@@ -10,7 +10,7 @@
   <Teleport to="body">
     <Transition name="modal">
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-content glass">
+        <div class="modal-content glass-modal">
           <div class="modal-header">
             <h2>Новый пост</h2>
             <button @click="closeModal" class="close-btn">
@@ -186,6 +186,7 @@ async function submit() {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  will-change: opacity;
 }
 .modal-content {
   width: 100%;
@@ -193,6 +194,8 @@ async function submit() {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 .modal-header {
   display: flex;
@@ -373,13 +376,25 @@ async function submit() {
   to { transform: rotate(360deg); }
 }
 
-.modal-enter-active, .modal-leave-active {
-  transition: all 0.3s ease;
+.modal-enter-active {
+  transition: opacity 0.1s ease-out;
+}
+.modal-enter-active .modal-content {
+  transition: transform 0.1s ease-out;
+}
+.modal-leave-active {
+  transition: opacity 0.08s ease-in;
+}
+.modal-leave-active .modal-content {
+  transition: transform 0.08s ease-in;
 }
 .modal-enter-from, .modal-leave-to {
   opacity: 0;
 }
-.modal-enter-from .modal-content, .modal-leave-to .modal-content {
-  transform: scale(0.95);
+.modal-enter-from .modal-content {
+  transform: translateZ(0) scale(0.97);
+}
+.modal-leave-to .modal-content {
+  transform: translateZ(0) scale(0.97);
 }
 </style>

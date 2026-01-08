@@ -1,59 +1,16 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-inner">
-      <!-- Navigation -->
-      <nav class="nav">
-        <router-link to="/" class="nav-item" :class="{ active: $route.name === 'feed' }">
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-          </div>
-          <span>Главная</span>
-        </router-link>
-
-        <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat' }">
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span v-if="unreadCount" class="nav-badge">{{ unreadCount }}</span>
-          </div>
-          <span>Сообщения</span>
-        </router-link>
-
-        <router-link to="/friends" class="nav-item" :class="{ active: $route.name === 'friends' }">
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          </div>
-          <span>Друзья</span>
-        </router-link>
-
-        <router-link :to="`/profile/${authStore.user?.id}`" class="nav-item" :class="{ active: $route.name === 'profile' }">
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <span>Профиль</span>
-        </router-link>
-      </nav>
-
-      <!-- User Section -->
-      <div class="sidebar-footer">
-        <div class="user-card" @click="showMenu = !showMenu">
-          <img :src="avatarUrl" class="avatar avatar-sm" alt="" @error="handleAvatarError">
-          <div class="user-info">
-            <span class="user-name">{{ authStore.user?.name }}</span>
-          </div>
-          <button class="menu-toggle">
+      <!-- User Profile at Top -->
+      <div class="sidebar-header">
+        <div class="user-card">
+          <router-link :to="`/profile/${authStore.user?.id}`" class="user-card-link">
+            <img :src="avatarUrl" class="avatar avatar-sm" alt="" @error="handleAvatarError">
+            <div class="user-info">
+              <span class="user-name">{{ authStore.user?.name }}</span>
+            </div>
+          </router-link>
+          <button class="menu-toggle" @click="showMenu = !showMenu">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="6" r="1.5"/>
               <circle cx="12" cy="12" r="1.5"/>
@@ -63,26 +20,60 @@
         </div>
 
         <Transition name="menu">
-          <div v-if="showMenu" class="user-menu glass">
-            <button @click="logout" class="menu-item">
+          <div v-if="showMenu" class="user-menu glass-modal">
+            <router-link :to="`/profile/${authStore.user?.id}`" class="menu-item" @click="showMenu = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="8" r="5"/>
+                <path d="M20 21a8 8 0 1 0-16 0"/>
+              </svg>
+              <span>Профиль</span>
+            </router-link>
+            <button @click="logout" class="menu-item danger">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
+                <path d="M16 17l5-5-5-5"/>
+                <path d="M21 12H9"/>
               </svg>
               <span>Выйти</span>
             </button>
           </div>
         </Transition>
-
-        <button class="post-btn btn btn-primary" @click="$router.push('/')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          <span>Запись</span>
-        </button>
       </div>
+
+      <nav class="nav">
+        <router-link to="/" class="nav-item" :class="{ active: $route.name === 'feed' }">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/>
+              <path d="M9 22V12h6v10"/>
+            </svg>
+          </div>
+          <span>Главная</span>
+        </router-link>
+
+        <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat' }">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <path d="M22 6l-10 7L2 6"/>
+            </svg>
+            <span v-if="unreadCount" class="nav-badge">{{ unreadCount }}</span>
+          </div>
+          <span>Сообщения</span>
+        </router-link>
+
+        <router-link to="/friends" class="nav-item" :class="{ active: $route.name === 'friends' }">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <span>Друзья</span>
+        </router-link>
+      </nav>
     </div>
   </aside>
 </template>
@@ -179,6 +170,8 @@ onUnmounted(() => clearInterval(interval))
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .nav-item {
@@ -242,10 +235,9 @@ onUnmounted(() => clearInterval(interval))
   justify-content: center;
 }
 
-.sidebar-footer {
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.sidebar-header {
   position: relative;
+  padding-bottom: 16px;
 }
 
 .user-card {
@@ -254,12 +246,21 @@ onUnmounted(() => clearInterval(interval))
   gap: 12px;
   padding: 10px 12px;
   border-radius: var(--radius-lg);
-  cursor: pointer;
   transition: background var(--transition);
 }
 
 .user-card:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.user-card-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
 }
 
 .user-info {
@@ -294,9 +295,9 @@ onUnmounted(() => clearInterval(interval))
 
 .user-menu {
   position: absolute;
-  bottom: calc(100% + 8px);
-  left: 12px;
-  right: 12px;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
   padding: 8px;
   z-index: 10;
 }
@@ -311,27 +312,19 @@ onUnmounted(() => clearInterval(interval))
   border-radius: var(--radius);
   font-size: 14px;
   transition: all var(--transition);
+  text-decoration: none;
 }
 
 .menu-item:hover {
   background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.menu-item.danger:hover {
   color: var(--danger);
 }
 
 .menu-item svg {
-  width: 18px;
-  height: 18px;
-}
-
-.post-btn {
-  width: 100%;
-  margin-top: 16px;
-  padding: 14px 20px;
-  font-size: 15px;
-  gap: 10px;
-}
-
-.post-btn svg {
   width: 18px;
   height: 18px;
 }

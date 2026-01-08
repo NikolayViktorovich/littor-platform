@@ -19,25 +19,21 @@
         </button>
         
         <Transition name="menu">
-          <div v-if="showMenu" class="post-dropdown glass" v-click-outside="closeMenu">
+          <div v-if="showMenu" class="post-dropdown glass-modal" v-click-outside="closeMenu">
             <button class="dropdown-item" v-if="isOwner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
+                <path d="M9 4v6l-2 4v2h10v-2l-2-4V4"/>
+                <line x1="12" y1="16" x2="12" y2="21"/>
+                <line x1="8" y1="4" x2="16" y2="4"/>
               </svg>
               Закрепить
             </button>
             <button class="dropdown-item" v-if="isOwner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="M9 9h6"/>
               </svg>
               Отключить комментарии
-            </button>
-            <button class="dropdown-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-              </svg>
-              Сохранить в закладках
             </button>
             <button @click="copyLink" class="dropdown-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -51,17 +47,19 @@
               <div class="dropdown-divider"></div>
               <button class="dropdown-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="9" y1="3" x2="9" y2="21"/>
+                  <path d="M21 8v13H3V8"/>
+                  <path d="M1 3h22v5H1z"/>
+                  <path d="M10 12h4"/>
                 </svg>
                 Архивировать
               </button>
               <button @click="handleDelete" class="dropdown-item danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  <line x1="10" y1="11" x2="10" y2="17"/>
-                  <line x1="14" y1="11" x2="14" y2="17"/>
+                  <path d="M3 6h18"/>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                  <path d="M10 11v6"/>
+                  <path d="M14 11v6"/>
                 </svg>
                 Удалить
               </button>
@@ -86,25 +84,22 @@
     <div class="post-actions">
       <button @click="toggleLike" class="action-btn" :class="{ active: post.isLiked }">
         <svg viewBox="0 0 24 24" :fill="post.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
         <span>Нравится</span>
       </button>
       
       <button @click="showComments = !showComments" class="action-btn" :class="{ active: showComments }">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
         <span>Комментировать</span>
       </button>
 
       <button class="action-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="18" cy="5" r="3"/>
-          <circle cx="6" cy="12" r="3"/>
-          <circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          <path d="M22 2L11 13"/>
+          <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
         </svg>
         <span>Поделиться</span>
       </button>
@@ -294,13 +289,16 @@ const vClickOutside = {
 
 .post-menu-btn {
   color: rgba(255, 255, 255, 0.4);
-  padding: 6px;
-  border-radius: var(--radius);
+  padding: 8px;
+  border-radius: 50%;
   transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .post-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -317,6 +315,8 @@ const vClickOutside = {
   min-width: 200px;
   padding: 6px;
   z-index: 10;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .dropdown-item {
@@ -329,6 +329,8 @@ const vClickOutside = {
   border-radius: var(--radius);
   font-size: 14px;
   transition: all var(--transition);
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .dropdown-item:hover {
@@ -485,7 +487,7 @@ const vClickOutside = {
 }
 
 .comment-body {
-  background: rgba(255, 255, 255, 0.06);
+  background: transparent;
   padding: 10px 14px;
   border-radius: var(--radius-lg);
   flex: 1;
@@ -519,20 +521,26 @@ const vClickOutside = {
   padding: 10px 16px;
 }
 
-.menu-enter-active,
+.menu-enter-active {
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+}
+
 .menu-leave-active {
-  transition: all var(--transition);
+  transition: opacity 0.1s ease-in, transform 0.1s ease-in;
 }
 
 .menu-enter-from,
 .menu-leave-to {
   opacity: 0;
-  transform: translateY(-8px) scale(0.95);
+  transform: translateZ(0) translateY(-4px) scale(0.98);
 }
 
-.comments-enter-active,
+.comments-enter-active {
+  transition: opacity 0.2s ease-out;
+}
+
 .comments-leave-active {
-  transition: all var(--transition);
+  transition: opacity 0.15s ease-in;
 }
 
 .comments-enter-from,

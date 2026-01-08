@@ -2,7 +2,7 @@
 
 :root {
   /* Colors */
-  --bg-primary: #000000;
+  --bg-primary: #1a1a1a;
   --bg-secondary: #0a0a0a;
   
   /* Liquid Glass effects */
@@ -21,6 +21,7 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.05);
   --glass-blur: blur(40px) saturate(180%);
   --glass-blur-heavy: blur(60px) saturate(200%);
+  --glass-blur-modal: blur(80px) saturate(150%);
   
   /* Text */
   --text-primary: rgba(255, 255, 255, 0.95);
@@ -49,9 +50,9 @@
   --sidebar-width: 260px;
   
   /* Transitions */
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.08s ease-out;
+  --transition: 0.12s ease-out;
+  --transition-slow: 0.18s ease-out;
 }
 
 /* Reset & Base */
@@ -74,6 +75,7 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 /* Animated gradient background */
@@ -150,6 +152,8 @@ img {
   box-shadow: var(--glass-shadow);
   position: relative;
   overflow: hidden;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 /* Liquid shine effect */
@@ -180,6 +184,18 @@ img {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-shadow);
+}
+
+/* Frosted glass for modals */
+.glass-modal {
+  background: rgba(15, 15, 15, 0.95);
+  backdrop-filter: var(--glass-blur-modal);
+  -webkit-backdrop-filter: var(--glass-blur-modal);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow-lg);
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 /* Liquid Glass Tabs */
@@ -406,20 +422,20 @@ img {
 @keyframes slideUp {
   from { 
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateZ(0) translateY(8px);
   }
   to { 
     opacity: 1;
-    transform: translateY(0);
+    transform: translateZ(0) translateY(0);
   }
 }
 
 .animate-fade-in {
-  animation: fadeIn var(--transition-slow);
+  animation: fadeIn 0.2s ease-out;
 }
 
 .animate-slide-up {
-  animation: slideUp var(--transition-slow);
+  animation: slideUp 0.2s ease-out;
 }
 
 /* Loading skeleton */

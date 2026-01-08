@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-page" v-if="user">
+  <div class="profile-page">
     <div class="profile-header">
       <button @click="$router.back()" class="back-btn glass">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -14,7 +14,7 @@
       <div class="profile-info glass">
         <div class="profile-avatar-wrap">
           <img :src="userAvatar" class="avatar avatar-xl" alt="" @error="handleAvatarError">
-          <label v-if="isOwner" class="avatar-edit">
+          <label v-if="isOwner && user" class="avatar-edit">
             <input type="file" accept="image/*" @change="uploadAvatar" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -24,15 +24,16 @@
         </div>
 
         <div class="profile-details">
-          <h1>{{ user.name }}</h1>
-          <p v-if="user.bio" class="bio">{{ user.bio }}</p>
+          <h1 v-if="user">{{ user.name }}</h1>
+          <div v-else class="skeleton" style="height: 28px; width: 150px; margin-bottom: 8px;"></div>
+          <p v-if="user?.bio" class="bio">{{ user.bio }}</p>
           <div class="profile-meta">
-            <span class="meta-item">{{ user.friendsCount || 0 }} друзей</span>
-            <span class="meta-item">{{ user.postsCount || 0 }} записей</span>
+            <span class="meta-item">{{ user?.friendsCount || 0 }} друзей</span>
+            <span class="meta-item">{{ user?.postsCount || 0 }} записей</span>
           </div>
         </div>
 
-        <div class="profile-actions">
+        <div v-if="user" class="profile-actions">
           <template v-if="isOwner">
             <button @click="showEditModal = true" class="btn btn-secondary">Редактировать</button>
           </template>
@@ -47,7 +48,7 @@
       </div>
     </div>
 
-    <div class="profile-content">
+    <div class="profile-content" v-if="user">
       <div class="liquid-tabs">
         <button class="liquid-tab active">Записи</button>
         <button class="liquid-tab">Фото</button>
@@ -71,10 +72,10 @@
       </div>
     </div>
 
-    <Teleport to="body">
+    <Teleport to="body" v-if="user">
       <Transition name="modal">
         <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
-          <div class="modal glass">
+          <div class="modal glass-modal">
             <div class="modal-header">
               <h2>Редактировать профиль</h2>
               <button @click="showEditModal = false" class="close-btn">
@@ -266,6 +267,8 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   gap: 24px;
   align-items: flex-start;
   flex-wrap: wrap;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .profile-avatar-wrap {
@@ -365,13 +368,13 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
   padding: 20px;
+  will-change: opacity;
 }
 
 .modal {
@@ -379,6 +382,8 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .modal-header {
@@ -434,9 +439,20 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   margin-top: 24px;
 }
 
-.modal-enter-active,
+.modal-enter-active {
+  transition: opacity 0.1s ease-out;
+}
+
+.modal-enter-active .modal {
+  transition: transform 0.1s ease-out;
+}
+
 .modal-leave-active {
-  transition: all var(--transition-slow);
+  transition: opacity 0.08s ease-in;
+}
+
+.modal-leave-active .modal {
+  transition: transform 0.08s ease-in;
 }
 
 .modal-enter-from,
@@ -446,7 +462,7 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 
 .modal-enter-from .modal,
 .modal-leave-to .modal {
-  transform: scale(0.95);
+  transform: translateZ(0) scale(0.97);
 }
 
 @media (max-width: 768px) {
