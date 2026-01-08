@@ -329,7 +329,7 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .back-btn svg { width: 20px; height: 20px; }
 .profile-cover { height: 200px; border-radius: var(--radius-2xl); overflow: hidden; position: relative; background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%); }
 .cover-gradient { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5)); }
-.cover-edit { position: absolute; bottom: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); }
+.cover-edit { position: absolute; bottom: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); z-index: 20; }
 .cover-edit:hover { background: rgba(0,0,0,0.7); }
 .cover-edit svg { width: 20px; height: 20px; color: white; }
 .profile-info { max-width: 700px; margin: -60px auto 0; padding: 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; background: rgba(18, 18, 18, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: var(--radius-xl); }
@@ -409,5 +409,25 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
   .profile-meta { justify-content: center; }
   .profile-actions { width: 100%; justify-content: center; }
   .media-grid { grid-template-columns: repeat(2, 1fr); }
+  
+  .cover-edit {
+    width: 36px;
+    height: 36px;
+    bottom: 70px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    box-shadow: none;
+  }
+  
+  .cover-edit:active {
+    transform: scale(0.95);
+  }
+  
+  .cover-edit svg {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+  }
 }
 </style>

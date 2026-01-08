@@ -229,5 +229,55 @@ onUnmounted(() => {
 .menu-enter-from, .menu-leave-to { opacity: 0; transform: translateX(-8px); }
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateX(-8px); }
 
-@media (max-width: 768px) { .sidebar { display: none; } }
+@media (max-width: 768px) {
+  .sidebar {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 72px;
+    padding: 0;
+    background: rgba(14, 14, 14, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  
+  .sidebar-inner {
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 0 8px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .sidebar-top,
+  .sidebar-bottom,
+  .nav-divider,
+  .notifications-wrap {
+    display: none;
+  }
+  
+  .nav {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    gap: 0;
+  }
+  
+  .nav-item {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .nav-item svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .nav-badge {
+    top: 8px;
+    right: 8px;
+  }
+}
 </style>
