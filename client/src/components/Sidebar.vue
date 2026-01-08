@@ -23,16 +23,15 @@
           <div v-if="showMenu" class="user-menu glass-modal">
             <router-link :to="`/profile/${authStore.user?.id}`" class="menu-item" @click="showMenu = false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="8" r="5"/>
-                <path d="M20 21a8 8 0 1 0-16 0"/>
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>
               </svg>
               <span>Профиль</span>
             </router-link>
             <button @click="logout" class="menu-item danger">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <path d="M16 17l5-5-5-5"/>
-                <path d="M21 12H9"/>
+                <path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/>
+                <path d="M7 12h14m0 0l-3-3m3 3l-3 3"/>
               </svg>
               <span>Выйти</span>
             </button>
@@ -44,8 +43,7 @@
         <router-link to="/" class="nav-item" :class="{ active: $route.name === 'feed' }">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/>
-              <path d="M9 22V12h6v10"/>
+              <path d="M4 6h16M4 12h16M4 18h10"/>
             </svg>
           </div>
           <span>Главная</span>
@@ -54,8 +52,7 @@
         <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat' }">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <path d="M22 6l-10 7L2 6"/>
+              <path d="M12 21a9 9 0 1 0-9-9c0 1.5.4 3 1 4.3L3 21l4.7-1c1.3.6 2.8 1 4.3 1z"/>
             </svg>
             <span v-if="unreadCount" class="nav-badge">{{ unreadCount }}</span>
           </div>
@@ -65,10 +62,10 @@
         <router-link to="/friends" class="nav-item" :class="{ active: $route.name === 'friends' }">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              <path d="M21 21v-2a4 4 0 0 0-3-3.85"/>
             </svg>
           </div>
           <span>Друзья</span>

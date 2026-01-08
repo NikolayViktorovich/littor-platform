@@ -1,7 +1,7 @@
 <template>
   <div class="messages-page">
     <div class="messages-container">
-      <div class="dialogs-panel glass">
+      <div class="dialogs-panel">
         <div class="dialogs-header">
           <h1>Сообщения</h1>
         </div>
@@ -46,7 +46,7 @@
         </div>
       </div>
 
-      <div class="chat-empty glass">
+      <div class="chat-empty">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -127,6 +127,14 @@ onMounted(fetchDialogs)
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: rgba(35, 35, 35, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+}
+
+.dialogs-panel::before {
+  display: none;
 }
 
 .dialogs-header {
@@ -246,6 +254,10 @@ onMounted(fetchDialogs)
   justify-content: center;
   gap: 16px;
   text-align: center;
+  background: rgba(35, 35, 35, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
 }
 
 .chat-empty::before {

@@ -229,7 +229,7 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 .back-btn {
   position: absolute;
   top: 32px;
-  left: calc(var(--sidebar-width) + 32px);
+  left: 32px;
   width: 40px;
   height: 40px;
   display: flex;
@@ -472,7 +472,7 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 
 @media (max-width: 768px) {
   .profile-page { padding-left: 0; }
-  .back-btn { left: 32px; }
+  .back-btn { left: 32px; top: 32px; }
   .profile-info { flex-direction: column; align-items: center; text-align: center; }
   .profile-meta { justify-content: center; }
   .profile-actions { width: 100%; justify-content: center; }
