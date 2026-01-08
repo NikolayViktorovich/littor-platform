@@ -55,12 +55,32 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       postId TEXT NOT NULL,
       authorId TEXT NOT NULL,
+      parentId TEXT,
       content TEXT NOT NULL,
       createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (postId) REFERENCES posts(id),
-      FOREIGN KEY (authorId) REFERENCES users(id)
+      FOREIGN KEY (authorId) REFERENCES users(id),
+      FOREIGN KEY (parentId) REFERENCES comments(id)
     )
   `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS comment_likes (
+      userId TEXT NOT NULL,
+      commentId TEXT NOT NULL,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (userId, commentId),
+      FOREIGN KEY (userId) REFERENCES users(id),
+      FOREIGN KEY (commentId) REFERENCES comments(id)
+    )
+  `)
+
+  // Migration: add parentId column if not exists
+  try {
+    db.run(`ALTER TABLE comments ADD COLUMN parentId TEXT`)
+  } catch (e) {
+    // Column already exists
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS friendships (

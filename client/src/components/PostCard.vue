@@ -92,6 +92,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
+        <span v-if="post.commentsCount" class="count">{{ formatCount(post.commentsCount) }}</span>
       </button>
 
       <button @click="handleShare" class="action-btn" :class="{ pressed: sharePressed }">
@@ -107,26 +108,84 @@
         <div v-if="loadingComments" class="comments-loading">
           <div class="spinner"></div>
         </div>
-        
         <div v-else class="comments-list">
           <div v-for="comment in comments" :key="comment.id" class="comment">
-            <router-link :to="`/profile/${comment.author.id}`">
+            <router-link :to="`/profile/${comment.author.id}`" class="comment-avatar">
               <img :src="getAvatarUrl(comment.author.avatar)" class="avatar avatar-sm" alt="" @error="handleAvatarError">
             </router-link>
             <div class="comment-body">
-              <router-link :to="`/profile/${comment.author.id}`" class="comment-author">
-                {{ comment.author.name }}
-              </router-link>
-              <p>{{ comment.content }}</p>
+              <div class="comment-header">
+                <router-link :to="`/profile/${comment.author.id}`" class="comment-author">
+                  {{ comment.author.name }}
+                </router-link>
+                <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
+              </div>
+              <p class="comment-text">{{ comment.content }}</p>
+              <div class="comment-actions">
+                <button class="comment-action" :class="{ active: comment.isLiked }" @click="likeComment(comment)">
+                  <svg viewBox="0 0 24 24" :fill="comment.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                  </svg>
+                  <span v-if="comment.likesCount">{{ formatCount(comment.likesCount) }}</span>
+                </button>
+                <button class="comment-action" @click="startReply(comment)">Ответить</button>
+                <button v-if="canDeleteComment(comment)" class="comment-action delete" @click="deleteComment(comment)">Удалить</button>
+              </div>
+              
+              <div v-if="comment.replies?.length" class="replies">
+                <div v-for="reply in comment.replies" :key="reply.id" class="comment reply">
+                  <router-link :to="`/profile/${reply.author.id}`" class="comment-avatar">
+                    <img :src="getAvatarUrl(reply.author.avatar)" class="avatar avatar-xs" alt="" @error="handleAvatarError">
+                  </router-link>
+                  <div class="comment-body">
+                    <div class="comment-header">
+                      <router-link :to="`/profile/${reply.author.id}`" class="comment-author">
+                        {{ reply.author.name }}
+                      </router-link>
+                      <span class="comment-time">{{ formatTime(reply.createdAt) }}</span>
+                    </div>
+                    <p class="comment-text">{{ reply.content }}</p>
+                    <div class="comment-actions">
+                      <button class="comment-action" :class="{ active: reply.isLiked }" @click="likeComment(reply)">
+                        <svg viewBox="0 0 24 24" :fill="reply.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                        </svg>
+                        <span v-if="reply.likesCount">{{ formatCount(reply.likesCount) }}</span>
+                      </button>
+                      <button class="comment-action" @click="startReply(reply, comment)">Ответить</button>
+                      <button v-if="canDeleteComment(reply)" class="comment-action delete" @click="deleteReply(comment, reply)">Удалить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
         
-        <form @submit.prevent="addComment" class="comment-form">
-          <input v-model="newComment" placeholder="Написать комментарий..." required>
-          <button type="submit" class="btn btn-primary btn-sm" :disabled="!newComment.trim()">
-            Отправить
-          </button>
+        <form @submit.prevent="addComment" class="comment-form" :class="{ 'reply-mode': isReplyMode }">
+          <div class="comment-input-wrap">
+            <input v-model="newComment" :placeholder="replyingTo ? `Ответ для ${replyingTo.author.name}...` : 'Написать комментарий...'" required>
+            <button v-if="!replyingTo" type="submit" class="inside-btn send-inside" :disabled="!newComment.trim()" key="send-inside">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+                <path d="M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+            <button v-else type="button" class="inside-btn cancel-inside" @click="cancelReply" key="cancel-inside">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="outside-btn-wrap">
+            <button type="submit" class="outside-btn" :disabled="!newComment.trim()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+                <path d="M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
         </form>
       </div>
     </Transition>
@@ -151,6 +210,9 @@ const menuOpen = ref(false)
 const comments = ref([])
 const newComment = ref('')
 const loadingComments = ref(false)
+const replyingTo = ref(null)
+const replyingToParentId = ref(null)
+const isReplyMode = ref(false)
 const imageLoaded = ref(false)
 const likePressed = ref(false)
 const commentPressed = ref(false)
@@ -250,11 +312,77 @@ async function loadComments() {
 async function addComment() {
   if (!newComment.value.trim()) return
   try {
-    const res = await api.post(`/posts/${props.post.id}/comments`, { content: newComment.value })
-    comments.value.push(res.data)
+    const payload = { content: newComment.value }
+    if (replyingToParentId.value) {
+      payload.parentId = replyingToParentId.value
+    }
+    const res = await api.post(`/posts/${props.post.id}/comments`, payload)
+    
+    if (replyingToParentId.value) {
+      const parent = comments.value.find(c => c.id === replyingToParentId.value)
+      if (parent) {
+        if (!parent.replies) parent.replies = []
+        parent.replies.push(res.data)
+      }
+      replyingTo.value = null
+      replyingToParentId.value = null
+    } else {
+      comments.value.push(res.data)
+    }
     newComment.value = ''
     emit('update', { ...props.post, commentsCount: props.post.commentsCount + 1 })
   } catch {}
+}
+
+async function likeComment(comment) {
+  try {
+    const res = await api.post(`/posts/comments/${comment.id}/like`)
+    comment.isLiked = res.data.liked
+    comment.likesCount = res.data.likesCount
+  } catch {}
+}
+
+function canDeleteComment(comment) {
+  return comment.author.id === authStore.user?.id || isOwner.value
+}
+
+async function deleteComment(comment) {
+  try {
+    await api.delete(`/posts/comments/${comment.id}`)
+    const idx = comments.value.findIndex(c => c.id === comment.id)
+    if (idx !== -1) {
+      const repliesCount = comment.replies?.length || 0
+      comments.value.splice(idx, 1)
+      emit('update', { ...props.post, commentsCount: props.post.commentsCount - 1 - repliesCount })
+    }
+  } catch {}
+}
+
+async function deleteReply(parentComment, reply) {
+  try {
+    await api.delete(`/posts/comments/${reply.id}`)
+    const idx = parentComment.replies.findIndex(r => r.id === reply.id)
+    if (idx !== -1) {
+      parentComment.replies.splice(idx, 1)
+      emit('update', { ...props.post, commentsCount: props.post.commentsCount - 1 })
+    }
+  } catch {}
+}
+
+function startReply(comment, parentComment = null) {
+  replyingTo.value = comment
+  replyingToParentId.value = parentComment ? parentComment.id : comment.id
+  isReplyMode.value = true
+}
+
+function cancelReply() {
+  replyingTo.value = null
+  replyingToParentId.value = null
+  isReplyMode.value = false
+}
+
+function onReplyTransitionEnd() {
+  // не нужно больше
 }
 
 watch(showComments, (val) => {
@@ -531,19 +659,29 @@ const vClickOutside = {
 
 .comment {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.comment-avatar {
+  flex-shrink: 0;
 }
 
 .comment-body {
-  background: transparent;
-  padding: 10px 14px;
-  border-radius: var(--radius-lg);
   flex: 1;
+  min-width: 0;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .comment-author {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-primary);
   transition: color var(--transition);
 }
@@ -552,21 +690,222 @@ const vClickOutside = {
   color: rgba(255, 255, 255, 0.7);
 }
 
-.comment-body p {
-  font-size: 14px;
-  margin-top: 4px;
+.comment-time {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.comment-text {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.comment-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  transition: color var(--transition);
+}
+
+.comment-action:hover {
   color: var(--text-secondary);
+}
+
+.comment-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.comment-action.active {
+  color: var(--text-primary);
+}
+
+.comment-action.delete {
+  color: rgba(255, 100, 100, 0.7);
+}
+
+.comment-action.delete:hover {
+  color: #ff5555;
+}
+
+.replies {
+  margin-top: 12px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.reply {
+  margin-top: 12px;
+}
+
+.avatar-xs {
+  width: 28px;
+  height: 28px;
+}
+
+.cancel-reply {
+  color: var(--text-muted);
+  padding: 8px;
+  font-size: 14px;
+  transition: color var(--transition);
+}
+
+.cancel-reply:hover {
+  color: var(--text-primary);
 }
 
 .comment-form {
   display: flex;
+  align-items: center;
   gap: 10px;
+  position: relative;
 }
 
-.comment-form input {
+.comment-input-wrap {
   flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.comment-input-wrap input {
+  width: 100%;
   border-radius: var(--radius-full);
   padding: 10px 16px;
+  padding-right: 48px;
+}
+
+.inside-btn {
+  position: absolute;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.inside-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.send-inside {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.send-inside:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.send-inside:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.cancel-inside {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  animation: morph-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cancel-inside:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.outside-btn-wrap {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.comment-form.reply-mode .outside-btn-wrap {
+  width: 36px;
+}
+
+.outside-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.2s ease, opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.outside-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.outside-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.outside-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Smooth morph animations */
+@keyframes morph-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.liquid-out-enter-active {
+  animation: liquid-emerge 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-out-leave-active {
+  animation: liquid-merge 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes liquid-emerge {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes liquid-merge {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
 }
 
 .menu-enter-active {

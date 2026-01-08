@@ -1,66 +1,64 @@
 <template>
-  <Transition name="modal">
-    <div class="modal-overlay" @click.self="$emit('close')">
-      <div class="modal-content glass-modal">
-        <div class="modal-header">
-          <h2>Новый пост</h2>
-          <button @click="$emit('close')" class="close-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-content glass-modal">
+      <div class="modal-header">
+        <h2>Новый пост</h2>
+        <button @click="$emit('close')" class="close-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div v-if="!images.length" class="upload-area" @click="triggerUpload">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-          </button>
+          </div>
+          <p class="upload-title">Добавьте фото или видео</p>
+          <label class="btn btn-secondary">
+            <input type="file" accept="image/*" multiple @change="handleImages" hidden ref="fileInput">
+            Загрузить с устройства
+          </label>
         </div>
 
-        <div class="modal-body">
-          <div v-if="!images.length" class="upload-area" @click="triggerUpload">
-            <div class="upload-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-            </div>
-            <p class="upload-title">Добавьте фото или видео</p>
-            <label class="btn btn-secondary">
-              <input type="file" accept="image/*" multiple @change="handleImages" hidden ref="fileInput">
-              Загрузить с устройства
-            </label>
-          </div>
-
-          <div v-else class="images-grid">
-            <div v-for="(img, index) in images" :key="index" class="image-item">
-              <img :src="img.preview" alt="">
-              <button @click="removeImage(index)" class="remove-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-            <label class="add-more">
-              <input type="file" accept="image/*" multiple @change="handleImages" hidden>
+        <div v-else class="images-grid">
+          <div v-for="(img, index) in images" :key="index" class="image-item">
+            <img :src="img.preview" alt="">
+            <button @click="removeImage(index)" class="remove-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
-            </label>
+            </button>
           </div>
-
-          <div class="text-input">
-            <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="3"></textarea>
-          </div>
+          <label class="add-more">
+            <input type="file" accept="image/*" multiple @change="handleImages" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </label>
         </div>
 
-        <div class="modal-footer">
-          <button @click="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
-            <span v-if="loading" class="spinner"></span>
-            <span v-else>Опубликовать</span>
-          </button>
+        <div class="text-input">
+          <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="3"></textarea>
         </div>
       </div>
+
+      <div class="modal-footer">
+        <button @click="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
+          <span v-if="loading" class="spinner"></span>
+          <span v-else>Опубликовать</span>
+        </button>
+      </div>
     </div>
-  </Transition>
+  </div>
 </template>
 
 <script setup>
@@ -128,6 +126,7 @@ async function submit() {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  will-change: opacity;
 }
 
 .modal-content {
@@ -136,6 +135,8 @@ async function submit() {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 .modal-header {
@@ -312,23 +313,23 @@ async function submit() {
   to { transform: rotate(360deg); }
 }
 
-.modal-enter-active,
+.modal-enter-active {
+  transition: opacity 0.1s ease-out;
+}
+.modal-enter-active .modal-content {
+  transition: transform 0.1s ease-out;
+}
 .modal-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 0.08s ease-in;
 }
-
-.modal-enter-active .modal-content,
 .modal-leave-active .modal-content {
-  transition: transform 0.15s ease;
+  transition: transform 0.08s ease-in;
 }
-
-.modal-enter-from,
-.modal-leave-to {
+.modal-enter-from, .modal-leave-to {
   opacity: 0;
 }
-
 .modal-enter-from .modal-content,
 .modal-leave-to .modal-content {
-  transform: scale(0.95);
+  transform: translateZ(0) scale(0.97);
 }
 </style>

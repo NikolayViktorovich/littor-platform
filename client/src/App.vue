@@ -7,7 +7,9 @@
     <Notifications />
     
     <Teleport to="body">
-      <CreatePostModal v-if="showCreateModal" @close="showCreateModal = false" @created="handlePostCreated" />
+      <Transition name="modal">
+        <CreatePostModal v-if="showCreateModal" @close="showCreateModal = false" @created="handlePostCreated" />
+      </Transition>
     </Teleport>
   </div>
 </template>
@@ -65,5 +67,25 @@ onMounted(() => {
   .app.with-sidebar .main-content {
     margin-left: 0;
   }
+}
+
+.modal-enter-active {
+  transition: opacity 0.1s ease-out;
+}
+.modal-enter-active .modal-content {
+  transition: transform 0.1s ease-out;
+}
+.modal-leave-active {
+  transition: opacity 0.08s ease-in;
+}
+.modal-leave-active .modal-content {
+  transition: transform 0.08s ease-in;
+}
+.modal-enter-from, .modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: translateZ(0) scale(0.97);
 }
 </style>
