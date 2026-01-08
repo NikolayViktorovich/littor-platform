@@ -10,7 +10,7 @@
       </router-link>
       
       <div class="post-menu-wrap">
-        <button @click="showMenu = !showMenu" class="post-menu-btn">
+        <button @click.stop="showMenu = !showMenu" class="post-menu-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <circle cx="12" cy="6" r="1.5"/>
             <circle cx="12" cy="12" r="1.5"/>
@@ -76,32 +76,29 @@
       <div v-if="!imageLoaded" class="image-placeholder skeleton"></div>
     </div>
 
-    <div class="post-stats" v-if="post.likesCount || post.commentsCount">
-      <span v-if="post.likesCount" class="stat-item">{{ post.likesCount }} нравится</span>
-      <span v-if="post.commentsCount" class="stat-item">{{ post.commentsCount }} комментариев</span>
+    <div class="post-stats" v-if="post.commentsCount">
+      <span class="stat-item">{{ post.commentsCount }} комментариев</span>
     </div>
 
     <div class="post-actions">
-      <button @click="toggleLike" class="action-btn" :class="{ active: post.isLiked }">
-        <svg viewBox="0 0 24 24" :fill="post.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
-          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      <button @click="handleLike" class="action-btn" :class="{ active: post.isLiked, pressed: likePressed }">
+        <svg viewBox="0 0 24 24" :fill="post.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
         </svg>
-        <span>Нравится</span>
+        <span v-if="post.likesCount" class="count">{{ formatCount(post.likesCount) }}</span>
       </button>
       
-      <button @click="showComments = !showComments" class="action-btn" :class="{ active: showComments }">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <button @click="handleComment" class="action-btn" :class="{ active: showComments, pressed: commentPressed }">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
-        <span>Комментировать</span>
       </button>
 
-      <button class="action-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M22 2L11 13"/>
-          <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+      <button @click="handleShare" class="action-btn" :class="{ pressed: sharePressed }">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
         </svg>
-        <span>Поделиться</span>
       </button>
     </div>
 
@@ -154,6 +151,9 @@ const comments = ref([])
 const newComment = ref('')
 const loadingComments = ref(false)
 const imageLoaded = ref(false)
+const likePressed = ref(false)
+const commentPressed = ref(false)
+const sharePressed = ref(false)
 
 const isOwner = computed(() => authStore.user?.id === props.post.author.id)
 const authorAvatar = computed(() => getAvatarUrl(props.post.author.avatar))
@@ -186,6 +186,13 @@ function formatTime(date) {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
+function formatCount(num) {
+  if (!num) return ''
+  if (num >= 1000000) return (num / 1000000).toFixed(1).replace('.0', '') + 'М'
+  if (num >= 1000) return (num / 1000).toFixed(1).replace('.0', '') + 'К'
+  return num.toString()
+}
+
 function handleDelete() {
   showMenu.value = false
   emit('delete', props.post.id)
@@ -202,6 +209,23 @@ async function toggleLike() {
     const res = await api.post(`/posts/${props.post.id}/like`)
     emit('update', { ...props.post, isLiked: res.data.liked, likesCount: res.data.likesCount })
   } catch {}
+}
+
+async function handleLike() {
+  likePressed.value = true
+  setTimeout(() => likePressed.value = false, 150)
+  await toggleLike()
+}
+
+function handleComment() {
+  commentPressed.value = true
+  setTimeout(() => commentPressed.value = false, 150)
+  showComments.value = !showComments.value
+}
+
+function handleShare() {
+  sharePressed.value = true
+  setTimeout(() => sharePressed.value = false, 150)
 }
 
 async function loadComments() {
@@ -231,11 +255,11 @@ watch(showComments, (val) => {
 const vClickOutside = {
   mounted(el, binding) {
     el._clickOutside = (e) => {
-      if (!el.contains(e.target) && !el.parentElement.contains(e.target)) {
+      if (!el.contains(e.target)) {
         binding.value()
       }
     }
-    setTimeout(() => document.addEventListener('click', el._clickOutside), 0)
+    document.addEventListener('click', el._clickOutside)
   },
   unmounted(el) {
     document.removeEventListener('click', el._clickOutside)
@@ -418,35 +442,43 @@ const vClickOutside = {
 
 .post-actions {
   display: flex;
-  gap: 4px;
+  gap: 8px;
+  padding-top: 4px;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  color: rgba(255, 255, 255, 0.5);
+  gap: 6px;
+  padding: 8px;
+  color: var(--text-muted);
   border-radius: var(--radius-full);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all var(--transition);
-  flex: 1;
-  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .action-btn.active {
   color: var(--text-primary);
 }
 
+.action-btn.pressed {
+  transform: scale(0.85);
+}
+
 .action-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
+  transition: transform 0.15s ease;
+}
+
+.action-btn .count {
+  font-size: 13px;
+  color: inherit;
 }
 
 .comments-section {

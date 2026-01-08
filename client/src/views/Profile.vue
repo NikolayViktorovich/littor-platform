@@ -111,6 +111,7 @@ import { ref, computed, watch, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { cache } from '../stores/cache'
 import CreatePost from '../components/CreatePost.vue'
 import PostCard from '../components/PostCard.vue'
 import api from '../api'
@@ -135,6 +136,14 @@ function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
 
 async function fetchProfile() {
   const id = route.params.id || authStore.user?.id
+  
+  if (cache.profiles[id]) {
+    user.value = cache.profiles[id].user
+    posts.value = cache.profiles[id].posts
+    editForm.name = user.value.name
+    editForm.bio = user.value.bio || ''
+  }
+  
   try {
     const [userRes, postsRes] = await Promise.all([
       api.get(`/users/${id}`),
@@ -144,6 +153,8 @@ async function fetchProfile() {
     posts.value = postsRes.data
     editForm.name = user.value.name
     editForm.bio = user.value.bio || ''
+    
+    cache.profiles[id] = { user: userRes.data, posts: postsRes.data }
   } catch (err) {
     notifications.error(err.message)
   }

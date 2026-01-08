@@ -1,23 +1,57 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-inner">
-      <!-- User Profile at Top -->
-      <div class="sidebar-header">
-        <div class="user-card">
-          <router-link :to="`/profile/${authStore.user?.id}`" class="user-card-link">
-            <img :src="avatarUrl" class="avatar avatar-sm" alt="" @error="handleAvatarError">
-            <div class="user-info">
-              <span class="user-name">{{ authStore.user?.name }}</span>
-            </div>
-          </router-link>
-          <button class="menu-toggle" @click="showMenu = !showMenu">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="6" r="1.5"/>
-              <circle cx="12" cy="12" r="1.5"/>
-              <circle cx="12" cy="18" r="1.5"/>
-            </svg>
-          </button>
+      <div class="sidebar-top">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 8a4 4 0 104 4"/>
+          </svg>
         </div>
+      </div>
+
+      <nav class="nav">
+        <router-link to="/" class="nav-item" :class="{ active: $route.name === 'feed', pressed: pressedItem === 'feed' }" @click="handlePress('feed')">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.707 2.293a1 1 0 00-1.414 0l-9 9A1 1 0 003 13h1v7a2 2 0 002 2h4v-6a2 2 0 114 0v6h4a2 2 0 002-2v-7h1a1 1 0 00.707-1.707l-9-9z"/>
+          </svg>
+        </router-link>
+
+        <router-link to="/friends" class="nav-item" :class="{ active: $route.name === 'friends', pressed: pressedItem === 'friends' }" @click="handlePress('friends')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="M21 21l-4-4"/>
+          </svg>
+        </router-link>
+
+        <button class="nav-item create-btn" :class="{ pressed: pressedItem === 'create' }" @click="handleCreate">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+
+        <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat', pressed: pressedItem === 'messages' }" @click="handlePress('messages')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+          </svg>
+          <span v-if="unreadCount" class="nav-badge">{{ unreadCount }}</span>
+        </router-link>
+
+        <router-link :to="`/profile/${authStore.user?.id}`" class="nav-item" :class="{ active: $route.name === 'profile', pressed: pressedItem === 'profile' }" @click="handlePress('profile')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
+          </svg>
+        </router-link>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button class="nav-item" :class="{ pressed: pressedItem === 'menu' }" @click.stop="handleMenu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="12" x2="20" y2="12"/>
+          </svg>
+        </button>
 
         <Transition name="menu">
           <div v-if="showMenu" class="user-menu glass-modal">
@@ -38,39 +72,6 @@
           </div>
         </Transition>
       </div>
-
-      <nav class="nav">
-        <router-link to="/" class="nav-item" :class="{ active: $route.name === 'feed' }">
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M4 6h16M4 12h16M4 18h10"/>
-            </svg>
-          </div>
-          <span>Главная</span>
-        </router-link>
-
-        <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat' }">
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 21a9 9 0 1 0-9-9c0 1.5.4 3 1 4.3L3 21l4.7-1c1.3.6 2.8 1 4.3 1z"/>
-            </svg>
-            <span v-if="unreadCount" class="nav-badge">{{ unreadCount }}</span>
-          </div>
-          <span>Сообщения</span>
-        </router-link>
-
-        <router-link to="/friends" class="nav-item" :class="{ active: $route.name === 'friends' }">
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              <path d="M21 21v-2a4 4 0 0 0-3-3.85"/>
-            </svg>
-          </div>
-          <span>Друзья</span>
-        </router-link>
-      </nav>
     </div>
   </aside>
 </template>
@@ -81,10 +82,13 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
 
+const emit = defineEmits(['create'])
+
 const router = useRouter()
 const authStore = useAuthStore()
 const unreadCount = ref(0)
 const showMenu = ref(false)
+const pressedItem = ref(null)
 let interval
 
 const avatarUrl = computed(() => {
@@ -95,6 +99,21 @@ const avatarUrl = computed(() => {
 
 function handleAvatarError(e) {
   e.target.src = '/default-avatar.svg'
+}
+
+function handlePress(item) {
+  pressedItem.value = item
+  setTimeout(() => pressedItem.value = null, 150)
+}
+
+function handleCreate() {
+  handlePress('create')
+  emit('create')
+}
+
+function handleMenu() {
+  handlePress('menu')
+  showMenu.value = !showMenu.value
 }
 
 async function fetchUnread() {
@@ -109,12 +128,22 @@ function logout() {
   router.push('/login')
 }
 
+function handleClickOutside(e) {
+  if (showMenu.value && !e.target.closest('.sidebar-bottom')) {
+    showMenu.value = false
+  }
+}
+
 onMounted(() => {
   fetchUnread()
   interval = setInterval(fetchUnread, 30000)
+  document.addEventListener('click', handleClickOutside)
 })
 
-onUnmounted(() => clearInterval(interval))
+onUnmounted(() => {
+  clearInterval(interval)
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -123,90 +152,94 @@ onUnmounted(() => clearInterval(interval))
   top: 0;
   left: 0;
   bottom: 0;
-  width: var(--sidebar-width);
+  width: 72px;
   z-index: 100;
-  padding: 16px;
-  isolation: isolate;
+  padding: 12px;
 }
 
 .sidebar-inner {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: rgba(35, 35, 35, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-2xl);
-  padding: 20px 12px;
-  box-shadow: var(--glass-shadow);
-  position: relative;
-  overflow: hidden;
+  align-items: center;
+  background: transparent;
 }
 
-.sidebar-inner::before {
-  display: none;
+.sidebar-top {
+  padding: 20px 0 40px;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  color: var(--text-primary);
+}
+
+.logo svg {
+  width: 100%;
+  height: 100%;
 }
 
 .nav {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .nav-item {
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  color: var(--text-secondary);
+  justify-content: center;
+  color: var(--text-muted);
   border-radius: var(--radius-lg);
-  font-weight: 500;
-  font-size: 15px;
-  transition: all var(--transition);
+  transition: all 0.15s ease;
   position: relative;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
 .nav-item.active {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.06) 100%
-  );
-  color: var(--text-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-.nav-item.active .nav-icon {
   color: var(--text-primary);
 }
 
-.nav-icon {
-  position: relative;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
+.nav-item.active svg {
+  transform: scale(1.1);
 }
 
-.nav-icon svg {
-  width: 24px;
-  height: 24px;
+.nav-item svg {
+  width: 26px;
+  height: 26px;
+  transition: transform 0.15s ease;
+}
+
+.nav-item.pressed {
+  transform: scale(0.85);
+}
+
+.nav-item.create-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.nav-item.create-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .nav-badge {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  background: rgba(255, 255, 255, 0.2);
+  top: 6px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ff3b5c;
   color: white;
   font-size: 10px;
   font-weight: 600;
@@ -216,71 +249,17 @@ onUnmounted(() => clearInterval(interval))
   justify-content: center;
 }
 
-.sidebar-header {
+.sidebar-bottom {
+  padding: 40px 0 20px;
   position: relative;
-  padding-bottom: 16px;
-}
-
-.user-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-lg);
-  transition: background var(--transition);
-}
-
-.user-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.user-card-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-  text-decoration: none;
-  color: inherit;
-}
-
-.user-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.user-name {
-  font-weight: 500;
-  font-size: 14px;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.menu-toggle {
-  color: var(--text-muted);
-  padding: 4px;
-  border-radius: var(--radius);
-  transition: color var(--transition);
-}
-
-.menu-toggle:hover {
-  color: var(--text-secondary);
-}
-
-.menu-toggle svg {
-  width: 18px;
-  height: 18px;
 }
 
 .user-menu {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
+  bottom: 0;
+  left: 72px;
+  width: 200px;
   padding: 8px;
-  z-index: 10;
 }
 
 .menu-item {
@@ -318,7 +297,7 @@ onUnmounted(() => clearInterval(interval))
 .menu-enter-from,
 .menu-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateX(-8px);
 }
 
 @media (max-width: 768px) {

@@ -47,13 +47,14 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import CreatePost from '../components/CreatePost.vue'
 import PostCard from '../components/PostCard.vue'
 import { useNotificationsStore } from '../stores/notifications'
+import { cache } from '../stores/cache'
 import api from '../api'
 
 const notifications = useNotificationsStore()
-const posts = ref([])
+const posts = ref(cache.feed.posts)
 const loading = ref(false)
-const hasMore = ref(true)
-const page = ref(1)
+const hasMore = ref(cache.feed.hasMore)
+const page = ref(cache.feed.page)
 const loadMore = ref(null)
 let observer
 
@@ -66,6 +67,11 @@ async function fetchPosts() {
     posts.value.push(...res.data.posts)
     hasMore.value = res.data.hasMore
     page.value++
+    
+    cache.feed.posts = posts.value
+    cache.feed.page = page.value
+    cache.feed.hasMore = hasMore.value
+    cache.feed.loaded = true
   } catch (err) {
     notifications.error(err.message)
   } finally {
@@ -75,12 +81,14 @@ async function fetchPosts() {
 
 function addPost(post) {
   posts.value.unshift(post)
+  cache.feed.posts = posts.value
 }
 
 async function deletePost(id) {
   try {
     await api.delete(`/posts/${id}`)
     posts.value = posts.value.filter(p => p.id !== id)
+    cache.feed.posts = posts.value
     notifications.success('Запись удалена')
   } catch (err) {
     notifications.error(err.message)
@@ -89,11 +97,16 @@ async function deletePost(id) {
 
 function updatePost(updated) {
   const idx = posts.value.findIndex(p => p.id === updated.id)
-  if (idx !== -1) posts.value[idx] = updated
+  if (idx !== -1) {
+    posts.value[idx] = updated
+    cache.feed.posts = posts.value
+  }
 }
 
 onMounted(() => {
-  fetchPosts()
+  if (!cache.feed.loaded) {
+    fetchPosts()
+  }
   
   observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) fetchPosts()

@@ -66,15 +66,16 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useNotificationsStore } from '../stores/notifications'
+import { cache } from '../stores/cache'
 import api from '../api'
 
 const notifications = useNotificationsStore()
 
 const activeTab = ref('friends')
-const friends = ref([])
-const incoming = ref([])
-const outgoing = ref([])
-const loading = ref(false)
+const friends = ref(cache.friends.friends)
+const incoming = ref(cache.friends.incoming)
+const outgoing = ref(cache.friends.outgoing)
+const loading = ref(!cache.friends.loaded)
 
 const tabs = computed(() => [
   { key: 'friends', label: 'Друзья', count: friends.value.length },
@@ -98,7 +99,9 @@ function handleAvatarError(e) {
 }
 
 async function fetchData() {
-  loading.value = true
+  if (!cache.friends.loaded) {
+    loading.value = true
+  }
   try {
     const [friendsRes, incomingRes, outgoingRes] = await Promise.all([
       api.get('/friends'),
@@ -108,6 +111,11 @@ async function fetchData() {
     friends.value = friendsRes.data
     incoming.value = incomingRes.data
     outgoing.value = outgoingRes.data
+    
+    cache.friends.friends = friendsRes.data
+    cache.friends.incoming = incomingRes.data
+    cache.friends.outgoing = outgoingRes.data
+    cache.friends.loaded = true
   } catch (err) {
     notifications.error(err.message)
   } finally {
@@ -121,6 +129,8 @@ async function acceptRequest(userId) {
     const user = incoming.value.find(u => u.id === userId)
     incoming.value = incoming.value.filter(u => u.id !== userId)
     if (user) friends.value.push(user)
+    cache.friends.friends = friends.value
+    cache.friends.incoming = incoming.value
     notifications.success('Заявка принята')
   } catch (err) {
     notifications.error(err.message)
@@ -131,6 +141,7 @@ async function declineRequest(userId) {
   try {
     await api.post(`/friends/decline/${userId}`)
     incoming.value = incoming.value.filter(u => u.id !== userId)
+    cache.friends.incoming = incoming.value
   } catch (err) {
     notifications.error(err.message)
   }
@@ -140,6 +151,7 @@ async function cancelRequest(userId) {
   try {
     await api.delete(`/friends/request/${userId}`)
     outgoing.value = outgoing.value.filter(u => u.id !== userId)
+    cache.friends.outgoing = outgoing.value
   } catch (err) {
     notifications.error(err.message)
   }
@@ -149,6 +161,7 @@ async function removeFriend(userId) {
   try {
     await api.delete(`/friends/${userId}`)
     friends.value = friends.value.filter(u => u.id !== userId)
+    cache.friends.friends = friends.value
     notifications.success('Удалён из друзей')
   } catch (err) {
     notifications.error(err.message)

@@ -63,13 +63,14 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { cache } from '../stores/cache'
 import api from '../api'
 
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
 
-const dialogs = ref([])
-const loading = ref(true)
+const dialogs = ref(cache.messages.dialogs)
+const loading = ref(!cache.messages.loaded)
 
 function getAvatarUrl(avatar) {
   if (!avatar) return '/default-avatar.svg'
@@ -98,6 +99,8 @@ async function fetchDialogs() {
   try {
     const res = await api.get('/messages/dialogs')
     dialogs.value = res.data
+    cache.messages.dialogs = res.data
+    cache.messages.loaded = true
   } catch (err) {
     notifications.error(err.message)
   } finally {
@@ -105,7 +108,13 @@ async function fetchDialogs() {
   }
 }
 
-onMounted(fetchDialogs)
+onMounted(() => {
+  if (!cache.messages.loaded) {
+    fetchDialogs()
+  } else {
+    fetchDialogs()
+  }
+})
 </script>
 
 <style scoped>
