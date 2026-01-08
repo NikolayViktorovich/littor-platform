@@ -2,13 +2,13 @@
   <div class="friends-page">
     <div class="friends-container">
       <div class="friends-header glass">
-        <h1>Friends</h1>
-        <div class="friends-tabs">
+        <h1>Друзья</h1>
+        <div class="liquid-tabs">
           <button 
             v-for="tab in tabs" 
             :key="tab.key"
             @click="activeTab = tab.key"
-            class="tab"
+            class="liquid-tab"
             :class="{ active: activeTab === tab.key }"
           >
             {{ tab.label }}
@@ -31,7 +31,7 @@
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           </div>
-          <p>{{ activeTab === 'friends' ? 'No friends yet' : 'No requests' }}</p>
+          <p>{{ activeTab === 'friends' ? 'Пока нет друзей' : 'Нет заявок' }}</p>
         </div>
         
         <TransitionGroup v-else name="list" tag="div" class="friends-list">
@@ -40,21 +40,20 @@
               <img :src="getAvatarUrl(user.avatar)" class="avatar" alt="" @error="handleAvatarError">
               <div class="friend-details">
                 <span class="friend-name">{{ user.name }}</span>
-                <span class="friend-meta">@{{ user.name.toLowerCase().replace(/\s/g, '') }}</span>
               </div>
             </router-link>
             
             <div class="friend-actions">
               <template v-if="activeTab === 'friends'">
-                <router-link :to="`/messages/${user.id}`" class="btn btn-secondary btn-sm">Message</router-link>
-                <button @click="removeFriend(user.id)" class="btn btn-ghost btn-sm">Remove</button>
+                <router-link :to="`/messages/${user.id}`" class="btn btn-secondary btn-sm">Написать</router-link>
+                <button @click="removeFriend(user.id)" class="btn btn-ghost btn-sm">Удалить</button>
               </template>
               <template v-else-if="activeTab === 'incoming'">
-                <button @click="acceptRequest(user.id)" class="btn btn-primary btn-sm">Accept</button>
-                <button @click="declineRequest(user.id)" class="btn btn-ghost btn-sm">Decline</button>
+                <button @click="acceptRequest(user.id)" class="btn btn-primary btn-sm">Принять</button>
+                <button @click="declineRequest(user.id)" class="btn btn-ghost btn-sm">Отклонить</button>
               </template>
               <template v-else>
-                <button @click="cancelRequest(user.id)" class="btn btn-secondary btn-sm">Cancel</button>
+                <button @click="cancelRequest(user.id)" class="btn btn-secondary btn-sm">Отменить</button>
               </template>
             </div>
           </div>
@@ -78,9 +77,9 @@ const outgoing = ref([])
 const loading = ref(false)
 
 const tabs = computed(() => [
-  { key: 'friends', label: 'Friends', count: friends.value.length },
-  { key: 'incoming', label: 'Incoming', count: incoming.value.length },
-  { key: 'outgoing', label: 'Outgoing', count: outgoing.value.length }
+  { key: 'friends', label: 'Друзья', count: friends.value.length },
+  { key: 'incoming', label: 'Входящие', count: incoming.value.length },
+  { key: 'outgoing', label: 'Исходящие', count: outgoing.value.length }
 ])
 
 const list = computed(() => {
@@ -122,7 +121,7 @@ async function acceptRequest(userId) {
     const user = incoming.value.find(u => u.id === userId)
     incoming.value = incoming.value.filter(u => u.id !== userId)
     if (user) friends.value.push(user)
-    notifications.success('Request accepted')
+    notifications.success('Заявка принята')
   } catch (err) {
     notifications.error(err.message)
   }
@@ -150,7 +149,7 @@ async function removeFriend(userId) {
   try {
     await api.delete(`/friends/${userId}`)
     friends.value = friends.value.filter(u => u.id !== userId)
-    notifications.success('Removed from friends')
+    notifications.success('Удалён из друзей')
   } catch (err) {
     notifications.error(err.message)
   }
@@ -167,7 +166,7 @@ fetchData()
 }
 
 .friends-container {
-  max-width: 680px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -182,47 +181,21 @@ fetchData()
   margin-bottom: 20px;
 }
 
-.friends-tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border-radius: var(--radius-full);
-  transition: all var(--transition);
-}
-
-.tab:hover {
-  background: var(--glass-bg-hover);
-  color: var(--text-primary);
-}
-
-.tab.active {
-  background: var(--accent);
-  color: white;
+.liquid-tabs {
+  display: inline-flex;
 }
 
 .tab-badge {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-full);
   font-size: 12px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.tab:not(.active) .tab-badge {
-  background: var(--glass-bg-hover);
+  margin-left: 8px;
 }
 
 .friends-content {
@@ -244,8 +217,8 @@ fetchData()
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--glass-border);
-  border-top-color: var(--accent);
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -257,7 +230,7 @@ fetchData()
 .empty-icon {
   width: 64px;
   height: 64px;
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
@@ -286,7 +259,7 @@ fetchData()
 }
 
 .friend-item:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .friend-info {
@@ -309,12 +282,7 @@ fetchData()
 }
 
 .friend-info:hover .friend-name {
-  color: var(--accent);
-}
-
-.friend-meta {
-  font-size: 13px;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .friend-actions {
@@ -322,7 +290,6 @@ fetchData()
   gap: 8px;
 }
 
-/* List transitions */
 .list-enter-active,
 .list-leave-active {
   transition: all var(--transition);

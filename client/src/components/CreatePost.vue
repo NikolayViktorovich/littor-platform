@@ -1,34 +1,92 @@
 <template>
-  <div class="create-post card">
-    <form @submit.prevent="submit">
-      <div class="create-post-header">
-        <img :src="authStore.user?.avatar || '/default-avatar.svg'" class="avatar" alt="">
-        <textarea 
-          v-model="content" 
-          placeholder="Что у вас нового?" 
-          rows="2"
-          @input="autoResize"
-          ref="textarea"
-        ></textarea>
-      </div>
-      
-      <div v-if="imagePreview" class="image-preview">
-        <img :src="imagePreview" alt="">
-        <button type="button" @click="removeImage" class="remove-image">×</button>
-      </div>
+  <button class="create-trigger glass" @click="showModal = true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    <span>Создать пост</span>
+  </button>
 
-      <div class="create-post-footer">
-        <label class="attach-btn">
-          <input type="file" accept="image/*" @change="handleImage" hidden>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-          Фото
-        </label>
-        <button type="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
-          {{ loading ? 'Публикация...' : 'Опубликовать' }}
-        </button>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+        <div class="modal-content glass">
+          <div class="modal-header">
+            <h2>Новый пост</h2>
+            <button @click="closeModal" class="close-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div v-if="!images.length" class="upload-area" @click="triggerUpload">
+              <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <p class="upload-title">Добавьте фото или видео</p>
+              <label class="btn btn-secondary">
+                <input type="file" accept="image/*" multiple @change="handleImages" hidden ref="fileInput">
+                Загрузить с устройства
+              </label>
+            </div>
+
+            <div v-else class="images-grid">
+              <div v-for="(img, index) in images" :key="index" class="image-item">
+                <img :src="img.preview" alt="">
+                <button @click="removeImage(index)" class="remove-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+              <label class="add-more">
+                <input type="file" accept="image/*" multiple @change="handleImages" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </label>
+            </div>
+
+            <div class="text-input">
+              <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="2"></textarea>
+              <button class="emoji-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                  <line x1="9" y1="9" x2="9.01" y2="9"/>
+                  <line x1="15" y1="9" x2="15.01" y2="9"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="tips-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              Советы по публикации
+            </button>
+            <button @click="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
+              <span v-if="loading" class="spinner"></span>
+              <span v-else>Далее</span>
+            </button>
+          </div>
+        </div>
       </div>
-    </form>
-  </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
@@ -38,58 +96,57 @@ import { useNotificationsStore } from '../stores/notifications'
 import api from '../api'
 
 const emit = defineEmits(['created'])
-
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
 
+const showModal = ref(false)
 const content = ref('')
-const image = ref(null)
-const imagePreview = ref(null)
+const images = ref([])
 const loading = ref(false)
-const textarea = ref(null)
+const fileInput = ref(null)
 
-const canSubmit = computed(() => content.value.trim() || image.value)
+const canSubmit = computed(() => content.value.trim() || images.value.length)
 
-function autoResize(e) {
-  e.target.style.height = 'auto'
-  e.target.style.height = e.target.scrollHeight + 'px'
+function triggerUpload() {
+  fileInput.value?.click()
 }
 
-function handleImage(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  
-  if (file.size > 5 * 1024 * 1024) {
-    notifications.error('Максимальный размер изображения 5MB')
-    return
+function closeModal() {
+  showModal.value = false
+  content.value = ''
+  images.value.forEach(img => URL.revokeObjectURL(img.preview))
+  images.value = []
+}
+
+function handleImages(e) {
+  const files = Array.from(e.target.files)
+  for (const file of files) {
+    if (file.size > 5 * 1024 * 1024) {
+      notifications.error('Максимальный размер 5MB')
+      continue
+    }
+    if (images.value.length >= 10) break
+    images.value.push({ file, preview: URL.createObjectURL(file) })
   }
-  
-  image.value = file
-  imagePreview.value = URL.createObjectURL(file)
+  e.target.value = ''
 }
 
-function removeImage() {
-  image.value = null
-  imagePreview.value = null
+function removeImage(index) {
+  URL.revokeObjectURL(images.value[index].preview)
+  images.value.splice(index, 1)
 }
 
 async function submit() {
   if (!canSubmit.value) return
-  
   loading.value = true
   try {
     const formData = new FormData()
     formData.append('content', content.value)
-    if (image.value) formData.append('image', image.value)
-    
+    if (images.value.length) formData.append('image', images.value[0].file)
     const res = await api.post('/posts', formData)
     emit('created', res.data)
-    
-    content.value = ''
-    removeImage()
-    if (textarea.value) textarea.value.style.height = 'auto'
-    
-    notifications.success('Пост опубликован')
+    closeModal()
+    notifications.success('Запись опубликована')
   } catch (err) {
     notifications.error(err.message)
   } finally {
@@ -99,87 +156,230 @@ async function submit() {
 </script>
 
 <style scoped>
-.create-post {
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.create-post-header {
+.create-trigger {
   display: flex;
-  gap: 12px;
-}
-
-.create-post-header textarea {
-  flex: 1;
-  border: none;
-  resize: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 15px;
-  line-height: 1.4;
-  min-height: 44px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.create-trigger:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+.create-trigger svg {
+  width: 20px;
+  height: 20px;
 }
 
-.create-post-header textarea:focus {
-  outline: none;
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
 }
-
-.image-preview {
-  position: relative;
-  margin: 12px 0;
+.modal-content {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
-
-.image-preview img {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: var(--radius);
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-.remove-image {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  background: rgba(0, 0, 0, 0.6);
+.modal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.close-btn {
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4px;
+}
+.close-btn:hover {
   color: white;
-  border-radius: 50%;
-  font-size: 20px;
-  line-height: 1;
+}
+.close-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+.upload-area {
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 60px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+.upload-area:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.upload-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-.remove-image:hover {
-  background: rgba(0, 0, 0, 0.8);
+.upload-icon svg {
+  width: 32px;
+  height: 32px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.upload-title {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--text-primary);
 }
 
-.create-post-footer {
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.image-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-item .remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.image-item:hover .remove-btn {
+  opacity: 1;
+}
+.remove-btn svg {
+  width: 12px;
+  height: 12px;
+}
+.add-more {
+  aspect-ratio: 1;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all var(--transition);
+}
+.add-more:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.7);
+}
+.add-more svg {
+  width: 24px;
+  height: 24px;
+}
+
+.text-input {
+  position: relative;
+  margin-top: 16px;
+}
+.text-input textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  resize: none;
+  font-size: 15px;
+  padding-right: 40px;
+}
+.text-input textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+.emoji-btn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 4px;
+}
+.emoji-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+.emoji-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-.attach-btn {
+.tips-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  color: var(--text-secondary);
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: background 0.2s;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+}
+.tips-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.attach-btn:hover {
-  background: var(--bg-hover);
+.modal-enter-active, .modal-leave-active {
+  transition: all 0.3s ease;
 }
-
-.attach-btn svg {
-  width: 20px;
-  height: 20px;
-  color: var(--success);
+.modal-enter-from, .modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from .modal-content, .modal-leave-to .modal-content {
+  transform: scale(0.95);
 }
 </style>

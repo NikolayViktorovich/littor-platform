@@ -1,81 +1,43 @@
 <template>
   <div class="feed-page">
-    <!-- Header Tabs -->
-    <div class="feed-header glass">
-      <div class="feed-tabs">
-        <button class="tab active">For you</button>
-        <button class="tab">Following</button>
+    <div class="feed-header">
+      <div class="liquid-tabs">
+        <button class="liquid-tab active">Для вас</button>
+        <button class="liquid-tab">Подписки</button>
       </div>
-      <div class="feed-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input type="text" placeholder="Search...">
-      </div>
-      <button class="btn btn-icon btn-ghost">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </button>
     </div>
 
     <div class="feed-content">
-      <!-- Main Feed -->
-      <div class="feed-main">
-        <CreatePost @created="addPost" />
-        
-        <div v-if="loading && !posts.length" class="loading-state">
-          <div class="spinner-lg"></div>
-          <p>Loading posts...</p>
-        </div>
-        
-        <TransitionGroup name="post" tag="div" class="posts-list">
-          <PostCard 
-            v-for="post in posts" 
-            :key="post.id" 
-            :post="post"
-            @delete="deletePost"
-            @update="updatePost"
-          />
-        </TransitionGroup>
-        
-        <div v-if="!loading && !posts.length" class="empty-state glass">
-          <div class="empty-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <h3>No posts yet</h3>
-          <p>Be the first to share something!</p>
-        </div>
-        
-        <div v-if="hasMore" ref="loadMore" class="load-more">
-          <div v-if="loading" class="spinner"></div>
-        </div>
+      <CreatePost @created="addPost" />
+      
+      <div v-if="loading && !posts.length" class="loading-state">
+        <div class="spinner-lg"></div>
+        <p>Загрузка...</p>
       </div>
-
-      <!-- Right Sidebar -->
-      <aside class="feed-sidebar">
-        <div class="sidebar-card glass">
-          <div class="sidebar-tabs">
-            <button class="sidebar-tab active">Who to follow</button>
-            <button class="sidebar-tab">Trending topics</button>
-          </div>
-          
-          <div class="suggestions-list">
-            <div class="suggestion-item" v-for="i in 5" :key="i">
-              <div class="avatar-placeholder"></div>
-              <div class="suggestion-info">
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text small"></div>
-              </div>
-              <button class="btn btn-sm btn-secondary">Follow</button>
-            </div>
-          </div>
+      
+      <TransitionGroup name="post" tag="div" class="posts-list">
+        <PostCard 
+          v-for="post in posts" 
+          :key="post.id" 
+          :post="post"
+          @delete="deletePost"
+          @update="updatePost"
+        />
+      </TransitionGroup>
+      
+      <div v-if="!loading && !posts.length" class="empty-state glass">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
         </div>
-      </aside>
+        <h3>Пока нет записей</h3>
+        <p>Напишите что-нибудь первым!</p>
+      </div>
+      
+      <div v-if="hasMore" ref="loadMore" class="load-more">
+        <div v-if="loading" class="spinner"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -119,7 +81,7 @@ async function deletePost(id) {
   try {
     await api.delete(`/posts/${id}`)
     posts.value = posts.value.filter(p => p.id !== id)
-    notifications.success('Post deleted')
+    notifications.success('Запись удалена')
   } catch (err) {
     notifications.error(err.message)
   }
@@ -152,71 +114,16 @@ onUnmounted(() => observer?.disconnect())
 
 .feed-header {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 20px;
-  margin-bottom: 20px;
+  justify-content: center;
+  margin-bottom: 24px;
   position: sticky;
   top: 20px;
   z-index: 50;
 }
 
-.feed-tabs {
-  display: flex;
-  background: var(--glass-bg);
-  border-radius: var(--radius-full);
-  padding: 4px;
-}
-
-.tab {
-  padding: 10px 20px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 14px;
-  border-radius: var(--radius-full);
-  transition: all var(--transition);
-}
-
-.tab:hover {
-  color: var(--text-primary);
-}
-
-.tab.active {
-  background: var(--glass-bg-active);
-  color: var(--text-primary);
-}
-
-.feed-search {
-  flex: 1;
-  max-width: 300px;
-  position: relative;
-}
-
-.feed-search svg {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-}
-
-.feed-search input {
-  padding-left: 42px;
-  border-radius: var(--radius-full);
-  background: var(--glass-bg);
-}
-
 .feed-content {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
-  max-width: 1100px;
-}
-
-.feed-main {
-  min-width: 0;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .posts-list {
@@ -237,8 +144,8 @@ onUnmounted(() => observer?.disconnect())
 .spinner-lg {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--glass-border);
-  border-top-color: var(--accent);
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -246,8 +153,8 @@ onUnmounted(() => observer?.disconnect())
 .spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid var(--glass-border);
-  border-top-color: var(--accent);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -268,7 +175,7 @@ onUnmounted(() => observer?.disconnect())
 .empty-icon {
   width: 64px;
   height: 64px;
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
@@ -298,89 +205,6 @@ onUnmounted(() => observer?.disconnect())
   padding: 24px;
 }
 
-/* Right Sidebar */
-.feed-sidebar {
-  position: sticky;
-  top: 100px;
-  height: fit-content;
-}
-
-.sidebar-card {
-  padding: 16px;
-}
-
-.sidebar-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-
-.sidebar-tab {
-  flex: 1;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border-radius: var(--radius-full);
-  transition: all var(--transition);
-}
-
-.sidebar-tab:hover {
-  color: var(--text-primary);
-}
-
-.sidebar-tab.active {
-  background: var(--glass-bg-active);
-  color: var(--text-primary);
-}
-
-.suggestions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-  border-radius: var(--radius);
-  transition: background var(--transition);
-}
-
-.suggestion-item:hover {
-  background: var(--glass-bg-hover);
-}
-
-.avatar-placeholder {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--glass-bg-hover);
-  flex-shrink: 0;
-}
-
-.suggestion-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.skeleton-text {
-  height: 14px;
-  background: var(--glass-bg-hover);
-  border-radius: 4px;
-  margin-bottom: 6px;
-  width: 80%;
-}
-
-.skeleton-text.small {
-  height: 12px;
-  width: 60%;
-  margin-bottom: 0;
-}
-
-/* Post transitions */
 .post-enter-active {
   animation: slideUp var(--transition-slow);
 }
@@ -396,29 +220,9 @@ onUnmounted(() => observer?.disconnect())
   }
 }
 
-@media (max-width: 1200px) {
-  .feed-sidebar {
-    display: none;
-  }
-  
-  .feed-content {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 768px) {
   .feed-page {
     padding-left: 20px;
-  }
-  
-  .feed-header {
-    flex-wrap: wrap;
-  }
-  
-  .feed-search {
-    order: 3;
-    max-width: 100%;
-    width: 100%;
   }
 }
 </style>

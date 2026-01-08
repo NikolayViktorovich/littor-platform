@@ -1,21 +1,9 @@
 <template>
   <div class="chat-page">
     <div class="chat-container">
-      <!-- Dialogs Sidebar -->
       <div class="dialogs-sidebar glass">
         <div class="sidebar-header">
-          <div class="search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input type="text" placeholder="Search...">
-          </div>
-        </div>
-
-        <div class="dialogs-tabs">
-          <button class="tab active">Primary</button>
-          <button class="tab">Requests</button>
+          <h2>Диалоги</h2>
         </div>
 
         <div class="dialogs-list">
@@ -36,29 +24,15 @@
         </div>
       </div>
 
-      <!-- Chat Area -->
       <div class="chat-area glass">
         <div class="chat-header">
           <router-link v-if="user" :to="`/profile/${user.id}`" class="chat-user">
             <img :src="userAvatar" class="avatar" alt="" @error="handleAvatarError">
             <div class="user-info">
               <span class="user-name">{{ user.name }}</span>
-              <span class="user-status">Online</span>
+              <span class="user-status">в сети</span>
             </div>
           </router-link>
-          <div class="chat-actions">
-            <button class="btn btn-icon btn-ghost">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-            </button>
-            <button class="btn btn-icon btn-ghost">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <polygon points="23 7 16 12 23 17 23 7"/>
-                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-              </svg>
-            </button>
-          </div>
         </div>
 
         <div class="chat-messages" ref="messagesContainer">
@@ -82,14 +56,9 @@
         </div>
 
         <form @submit.prevent="sendMessage" class="chat-input">
-          <button type="button" class="attach-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-            </svg>
-          </button>
           <input 
             v-model="newMessage" 
-            placeholder="Start a new message..." 
+            placeholder="Написать сообщение..." 
             autocomplete="off"
           >
           <button type="submit" class="send-btn" :disabled="!newMessage.trim()">
@@ -132,7 +101,7 @@ function getAvatarUrl(avatar) {
 function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
 
 function formatTime(date) {
-  return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  return new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 }
 
 function scrollToBottom() {
@@ -214,9 +183,9 @@ watch(() => route.params.id, () => {
 
 .chat-container {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 300px 1fr;
   gap: 20px;
-  max-width: 1200px;
+  max-width: 1100px;
   height: calc(100vh - 40px);
 }
 
@@ -227,48 +196,13 @@ watch(() => route.params.id, () => {
 }
 
 .sidebar-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--glass-border);
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.search-box {
-  position: relative;
-}
-
-.search-box svg {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-}
-
-.search-box input {
-  padding-left: 42px;
-  border-radius: var(--radius-full);
-}
-
-.dialogs-tabs {
-  display: flex;
-  padding: 12px;
-  gap: 4px;
-}
-
-.tab {
-  flex: 1;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border-radius: var(--radius-full);
-  transition: all var(--transition);
-}
-
-.tab.active {
-  background: var(--glass-bg-active);
-  color: var(--text-primary);
+.sidebar-header h2 {
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .dialogs-list {
@@ -290,7 +224,7 @@ watch(() => route.params.id, () => {
 
 .dialog-item:hover,
 .dialog-item.active {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dialog-info {
@@ -317,7 +251,7 @@ watch(() => route.params.id, () => {
 .unread-dot {
   width: 8px;
   height: 8px;
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -329,11 +263,8 @@ watch(() => route.params.id, () => {
 }
 
 .chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .chat-user {
@@ -356,12 +287,7 @@ watch(() => route.params.id, () => {
 
 .user-status {
   font-size: 13px;
-  color: var(--success);
-}
-
-.chat-actions {
-  display: flex;
-  gap: 8px;
+  color: var(--text-secondary);
 }
 
 .chat-messages {
@@ -383,8 +309,8 @@ watch(() => route.params.id, () => {
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--glass-border);
-  border-top-color: var(--accent);
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -404,13 +330,13 @@ watch(() => route.params.id, () => {
 
 .message-bubble {
   padding: 12px 16px;
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   border-bottom-left-radius: var(--radius-sm);
 }
 
 .message.own .message-bubble {
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
   border-bottom-left-radius: var(--radius-xl);
   border-bottom-right-radius: var(--radius-sm);
@@ -434,24 +360,7 @@ watch(() => route.params.id, () => {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  border-top: 1px solid var(--glass-border);
-}
-
-.attach-btn {
-  color: var(--text-muted);
-  padding: 8px;
-  border-radius: var(--radius-full);
-  transition: all var(--transition);
-}
-
-.attach-btn:hover {
-  background: var(--glass-bg-hover);
-  color: var(--text-secondary);
-}
-
-.attach-btn svg {
-  width: 22px;
-  height: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .chat-input input {
@@ -463,17 +372,18 @@ watch(() => route.params.id, () => {
 .send-btn {
   width: 44px;
   height: 44px;
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition);
+  box-shadow: none;
 }
 
 .send-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
   transform: scale(1.05);
 }
 

@@ -1,27 +1,13 @@
 <template>
   <div class="auth-page">
-    <!-- Background decoration -->
     <div class="auth-bg">
       <div class="bg-gradient bg-gradient-1"></div>
       <div class="bg-gradient bg-gradient-2"></div>
-      <div class="bg-lines"></div>
     </div>
 
     <div class="auth-container">
-      <!-- Logo -->
-      <div class="auth-logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Card -->
       <div class="auth-card glass">
-        <h1 class="auth-title">Sign in to Littor</h1>
+        <h1 class="auth-title">Вход в Littor</h1>
         
         <form @submit.prevent="submit" class="auth-form">
           <div class="input-group">
@@ -38,7 +24,7 @@
             <input 
               v-model="form.password" 
               :type="showPassword ? 'text' : 'password'" 
-              placeholder="Password" 
+              placeholder="Пароль" 
               required
               autocomplete="current-password"
             >
@@ -56,25 +42,13 @@
 
           <button type="submit" class="btn btn-primary btn-lg btn-block" :disabled="loading">
             <span v-if="loading" class="spinner"></span>
-            {{ loading ? '' : 'Sign in' }}
+            {{ loading ? '' : 'Войти' }}
           </button>
         </form>
 
         <p class="auth-footer">
-          Don't have an account? <router-link to="/register">Sign up</router-link>
+          Нет аккаунта? <router-link to="/register">Зарегистрироваться</router-link>
         </p>
-      </div>
-
-      <!-- Social proof -->
-      <div class="social-proof">
-        <p>Join over <strong>2M</strong> global social media users</p>
-        <div class="avatars-stack">
-          <div class="avatar-placeholder"></div>
-          <div class="avatar-placeholder"></div>
-          <div class="avatar-placeholder"></div>
-          <div class="avatar-placeholder"></div>
-          <div class="avatar-placeholder"></div>
-        </div>
       </div>
     </div>
   </div>
@@ -127,36 +101,25 @@ async function submit() {
 .bg-gradient {
   position: absolute;
   border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.4;
+  filter: blur(120px);
 }
 
 .bg-gradient-1 {
   width: 600px;
   height: 600px;
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.03);
   top: -200px;
   right: -100px;
-  opacity: 0.15;
+  opacity: 1;
 }
 
 .bg-gradient-2 {
   width: 500px;
   height: 500px;
-  background: #8b5cf6;
+  background: rgba(255, 255, 255, 0.02);
   bottom: -150px;
   left: -100px;
-  opacity: 0.1;
-}
-
-.bg-lines {
-  position: absolute;
-  inset: 0;
-  background-image: 
-    linear-gradient(var(--glass-border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
-  background-size: 100px 100px;
-  opacity: 0.3;
+  opacity: 1;
 }
 
 .auth-container {
@@ -168,27 +131,6 @@ async function submit() {
   gap: 32px;
   position: relative;
   z-index: 1;
-}
-
-.auth-logo {
-  animation: slideUp var(--transition-slow);
-}
-
-.logo-icon {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, var(--accent), #8b5cf6);
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 32px var(--accent-glow);
-}
-
-.logo-icon svg {
-  width: 28px;
-  height: 28px;
-  color: white;
 }
 
 .auth-card {
@@ -269,39 +211,6 @@ async function submit() {
 }
 
 .auth-footer a:hover {
-  color: var(--accent);
-}
-
-.social-proof {
-  text-align: center;
-  animation: slideUp var(--transition-slow) 0.2s both;
-}
-
-.social-proof p {
-  color: var(--text-muted);
-  font-size: 14px;
-  margin-bottom: 16px;
-}
-
-.social-proof strong {
-  color: var(--accent);
-}
-
-.avatars-stack {
-  display: flex;
-  justify-content: center;
-}
-
-.avatar-placeholder {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--glass-bg-hover), var(--glass-bg-active));
-  border: 2px solid var(--bg-primary);
-  margin-left: -10px;
-}
-
-.avatar-placeholder:first-child {
-  margin-left: 0;
+  color: rgba(255, 255, 255, 0.7);
 }
 </style>

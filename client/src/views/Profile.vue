@@ -1,6 +1,5 @@
 <template>
   <div class="profile-page" v-if="user">
-    <!-- Profile Header -->
     <div class="profile-header">
       <button @click="$router.back()" class="back-btn glass">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -28,44 +27,31 @@
           <h1>{{ user.name }}</h1>
           <p v-if="user.bio" class="bio">{{ user.bio }}</p>
           <div class="profile-meta">
-            <span class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-              </svg>
-              {{ user.friendsCount || 0 }} friends
-            </span>
-            <span class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <line x1="3" y1="9" x2="21" y2="9"/>
-              </svg>
-              {{ user.postsCount || 0 }} posts
-            </span>
+            <span class="meta-item">{{ user.friendsCount || 0 }} друзей</span>
+            <span class="meta-item">{{ user.postsCount || 0 }} записей</span>
           </div>
         </div>
 
         <div class="profile-actions">
           <template v-if="isOwner">
-            <button @click="showEditModal = true" class="btn btn-secondary">Edit profile</button>
+            <button @click="showEditModal = true" class="btn btn-secondary">Редактировать</button>
           </template>
           <template v-else>
-            <button v-if="user.friendStatus === 'none'" @click="addFriend" class="btn btn-primary">Add friend</button>
-            <button v-else-if="user.friendStatus === 'pending'" class="btn btn-secondary" disabled>Request sent</button>
-            <button v-else-if="user.friendStatus === 'incoming'" @click="acceptFriend" class="btn btn-primary">Accept</button>
-            <button v-else-if="user.friendStatus === 'friends'" @click="removeFriend" class="btn btn-secondary">Remove friend</button>
-            <router-link :to="`/messages/${user.id}`" class="btn btn-secondary">Message</router-link>
+            <button v-if="user.friendStatus === 'none'" @click="addFriend" class="btn btn-primary">Добавить в друзья</button>
+            <button v-else-if="user.friendStatus === 'pending'" class="btn btn-secondary" disabled>Заявка отправлена</button>
+            <button v-else-if="user.friendStatus === 'incoming'" @click="acceptFriend" class="btn btn-primary">Принять заявку</button>
+            <button v-else-if="user.friendStatus === 'friends'" @click="removeFriend" class="btn btn-secondary">Удалить из друзей</button>
+            <router-link :to="`/messages/${user.id}`" class="btn btn-secondary">Написать</router-link>
           </template>
         </div>
       </div>
     </div>
 
-    <!-- Profile Content -->
     <div class="profile-content">
-      <div class="profile-tabs glass">
-        <button class="tab active">Posts</button>
-        <button class="tab">Media</button>
-        <button class="tab">Likes</button>
+      <div class="liquid-tabs">
+        <button class="liquid-tab active">Записи</button>
+        <button class="liquid-tab">Фото</button>
+        <button class="liquid-tab">Видео</button>
       </div>
 
       <div class="profile-posts">
@@ -80,18 +66,17 @@
         />
         
         <div v-if="!posts.length" class="empty-state glass">
-          <p>No posts yet</p>
+          <p>Нет записей</p>
         </div>
       </div>
     </div>
 
-    <!-- Edit Modal -->
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
           <div class="modal glass">
             <div class="modal-header">
-              <h2>Edit profile</h2>
+              <h2>Редактировать профиль</h2>
               <button @click="showEditModal = false" class="close-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="18" y1="6" x2="6" y2="18"/>
@@ -101,16 +86,16 @@
             </div>
             <form @submit.prevent="saveProfile" class="modal-body">
               <div class="form-group">
-                <label>Name</label>
-                <input v-model="editForm.name" placeholder="Your name" required>
+                <label>Имя</label>
+                <input v-model="editForm.name" placeholder="Ваше имя" required>
               </div>
               <div class="form-group">
-                <label>Bio</label>
-                <textarea v-model="editForm.bio" placeholder="Tell about yourself" rows="3"></textarea>
+                <label>О себе</label>
+                <textarea v-model="editForm.bio" placeholder="Расскажите о себе" rows="3"></textarea>
               </div>
               <div class="modal-actions">
-                <button type="button" @click="showEditModal = false" class="btn btn-secondary">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" @click="showEditModal = false" class="btn btn-secondary">Отмена</button>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
               </div>
             </form>
           </div>
@@ -172,7 +157,7 @@ async function uploadAvatar(e) {
     const res = await api.post('/users/avatar', formData)
     user.value.avatar = res.data.avatar
     authStore.updateUser({ avatar: res.data.avatar })
-    notifications.success('Avatar updated')
+    notifications.success('Аватар обновлён')
   } catch (err) {
     notifications.error(err.message)
   }
@@ -184,7 +169,7 @@ async function saveProfile() {
     user.value = { ...user.value, ...res.data }
     authStore.updateUser(res.data)
     showEditModal.value = false
-    notifications.success('Profile updated')
+    notifications.success('Профиль обновлён')
   } catch (err) {
     notifications.error(err.message)
   }
@@ -194,7 +179,7 @@ async function addFriend() {
   try {
     await api.post(`/friends/request/${user.value.id}`)
     user.value.friendStatus = 'pending'
-    notifications.success('Request sent')
+    notifications.success('Заявка отправлена')
   } catch (err) { notifications.error(err.message) }
 }
 
@@ -202,7 +187,7 @@ async function acceptFriend() {
   try {
     await api.post(`/friends/accept/${user.value.id}`)
     user.value.friendStatus = 'friends'
-    notifications.success('Request accepted')
+    notifications.success('Заявка принята')
   } catch (err) { notifications.error(err.message) }
 }
 
@@ -210,7 +195,7 @@ async function removeFriend() {
   try {
     await api.delete(`/friends/${user.value.id}`)
     user.value.friendStatus = 'none'
-    notifications.success('Removed from friends')
+    notifications.success('Удалён из друзей')
   } catch (err) { notifications.error(err.message) }
 }
 
@@ -228,7 +213,6 @@ function updatePost(updated) {
 
 watch(() => route.params.id, fetchProfile, { immediate: true })
 </script>
-
 
 <style scoped>
 .profile-page {
@@ -269,12 +253,12 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 .cover-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 50%, #06b6d4 100%);
-  opacity: 0.8;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  opacity: 1;
 }
 
 .profile-info {
-  max-width: 800px;
+  max-width: 700px;
   margin: -60px auto 0;
   padding: 24px;
   position: relative;
@@ -300,9 +284,9 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   right: 4px;
   width: 36px;
   height: 36px;
-  background: var(--glass-bg);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -312,7 +296,7 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 }
 
 .avatar-edit:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .avatar-edit svg {
@@ -344,16 +328,8 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 }
 
 .meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   color: var(--text-muted);
   font-size: 14px;
-}
-
-.meta-item svg {
-  width: 16px;
-  height: 16px;
 }
 
 .profile-actions {
@@ -363,35 +339,15 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 }
 
 .profile-content {
-  max-width: 680px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 0 20px 40px;
 }
 
-.profile-tabs {
-  display: flex;
-  padding: 4px;
+.liquid-tabs {
   margin-bottom: 20px;
-  border-radius: var(--radius-full);
-}
-
-.tab {
-  flex: 1;
-  padding: 12px 20px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 14px;
-  border-radius: var(--radius-full);
-  transition: all var(--transition);
-}
-
-.tab:hover {
-  color: var(--text-primary);
-}
-
-.tab.active {
-  background: var(--glass-bg-active);
-  color: var(--text-primary);
+  justify-content: center;
+  display: flex;
 }
 
 .profile-posts {
@@ -406,7 +362,6 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   color: var(--text-secondary);
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -431,7 +386,7 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h2 {
@@ -447,7 +402,7 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
 }
 
 .close-btn:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 

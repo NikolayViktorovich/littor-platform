@@ -1,17 +1,6 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-inner">
-      <!-- Logo -->
-      <router-link to="/" class="logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
-      </router-link>
-
       <!-- Navigation -->
       <nav class="nav">
         <router-link to="/" class="nav-item" :class="{ active: $route.name === 'feed' }">
@@ -21,7 +10,7 @@
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
           </div>
-          <span>Home</span>
+          <span>Главная</span>
         </router-link>
 
         <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat' }">
@@ -31,7 +20,7 @@
             </svg>
             <span v-if="unreadCount" class="nav-badge">{{ unreadCount }}</span>
           </div>
-          <span>Messages</span>
+          <span>Сообщения</span>
         </router-link>
 
         <router-link to="/friends" class="nav-item" :class="{ active: $route.name === 'friends' }">
@@ -43,7 +32,7 @@
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           </div>
-          <span>Friends</span>
+          <span>Друзья</span>
         </router-link>
 
         <router-link :to="`/profile/${authStore.user?.id}`" class="nav-item" :class="{ active: $route.name === 'profile' }">
@@ -53,7 +42,7 @@
               <circle cx="12" cy="7" r="4"/>
             </svg>
           </div>
-          <span>Profile</span>
+          <span>Профиль</span>
         </router-link>
       </nav>
 
@@ -73,7 +62,6 @@
           </button>
         </div>
 
-        <!-- Dropdown Menu -->
         <Transition name="menu">
           <div v-if="showMenu" class="user-menu glass">
             <button @click="logout" class="menu-item">
@@ -82,18 +70,17 @@
                 <polyline points="16 17 21 12 16 7"/>
                 <line x1="21" y1="12" x2="9" y2="12"/>
               </svg>
-              <span>Log out</span>
+              <span>Выйти</span>
             </button>
           </div>
         </Transition>
 
-        <!-- Post Button -->
         <button class="post-btn btn btn-primary" @click="$router.push('/')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          <span>Post</span>
+          <span>Запись</span>
         </button>
       </div>
     </div>
@@ -115,7 +102,6 @@ let interval
 const avatarUrl = computed(() => {
   const avatar = authStore.user?.avatar
   if (!avatar) return '/default-avatar.svg'
-  if (avatar.startsWith('http')) return avatar
   return avatar
 })
 
@@ -158,36 +144,34 @@ onUnmounted(() => clearInterval(interval))
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--glass-bg);
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-2xl);
   padding: 20px 12px;
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 32px;
-}
-
-.logo-icon {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--accent), #8b5cf6);
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px var(--accent-glow);
-}
-
-.logo-icon svg {
-  width: 24px;
-  height: 24px;
-  color: white;
+.sidebar-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.25) 50%, 
+    transparent 100%
+  );
 }
 
 .nav {
@@ -207,20 +191,26 @@ onUnmounted(() => clearInterval(interval))
   font-weight: 500;
   font-size: 15px;
   transition: all var(--transition);
+  position: relative;
 }
 
 .nav-item:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
 .nav-item.active {
-  background: var(--glass-bg-active);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
   color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .nav-item.active .nav-icon {
-  color: var(--accent);
+  color: var(--text-primary);
 }
 
 .nav-icon {
@@ -242,7 +232,7 @@ onUnmounted(() => clearInterval(interval))
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.2);
   color: white;
   font-size: 10px;
   font-weight: 600;
@@ -254,7 +244,7 @@ onUnmounted(() => clearInterval(interval))
 
 .sidebar-footer {
   padding-top: 16px;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
 }
 
@@ -269,7 +259,7 @@ onUnmounted(() => clearInterval(interval))
 }
 
 .user-card:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .user-info {
@@ -324,7 +314,7 @@ onUnmounted(() => clearInterval(interval))
 }
 
 .menu-item:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--danger);
 }
 
@@ -346,7 +336,6 @@ onUnmounted(() => clearInterval(interval))
   height: 18px;
 }
 
-/* Menu transition */
 .menu-enter-active,
 .menu-leave-active {
   transition: all var(--transition);
