@@ -129,20 +129,14 @@ onUnmounted(() => clearInterval(interval))
   width: var(--sidebar-width);
   z-index: 100;
   padding: 16px;
+  isolation: isolate;
 }
 
 .sidebar-inner {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.02) 50%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: rgba(35, 35, 35, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-2xl);
   padding: 20px 12px;
@@ -152,17 +146,7 @@ onUnmounted(() => clearInterval(interval))
 }
 
 .sidebar-inner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(255, 255, 255, 0.25) 50%, 
-    transparent 100%
-  );
+  display: none;
 }
 
 .nav {

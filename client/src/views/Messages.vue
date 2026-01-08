@@ -248,6 +248,10 @@ onMounted(fetchDialogs)
   text-align: center;
 }
 
+.chat-empty::before {
+  display: none;
+}
+
 .empty-icon {
   width: 80px;
   height: 80px;

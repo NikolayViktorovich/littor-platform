@@ -1,7 +1,7 @@
 <template>
   <div class="profile-page">
     <div class="profile-header">
-      <button @click="$router.back()" class="back-btn glass">
+      <button @click="$router.back()" class="back-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
@@ -11,7 +11,7 @@
         <div class="cover-gradient"></div>
       </div>
 
-      <div class="profile-info glass">
+      <div class="profile-info">
         <div class="profile-avatar-wrap">
           <img :src="userAvatar" class="avatar avatar-xl" alt="" @error="handleAvatarError">
           <label v-if="isOwner && user" class="avatar-edit">
@@ -237,6 +237,9 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   justify-content: center;
   z-index: 10;
   color: var(--text-primary);
+  background: rgba(35, 35, 35, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
 }
 
 .back-btn svg {
@@ -267,8 +270,10 @@ watch(() => route.params.id, fetchProfile, { immediate: true })
   gap: 24px;
   align-items: flex-start;
   flex-wrap: wrap;
-  will-change: transform;
-  transform: translateZ(0);
+  background: rgba(35, 35, 35, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
 }
 
 .profile-avatar-wrap {
