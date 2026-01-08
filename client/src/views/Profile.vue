@@ -60,6 +60,7 @@
         <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="activeTab = 'posts'">Записи</button>
         <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="switchTab('photos')">Фото</button>
         <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="switchTab('videos')">Видео</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="switchTab('friends')">Друзья</button>
       </div>
 
       <div v-if="activeTab === 'posts'" class="profile-posts">
@@ -81,6 +82,15 @@
           <div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
         </div>
         <div v-if="!videos.length" class="empty-state glass"><p>Нет видео</p></div>
+      </div>
+
+      <div v-else-if="activeTab === 'friends'" class="friends-grid">
+        <div v-if="friendsLoading" class="loading-state"><div class="spinner"></div></div>
+        <div v-else-if="!friendsList.length" class="empty-state glass"><p>Нет друзей</p></div>
+        <router-link v-else v-for="friend in friendsList" :key="friend.id" :to="`/profile/${friend.id}`" class="friend-card glass">
+          <img :src="friend.avatar || '/default-avatar.svg'" class="avatar avatar-lg" alt="" @error="handleAvatarError">
+          <span class="friend-name">{{ friend.name }}</span>
+        </router-link>
       </div>
     </div>
 
@@ -172,6 +182,9 @@ const mediaViewerType = ref('image')
 const mediaIndex = ref(0)
 const mediaList = ref([])
 
+const friendsList = ref([])
+const friendsLoading = ref(false)
+
 const isOwner = computed(() => authStore.user?.id === user.value?.id)
 const userAvatar = computed(() => user.value?.avatar || '/default-avatar.svg')
 const coverStyle = computed(() => user.value?.cover ? { backgroundImage: `url(${user.value.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {})
@@ -212,6 +225,7 @@ function switchTab(tab) {
   activeTab.value = tab
   if (tab === 'photos' && !photos.value.length) fetchPhotos()
   if (tab === 'videos' && !videos.value.length) fetchVideos()
+  if (tab === 'friends' && !friendsList.value.length) fetchFriends()
 }
 
 async function uploadAvatar(e) {
@@ -274,7 +288,16 @@ function closeMedia() { showMediaViewer.value = false }
 function prevMedia() { if (mediaIndex.value > 0) { mediaIndex.value--; const item = mediaList.value[mediaIndex.value]; mediaViewerSrc.value = item.src; mediaViewerType.value = item.type } }
 function nextMedia() { if (mediaIndex.value < mediaList.value.length - 1) { mediaIndex.value++; const item = mediaList.value[mediaIndex.value]; mediaViewerSrc.value = item.src; mediaViewerType.value = item.type } }
 
-watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; fetchProfile() }, { immediate: true })
+async function fetchFriends() {
+  const id = route.params.id || authStore.user?.id
+  friendsLoading.value = true
+  try {
+    const res = await api.get(`/users/${id}/friends`)
+    friendsList.value = res.data
+  } catch {} finally { friendsLoading.value = false }
+}
+
+watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile() }, { immediate: true })
 </script>
 
 <style scoped>
@@ -347,6 +370,14 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
+.friends-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+.friend-card { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 16px; text-decoration: none; color: inherit; transition: all var(--transition); }
+.friend-card:hover { transform: translateY(-2px); }
+.friend-card .avatar-lg { width: 72px; height: 72px; }
+.friend-name { font-weight: 500; font-size: 14px; text-align: center; }
+.loading-state { display: flex; justify-content: center; padding: 40px; grid-column: 1 / -1; }
+.spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 768px) {
   .profile-page { padding-left: 0; }
   .profile-info { flex-direction: column; align-items: center; text-align: center; }

@@ -146,6 +146,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { currentChatUserId } from '../stores/chat'
 import EmojiPicker from '../components/EmojiPicker.vue'
 import api from '../api'
 
@@ -356,8 +357,17 @@ async function pollMessages() {
   try {
     const res = await api.get(`/messages/${route.params.id}`)
     if (res.data.length > messages.value.length) {
+      // Check if user is near bottom before updating
+      const container = messagesContainer.value
+      const wasAtBottom = container && (container.scrollHeight - container.scrollTop - container.clientHeight < 100)
+      
       messages.value = res.data
-      scrollToBottom()
+      
+      // Only scroll to bottom if user was already at bottom
+      if (wasAtBottom) {
+        scrollToBottom()
+      }
+      
       await api.post(`/messages/${route.params.id}/read`)
     }
   } catch {}
@@ -387,16 +397,19 @@ async function sendMessage() {
 onMounted(() => {
   fetchMessages()
   pollInterval = setInterval(pollMessages, 3000)
+  currentChatUserId.value = route.params.id
 })
 
 onUnmounted(() => {
   clearInterval(pollInterval)
   if (stream) stream.getTracks().forEach(t => t.stop())
+  currentChatUserId.value = null
 })
 
 watch(() => route.params.id, () => {
   loading.value = true
   messages.value = []
+  currentChatUserId.value = route.params.id
   fetchMessages()
 })
 </script>

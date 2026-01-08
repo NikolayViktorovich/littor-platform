@@ -119,7 +119,7 @@ async function fetchCounts() {
   try {
     const res = await api.get('/messages/counts')
     
-    // Check for new friend requests
+    // Check for new friend requests - add to notifications
     if (res.data.friends > prevCounts.friends) {
       const diff = res.data.friends - prevCounts.friends
       for (let i = 0; i < diff; i++) {
@@ -127,20 +127,6 @@ async function fetchCounts() {
           id: Date.now() + i,
           type: 'friend_request',
           text: 'Новая заявка в друзья',
-          avatar: null,
-          createdAt: new Date().toISOString()
-        })
-      }
-    }
-    
-    // Check for new messages
-    if (res.data.messages > prevCounts.messages) {
-      const diff = res.data.messages - prevCounts.messages
-      for (let i = 0; i < diff; i++) {
-        notificationsList.value.unshift({
-          id: Date.now() + 100 + i,
-          type: 'message',
-          text: 'Новое сообщение',
           avatar: null,
           createdAt: new Date().toISOString()
         })

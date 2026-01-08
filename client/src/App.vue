@@ -5,6 +5,8 @@
       <router-view />
     </main>
     
+    <MessageToast v-if="authStore.isAuthenticated" />
+    
     <Teleport to="body">
       <Transition name="modal">
         <CreatePostModal v-if="showCreateModal" @close="showCreateModal = false" @created="handlePostCreated" />
@@ -19,6 +21,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import Sidebar from './components/Sidebar.vue'
 import CreatePostModal from './components/CreatePostModal.vue'
+import MessageToast from './components/MessageToast.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()

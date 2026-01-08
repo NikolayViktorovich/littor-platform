@@ -150,4 +150,16 @@ router.get('/:id/videos', authMiddleware, (req, res) => {
   res.json(videos)
 })
 
+router.get('/:id/friends', authMiddleware, (req, res) => {
+  const friends = db.prepare(`
+    SELECT u.id, u.name, u.avatar
+    FROM users u
+    JOIN friendships f ON (f.userId = u.id OR f.friendId = u.id)
+    WHERE (f.userId = ? OR f.friendId = ?) 
+      AND f.status = 'accepted'
+      AND u.id != ?
+  `).all(req.params.id, req.params.id, req.params.id)
+  res.json(friends)
+})
+
 export default router

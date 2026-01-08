@@ -1,6 +1,6 @@
 <template>
   <div class="messages-page">
-    <div class="messages-container">
+    <div class="messages-container" :class="{ 'show-chat': selectedUserId && isMobile }">
       <div class="dialogs-panel glass">
         <div class="dialogs-header"><h1>Сообщения</h1></div>
         <div class="dialogs-list">
@@ -16,7 +16,10 @@
                 <span class="dialog-name">{{ dialog.user.name }}</span>
                 <span class="dialog-time">{{ formatTime(dialog.lastMessage.createdAt) }}</span>
               </div>
-              <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content }}</p>
+              <div class="dialog-bottom">
+                <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content }}</p>
+                <span v-if="dialog.unreadCount" class="unread-badge">{{ dialog.unreadCount }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -30,6 +33,9 @@
 
       <div v-else class="chat-panel glass">
         <div class="chat-header">
+          <button v-if="isMobile" @click="goBack" class="back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
           <router-link v-if="chatUser" :to="`/profile/${chatUser.id}`" class="chat-user">
             <div class="chat-avatar-wrap">
               <img :src="getAvatarUrl(chatUser.avatar)" class="avatar" alt="" @error="handleAvatarError">
@@ -46,14 +52,20 @@
           <div v-if="chatLoading" class="loading-state"><div class="spinner"></div></div>
           <template v-else>
             <div v-for="msg in messages" :key="msg.id" class="message" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded }" @contextmenu.prevent="openMsgMenu($event, msg)">
-              <div class="message-bubble">
-                <span v-if="msg.forwarded" class="forwarded-label">Переслано</span>
-                <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="" @click="openMediaViewer(msg.media, 'image')">
-                <video v-else-if="msg.mediaType === 'video'" :src="msg.media" class="message-media" controls></video>
-                <div v-else-if="msg.mediaType === 'circle'" class="circle-video" @click="toggleVideo($event)"><video :src="msg.media" class="circle-player"></video></div>
-                <audio v-else-if="msg.mediaType === 'voice'" :src="msg.media" controls class="voice-message"></audio>
-                <p v-if="msg.content">{{ msg.content }}</p>
-                <span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span>
+              <router-link v-if="msg.senderId !== authStore.user?.id" :to="`/profile/${chatUser?.id}`" class="msg-avatar">
+                <img :src="getAvatarUrl(chatUser?.avatar)" class="avatar avatar-sm" alt="" @error="handleAvatarError">
+              </router-link>
+              <div class="message-content">
+                <router-link v-if="msg.senderId !== authStore.user?.id" :to="`/profile/${chatUser?.id}`" class="msg-sender">{{ chatUser?.name }}</router-link>
+                <div class="message-bubble">
+                  <span v-if="msg.forwarded" class="forwarded-label">Переслано</span>
+                  <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="" @click="openMediaViewer(msg.media, 'image')">
+                  <video v-else-if="msg.mediaType === 'video'" :src="msg.media" class="message-media" controls></video>
+                  <div v-else-if="msg.mediaType === 'circle'" class="circle-video" @click="toggleVideo($event)"><video :src="msg.media" class="circle-player"></video></div>
+                  <audio v-else-if="msg.mediaType === 'voice'" :src="msg.media" controls class="voice-message"></audio>
+                  <p v-if="msg.content">{{ msg.content }}</p>
+                  <span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span>
+                </div>
               </div>
             </div>
           </template>
@@ -123,6 +135,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { currentChatUserId } from '../stores/chat'
 import { cache } from '../stores/cache'
 import EmojiPicker from '../components/EmojiPicker.vue'
 import api from '../api'
@@ -159,8 +172,34 @@ const showMediaViewerModal = ref(false)
 const viewerSrc = ref('')
 const viewerType = ref('image')
 
-const canSend = computed(() => newMessage.value.trim() || mediaFile.value)
+// Store scroll positions for each dialog
+const scrollPositions = {}
 
+const canSend = computed(() => newMessage.value.trim() || mediaFile.value)
+const isMobile = ref(window.innerWidth <= 900)
+
+// Save scroll position before leaving dialog
+function saveScrollPosition() {
+  if (selectedUserId.value && messagesContainer.value) {
+    scrollPositions[selectedUserId.value] = messagesContainer.value.scrollTop
+  }
+}
+
+// Restore scroll position or scroll to bottom for new dialogs
+function restoreScrollPosition(userId) {
+  nextTick(() => {
+    if (messagesContainer.value) {
+      if (scrollPositions[userId] !== undefined) {
+        messagesContainer.value.scrollTop = scrollPositions[userId]
+      } else {
+        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      }
+    }
+  })
+}
+
+function goBack() { saveScrollPosition(); selectedUserId.value = null; chatUser.value = null; currentChatUserId.value = null }
+function handleResize() { isMobile.value = window.innerWidth <= 900 }
 function getAvatarUrl(a) { return a || '/default-avatar.svg' }
 function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
 function formatTime(d) { const date = new Date(d), now = new Date(), diff = (now - date) / 1000; if (diff < 86400) return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); if (diff < 604800) return date.toLocaleDateString('ru-RU', { weekday: 'short' }); return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) }
@@ -181,8 +220,40 @@ function stopCircle() { if (mediaRecorder) { mediaRecorder.stop(); clearInterval
 function cancelRecording() { if (mediaRecorder) { mediaRecorder.stop(); recordedChunks = [] }; if (stream) stream.getTracks().forEach(t => t.stop()); isRecording.value = false; showCircleOverlay.value = false; clearInterval(recordingInterval); clearMedia() }
 
 async function fetchDialogs() { try { const res = await api.get('/messages/dialogs'); dialogs.value = res.data } catch (err) { console.log('Failed to fetch dialogs:', err) } finally { loading.value = false } }
-async function selectDialog(userId) { selectedUserId.value = userId; chatLoading.value = true; messages.value = []; try { const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)]); chatUser.value = userRes.data; messages.value = msgRes.data; scrollToBottom(); await api.post(`/messages/${userId}/read`) } catch (err) { notifications.error(err.message) } finally { chatLoading.value = false } }
-async function pollMessages() { if (!selectedUserId.value) return; try { const res = await api.get(`/messages/${selectedUserId.value}`); if (res.data.length !== messages.value.length) { messages.value = res.data; scrollToBottom(); await api.post(`/messages/${selectedUserId.value}/read`) } } catch {} }
+async function selectDialog(userId) { 
+  saveScrollPosition()
+  selectedUserId.value = userId
+  currentChatUserId.value = userId
+  chatLoading.value = true
+  messages.value = []
+  try { 
+    const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)])
+    chatUser.value = userRes.data
+    messages.value = msgRes.data
+    restoreScrollPosition(userId)
+    await api.post(`/messages/${userId}/read`) 
+  } catch (err) { notifications.error(err.message) } finally { chatLoading.value = false } 
+}
+async function pollMessages() { 
+  if (!selectedUserId.value) return
+  try { 
+    const res = await api.get(`/messages/${selectedUserId.value}`)
+    if (res.data.length !== messages.value.length) { 
+      // Check if user is near bottom before updating
+      const container = messagesContainer.value
+      const wasAtBottom = container && (container.scrollHeight - container.scrollTop - container.clientHeight < 100)
+      
+      messages.value = res.data
+      
+      // Only scroll to bottom if user was already at bottom
+      if (wasAtBottom) {
+        nextTick(() => { if (container) container.scrollTop = container.scrollHeight })
+      }
+      
+      await api.post(`/messages/${selectedUserId.value}/read`) 
+    } 
+  } catch {} 
+}
 async function sendMessage() { if (!canSend.value || !selectedUserId.value) return; try { const formData = new FormData(); if (newMessage.value.trim()) formData.append('content', newMessage.value.trim()); if (mediaFile.value) { formData.append('media', mediaFile.value); formData.append('mediaType', mediaType.value) }; const res = await api.post(`/messages/${selectedUserId.value}`, formData); messages.value.push(res.data); newMessage.value = ''; clearMedia(); scrollToBottom(); fetchDialogs() } catch (err) { notifications.error(err.message) } }
 
 function openMsgMenu(e, msg) { selectedMsg.value = msg; msgMenuX.value = Math.min(e.clientX, window.innerWidth - 200); msgMenuY.value = Math.min(e.clientY, window.innerHeight - 150); showMsgMenu.value = true }
@@ -195,8 +266,8 @@ function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = 
 
 function handleClickOutside(e) { if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu() }
 
-onMounted(() => { fetchDialogs(); pollInterval = setInterval(() => { pollMessages(); fetchDialogs() }, 3000); if (route.params.id) selectDialog(route.params.id); document.addEventListener('click', handleClickOutside) })
-onUnmounted(() => { clearInterval(pollInterval); if (stream) stream.getTracks().forEach(t => t.stop()); document.removeEventListener('click', handleClickOutside) })
+onMounted(() => { fetchDialogs(); pollInterval = setInterval(() => { pollMessages(); fetchDialogs() }, 3000); if (route.params.id) selectDialog(route.params.id); document.addEventListener('click', handleClickOutside); window.addEventListener('resize', handleResize) })
+onUnmounted(() => { clearInterval(pollInterval); if (stream) stream.getTracks().forEach(t => t.stop()); document.removeEventListener('click', handleClickOutside); window.removeEventListener('resize', handleResize); currentChatUserId.value = null })
 watch(() => route.params.id, id => { if (id) selectDialog(id) })
 </script>
 
@@ -213,14 +284,16 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .dialog-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-lg); transition: all var(--transition); cursor: pointer; }
 .dialog-item:hover, .dialog-item.active { background: rgba(255,255,255,0.08); }
 .dialog-item.unread { background: rgba(255,255,255,0.06); }
-.dialog-avatar-wrap, .chat-avatar-wrap { position: relative; }
+.dialog-avatar-wrap, .chat-avatar-wrap { position: relative; flex-shrink: 0; }
 .online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background: #4ade80; border: 2px solid var(--bg-primary); border-radius: 50%; }
 .dialog-content { flex: 1; min-width: 0; }
 .dialog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .dialog-name { font-weight: 600; font-size: 15px; }
 .dialog-time { font-size: 12px; color: var(--text-muted); }
-.dialog-preview { font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dialog-bottom { display: flex; align-items: center; gap: 8px; }
+.dialog-preview { flex: 1; font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dialog-preview .you { color: var(--text-muted); }
+.unread-badge { min-width: 20px; height: 20px; padding: 0 6px; background: #ff3b5c; color: white; font-size: 12px; font-weight: 600; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .chat-empty { align-items: center; justify-content: center; gap: 16px; text-align: center; }
 .empty-icon { width: 80px; height: 80px; background: rgba(255,255,255,0.08); border-radius: var(--radius-2xl); display: flex; align-items: center; justify-content: center; }
 .empty-icon svg { width: 40px; height: 40px; color: var(--text-muted); }
@@ -228,14 +301,24 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .chat-empty p { color: var(--text-secondary); }
 .chat-panel { display: flex; flex-direction: column; }
 .chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); flex-shrink: 0; }
+.back-btn:hover { background: rgba(255,255,255,0.08); }
+.back-btn svg { width: 20px; height: 20px; }
 .chat-user { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
 .user-info { display: flex; flex-direction: column; }
 .user-name { font-weight: 600; font-size: 16px; }
 .user-status { font-size: 13px; color: var(--text-muted); }
 .user-status.online { color: #4ade80; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.message { display: flex; max-width: 70%; }
-.message.own { align-self: flex-end; }
+.message { display: flex; gap: 10px; max-width: 70%; }
+.message.own { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar { flex-shrink: 0; }
+.msg-avatar .avatar-sm { width: 32px; height: 32px; }
+.message-content { display: flex; flex-direction: column; }
+.msg-sender { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-decoration: none; }
+.msg-sender:hover { color: var(--text-primary); }
+.message.own .msg-sender { display: none; }
+.message.own .msg-avatar { display: none; }
 .message-bubble { padding: 12px 16px; background: rgba(255,255,255,0.08); border-radius: var(--radius-xl); border-bottom-left-radius: var(--radius-sm); position: relative; }
 .message.own .message-bubble { background: rgba(255,255,255,0.15); border-bottom-left-radius: var(--radius-xl); border-bottom-right-radius: var(--radius-sm); }
 .forwarded-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-style: italic; }
@@ -300,6 +383,14 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
-@media (max-width: 900px) { .messages-container { grid-template-columns: 1fr; } .chat-empty { display: none; } .dialogs-panel { display: none; } }
+
+/* Mobile responsive */
+@media (max-width: 900px) {
+  .messages-container { grid-template-columns: 1fr; }
+  .messages-container .chat-empty { display: none; }
+  .messages-container .chat-panel { display: none; }
+  .messages-container.show-chat .dialogs-panel { display: none; }
+  .messages-container.show-chat .chat-panel { display: flex; }
+}
 @media (max-width: 768px) { .messages-page { padding-left: 20px; } }
 </style>

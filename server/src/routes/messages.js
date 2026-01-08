@@ -80,6 +80,25 @@ router.get('/counts', authMiddleware, (req, res) => {
   }
 })
 
+// Get recent unread messages for toast notifications
+router.get('/recent', authMiddleware, (req, res) => {
+  try {
+    const messages = db.prepare(`
+      SELECT m.*, u.name as senderName, u.avatar as senderAvatar
+      FROM messages m
+      JOIN users u ON m.senderId = u.id
+      WHERE m.receiverId = ? AND m.isRead = 0
+      ORDER BY m.createdAt DESC
+      LIMIT 5
+    `).all(req.userId)
+
+    res.json(messages)
+  } catch (err) {
+    console.error('Error fetching recent messages:', err)
+    res.json([])
+  }
+})
+
 // Forward message - must be before /:id route
 router.post('/forward', authMiddleware, (req, res) => {
   try {
