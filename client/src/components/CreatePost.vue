@@ -57,30 +57,15 @@
             </div>
 
             <div class="text-input">
-              <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="2"></textarea>
-              <button class="emoji-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                  <line x1="9" y1="9" x2="9.01" y2="9"/>
-                  <line x1="15" y1="9" x2="15.01" y2="9"/>
-                </svg>
-              </button>
+              <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="2" ref="textareaRef"></textarea>
+              <EmojiPicker @select="insertEmoji" />
             </div>
           </div>
 
           <div class="modal-footer">
-            <button class="tips-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              Советы по публикации
-            </button>
             <button @click="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
               <span v-if="loading" class="spinner"></span>
-              <span v-else>Далее</span>
+              <span v-else>Опубликовать</span>
             </button>
           </div>
         </div>
@@ -93,6 +78,7 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
 
 const emit = defineEmits(['created'])
@@ -104,8 +90,24 @@ const content = ref('')
 const images = ref([])
 const loading = ref(false)
 const fileInput = ref(null)
+const textareaRef = ref(null)
 
 const canSubmit = computed(() => content.value.trim() || images.value.length)
+
+function insertEmoji(emoji) {
+  const textarea = textareaRef.value
+  if (textarea) {
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    content.value = content.value.substring(0, start) + emoji + content.value.substring(end)
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length)
+    }, 0)
+  } else {
+    content.value += emoji
+  }
+}
 
 function triggerUpload() {
   fileInput.value?.click()
@@ -331,38 +333,18 @@ async function submit() {
   outline: none;
   box-shadow: none;
 }
-.emoji-btn {
+.text-input :deep(.emoji-wrap) {
   position: absolute;
   right: 0;
   bottom: 0;
-  color: rgba(255, 255, 255, 0.4);
-  padding: 4px;
-}
-.emoji-btn:hover {
-  color: rgba(255, 255, 255, 0.7);
-}
-.emoji-btn svg {
-  width: 20px;
-  height: 20px;
 }
 
 .modal-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   padding: 16px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-.tips-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-}
-.tips-btn svg {
-  width: 18px;
-  height: 18px;
 }
 .spinner {
   width: 16px;

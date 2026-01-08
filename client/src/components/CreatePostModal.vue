@@ -47,7 +47,8 @@
         </div>
 
         <div class="text-input">
-          <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="3"></textarea>
+          <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="3" ref="textareaRef"></textarea>
+          <EmojiPicker @select="insertEmoji" />
         </div>
       </div>
 
@@ -64,6 +65,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useNotificationsStore } from '../stores/notifications'
+import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
 
 const emit = defineEmits(['close', 'created'])
@@ -73,8 +75,24 @@ const content = ref('')
 const images = ref([])
 const loading = ref(false)
 const fileInput = ref(null)
+const textareaRef = ref(null)
 
 const canSubmit = computed(() => content.value.trim() || images.value.length)
+
+function insertEmoji(emoji) {
+  const textarea = textareaRef.value
+  if (textarea) {
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    content.value = content.value.substring(0, start) + emoji + content.value.substring(end)
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length)
+    }, 0)
+  } else {
+    content.value += emoji
+  }
+}
 
 function triggerUpload() {
   fileInput.value?.click()
@@ -275,6 +293,7 @@ async function submit() {
 }
 
 .text-input {
+  position: relative;
   margin-top: 16px;
 }
 
@@ -286,11 +305,18 @@ async function submit() {
   resize: none;
   font-size: 15px;
   padding: 12px;
+  padding-right: 40px;
 }
 
 .text-input textarea:focus {
   outline: none;
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+.text-input :deep(.emoji-wrap) {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
 }
 
 .modal-footer {

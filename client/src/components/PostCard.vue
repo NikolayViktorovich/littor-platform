@@ -164,7 +164,8 @@
         
         <form @submit.prevent="addComment" class="comment-form" :class="{ 'reply-mode': isReplyMode }">
           <div class="comment-input-wrap">
-            <input v-model="newComment" :placeholder="replyingTo ? `Ответ для ${replyingTo.author.name}...` : 'Написать комментарий...'" required>
+            <input v-model="newComment" :placeholder="replyingTo ? `Ответ для ${replyingTo.author.name}...` : 'Написать комментарий...'" required ref="commentInput">
+            <EmojiPicker @select="insertCommentEmoji" class="comment-emoji" />
             <button v-if="!replyingTo" type="submit" class="inside-btn send-inside" :disabled="!newComment.trim()" key="send-inside">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M5 12h14"/>
@@ -195,6 +196,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
 
 const props = defineProps({
@@ -217,6 +219,22 @@ const imageLoaded = ref(false)
 const likePressed = ref(false)
 const commentPressed = ref(false)
 const sharePressed = ref(false)
+const commentInput = ref(null)
+
+function insertCommentEmoji(emoji) {
+  const input = commentInput.value
+  if (input) {
+    const start = input.selectionStart
+    const end = input.selectionEnd
+    newComment.value = newComment.value.substring(0, start) + emoji + newComment.value.substring(end)
+    setTimeout(() => {
+      input.focus()
+      input.setSelectionRange(start + emoji.length, start + emoji.length)
+    }, 0)
+  } else {
+    newComment.value += emoji
+  }
+}
 
 const isOwner = computed(() => authStore.user?.id === props.post.author.id)
 const authorAvatar = computed(() => getAvatarUrl(props.post.author.avatar))
@@ -782,7 +800,17 @@ const vClickOutside = {
   width: 100%;
   border-radius: var(--radius-full);
   padding: 10px 16px;
-  padding-right: 48px;
+  padding-right: 80px;
+}
+
+.comment-emoji {
+  position: absolute;
+  right: 44px;
+}
+
+.comment-emoji :deep(.emoji-picker) {
+  bottom: 100%;
+  right: -38px;
 }
 
 .inside-btn {
