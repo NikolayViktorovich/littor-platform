@@ -103,40 +103,38 @@
           </template>
         </div>
 
-        <div class="chat-input-area">
-          <div v-if="mediaPreview" class="media-preview">
-            <img v-if="mediaType === 'image'" :src="mediaPreview" alt="">
-            <video v-else-if="mediaType === 'video' || mediaType === 'circle'" :src="mediaPreview" :class="{ circle: mediaType === 'circle' }"></video>
-            <div v-else-if="mediaType === 'voice'" class="voice-preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><span>Голосовое</span></div>
-            <button @click="clearMedia" class="clear-media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
-          <div v-if="isRecording" class="voice-recording-bar">
-            <div class="voice-rec-left">
-              <div class="voice-rec-dot"></div>
-              <span class="voice-rec-time">{{ formatRecTimeMs(recordingTime) }}</span>
-            </div>
-            <button @click="cancelRecording" class="voice-rec-cancel">Отмена</button>
-            <button @click="stopVoice" class="voice-rec-send">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-            </button>
-          </div>
-          <form @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
-            <div class="input-actions-left">
-              <label class="action-btn"><input type="file" accept="image/*,video/*" @change="handleMediaSelect" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></label>
-            </div>
-            <div class="input-wrap">
-              <input v-model="newMessage" placeholder="Написать сообщение..." autocomplete="off" ref="msgInput">
-              <EmojiPicker @select="insertEmoji" />
-            </div>
-            <div class="input-actions-right">
-              <button v-if="!newMessage.trim() && !mediaPreview" type="button" class="action-btn voice-btn" :class="{ 'circle-mode': voiceBtnMode === 'circle' }" @click="onVoiceBtnClick" @mousedown="onVoiceMouseDown" @mousemove="onVoiceMouseMove" @mouseup="onVoiceMouseUp" @mouseleave="onVoiceMouseUp" @touchstart.prevent="onVoiceBtnDown" @touchend.prevent="onVoiceBtnUp" @touchmove.prevent="onVoiceBtnTouchMove" ref="voiceBtnRef">
-                <svg v-if="voiceBtnMode === 'voice'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
-              <button v-else type="submit" class="send-btn" :disabled="!canSend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></button>
-            </div>
-          </form>
+        <div v-if="mediaPreview" class="media-preview">
+          <img v-if="mediaType === 'image'" :src="mediaPreview" alt="">
+          <video v-else-if="mediaType === 'video' || mediaType === 'circle'" :src="mediaPreview" :class="{ circle: mediaType === 'circle' }"></video>
+          <div v-else-if="mediaType === 'voice'" class="voice-preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><span>Голосовое</span></div>
+          <button @click="clearMedia" class="clear-media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
+        <div v-if="isRecording" class="voice-recording-bar">
+          <div class="voice-rec-left">
+            <div class="voice-rec-dot"></div>
+            <span class="voice-rec-time">{{ formatRecTimeMs(recordingTime) }}</span>
+          </div>
+          <button @click="cancelRecording" class="voice-rec-cancel">Отмена</button>
+          <button @click="stopVoice" class="voice-rec-send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+        <form @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
+          <div class="input-actions-left">
+            <label class="action-btn"><input type="file" accept="image/*,video/*" @change="handleMediaSelect" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></label>
+          </div>
+          <div class="input-wrap">
+            <input v-model="newMessage" placeholder="Написать сообщение..." autocomplete="off" ref="msgInput">
+            <EmojiPicker @select="insertEmoji" />
+          </div>
+          <div class="input-actions-right">
+            <button v-if="!newMessage.trim() && !mediaPreview" type="button" class="action-btn voice-btn" @click="onVoiceBtnClick" @mousedown="onVoiceMouseDown" @mousemove="onVoiceMouseMove" @mouseup="onVoiceMouseUp" @mouseleave="onVoiceMouseUp" @touchstart.prevent="onVoiceBtnDown" @touchend.prevent="onVoiceBtnUp" @touchmove.prevent="onVoiceBtnTouchMove" ref="voiceBtnRef">
+              <svg v-if="voiceBtnMode === 'voice'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button v-else type="submit" class="send-btn" :disabled="!canSend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></button>
+          </div>
+        </form>
       </div>
 
       <div v-if="showCircleOverlay" class="circle-overlay">
@@ -251,7 +249,6 @@ const showMsgMenu = ref(false)
 const msgMenuX = ref(0)
 const msgMenuY = ref(0)
 
-// Circle and voice playback state
 const playingCircles = ref({})
 const mutedCircles = ref({})
 const playingVoices = ref({})
@@ -266,24 +263,20 @@ const showMediaViewerModal = ref(false)
 const viewerSrc = ref('')
 const viewerType = ref('image')
 
-// Store scroll positions for each dialog
 const scrollPositions = {}
 
 const canSend = computed(() => newMessage.value.trim() || mediaFile.value)
 const isMobile = ref(window.innerWidth <= 900)
 
-// Save scroll position before leaving dialog
 function saveScrollPosition() {
   if (selectedUserId.value && messagesContainer.value) {
     scrollPositions[selectedUserId.value] = messagesContainer.value.scrollTop
   }
 }
 
-// Restore scroll position or scroll to bottom for new dialogs
 function restoreScrollPosition(userId) {
   nextTick(() => {
     if (messagesContainer.value) {
-      // Always scroll to bottom (last message)
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
     }
   })
@@ -312,7 +305,6 @@ function formatLastSeen(lastSeen) { if (!lastSeen) return 'был(а) давно
 function scrollToBottom() { nextTick(() => { if (messagesContainer.value) messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight }) }
 function toggleVideo(e) { const v = e.target.querySelector('video') || e.target; v.paused ? v.play() : v.pause() }
 
-// Circle video functions
 function toggleCircle(e, msgId) {
   const video = document.getElementById('circle-' + msgId)
   if (!video) return
@@ -356,12 +348,10 @@ function onCircleTimeUpdate(e, msgId) {
   circleCurrentTime.value[msgId] = `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-// Voice message functions
 function toggleVoice(e, msgId) {
   const audio = document.getElementById('voice-' + msgId)
   if (!audio) return
   
-  // Pause all other voices
   Object.keys(playingVoices.value).forEach(id => {
     if (id !== msgId && playingVoices.value[id]) {
       const otherAudio = document.getElementById('voice-' + id)
@@ -382,7 +372,6 @@ function toggleVoice(e, msgId) {
 function onVoiceEnded(msgId) {
   playingVoices.value[msgId] = false
   voiceProgress.value[msgId] = 0
-  // Reset to total duration
   if (voiceTotalDurations.value[msgId]) {
     voiceDurations.value[msgId] = voiceTotalDurations.value[msgId]
   }
@@ -423,7 +412,6 @@ function isWaveBarActive(msgId, barIndex, totalBars) {
 }
 
 function getWaveHeight(i) {
-  // Generate random-ish wave heights for visual effect
   const heights = [8, 12, 18, 14, 22, 16, 20, 12, 24, 18, 14, 20, 16, 22, 12, 18, 14, 20, 16, 10]
   return heights[(i - 1) % heights.length]
 }
@@ -436,14 +424,12 @@ async function startVoice() {
   try { 
     stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     
-    // Setup audio analyser for visualization
     audioContext = new (window.AudioContext || window.webkitAudioContext)()
     analyser = audioContext.createAnalyser()
     analyser.fftSize = 64
     const source = audioContext.createMediaStreamSource(stream)
     source.connect(analyser)
     
-    // Start visualization loop
     const dataArray = new Uint8Array(analyser.frequencyBinCount)
     function updateLevels() {
       analyser.getByteFrequencyData(dataArray)
@@ -485,7 +471,6 @@ async function startVoice() {
 }
 function stopVoice() { if (mediaRecorder && mediaRecorder.state !== 'inactive' && isRecording.value) { mediaRecorder.stop(); isRecording.value = false; clearInterval(recordingInterval) } }
 
-// Voice button handlers with swipe to switch mode
 let clickPrevented = false
 
 function onVoiceBtnClick() {
@@ -500,7 +485,6 @@ function onVoiceBtnClick() {
   }
 }
 
-// Mouse drag down to switch mode
 function onVoiceMouseDown(e) {
   mouseDownOnVoice.value = true
   mouseDragStartY.value = e.clientY
@@ -518,7 +502,6 @@ function onVoiceMouseUp() {
   mouseDownOnVoice.value = false
 }
 
-// Touch handlers
 function onVoiceBtnDown(e) {
   const touch = e.touches[0]
   voiceBtnStartX.value = touch.clientX
@@ -539,7 +522,6 @@ function onVoiceBtnTouchMove(e) {
   if (!voiceBtnStartY.value || !e.touches[0]) return
   const touch = e.touches[0]
   const diffY = voiceBtnStartY.value - touch.clientY
-  // Swipe up to switch mode
   if (diffY > 30) {
     voiceBtnMode.value = voiceBtnMode.value === 'voice' ? 'circle' : 'voice'
     voiceBtnStartX.value = 0
@@ -595,13 +577,11 @@ async function pollMessages() {
   try { 
     const res = await api.get(`/messages/${selectedUserId.value}`)
     if (res.data.length !== messages.value.length) { 
-      // Check if user is near bottom before updating
       const container = messagesContainer.value
       const wasAtBottom = container && (container.scrollHeight - container.scrollTop - container.clientHeight < 100)
       
       messages.value = res.data
       
-      // Only scroll to bottom if user was already at bottom
       if (wasAtBottom) {
         nextTick(() => { if (container) container.scrollTop = container.scrollHeight })
       }
@@ -674,9 +654,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .msg-sender { display: none; }
 .message.own .msg-avatar { display: none; }
 .message-bubble { display: inline-block; padding: 8px 12px; border-radius: 18px; position: relative; }
-/* Incoming messages - dark gray */
 .message:not(.own) .message-bubble { background: #262626; border-bottom-left-radius: 4px; }
-/* Outgoing messages - purple gradient */
 .message.own .message-bubble { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom-right-radius: 4px; }
 .forwarded-label { display: block; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px; font-style: italic; }
 .message-text-wrap { display: inline; }
@@ -688,7 +666,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .circle-player { width: 100%; height: 100%; object-fit: cover; }
 .voice-message { width: 180px; height: 36px; margin-bottom: 6px; }
 
-/* New circle video design */
 .circle-message { display: flex; flex-direction: column; align-items: flex-end; }
 .message:not(.own) .circle-message { align-items: flex-start; }
 .circle-video-wrap { position: relative; width: 240px; height: 240px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); }
@@ -701,7 +678,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .circle-timer { font-size: 11px; color: var(--text-secondary); }
 .circle-info .message-time { font-size: 11px; color: rgba(255,255,255,0.35); }
 
-/* New voice message design */
 .voice-message-wrap { display: flex; align-items: center; gap: 10px; background: rgba(30,30,30,0.95); padding: 10px 14px; border-radius: 20px; min-width: 200px; max-width: 280px; }
 .message.own .voice-message-wrap { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 .voice-play-btn { width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: transform 0.15s; }
@@ -720,12 +696,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .voice-msg-time { font-size: 12px; color: rgba(255,255,255,0.35); }
 .message.own .voice-msg-time { color: rgba(255,255,255,0.5); }
 
-/* Media message without bubble */
 .message.media-message .message-content { background: none; }
 .message.media-message { max-width: none; }
-.chat-input-area { border-top: 1px solid rgba(255,255,255,0.08); background: var(--bg-secondary); }
-.media-preview { position: relative; padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.media-preview img, .media-preview video { max-height: 120px; max-width: 160px; border-radius: var(--radius-lg); }
+
+.media-preview { position: absolute; bottom: 70px; left: 16px; right: 16px; padding: 12px; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border-radius: 16px; }
+.media-preview img, .media-preview video { max-height: 120px; max-width: 160px; border-radius: 12px; }
 .media-preview video.circle { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
 .voice-preview { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); }
 .voice-preview svg { width: 24px; height: 24px; }
@@ -736,16 +711,13 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .cancel-rec { margin-left: auto; color: var(--text-muted); font-size: 14px; }
 
-/* Voice recording bar - Telegram style */
-.voice-recording-bar { display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: rgba(20,20,20,0.95); }
 .voice-rec-left { display: flex; align-items: center; gap: 10px; }
 .voice-rec-dot { width: 10px; height: 10px; background: #ff4466; border-radius: 50%; animation: pulse 1s infinite; }
 .voice-rec-time { font-size: 15px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .voice-rec-cancel { flex: 1; text-align: center; color: var(--text-secondary); font-size: 15px; }
-.voice-rec-send { width: 48px; height: 48px; background: rgba(60,60,60,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
-.voice-rec-send svg { width: 22px; height: 22px; }
+.voice-rec-send { width: 44px; height: 44px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+.voice-rec-send svg { width: 20px; height: 20px; }
 
-/* Circle recording overlay - Telegram style */
 .circle-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
 .circle-rec-container { position: relative; display: flex; align-items: center; justify-content: center; }
 .circle-rec-video-wrap { position: relative; width: 300px; height: 300px; }
@@ -766,21 +738,22 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .circle-rec-send { width: 56px; height: 56px; background: rgba(60,60,60,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
 .circle-rec-send svg { width: 26px; height: 26px; }
 
-.chat-input { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
-.input-actions-left, .input-actions-right { display: flex; gap: 4px; }
-.action-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius-full); transition: all var(--transition); cursor: pointer; }
-.action-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+.chat-input { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+.voice-recording-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.input-actions-left, .input-actions-right { display: flex; }
+.action-btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); border-radius: 50%; transition: all 0.2s; cursor: pointer; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+.action-btn:hover { background: rgba(255,255,255,0.12); color: white; }
 .action-btn svg { width: 22px; height: 22px; }
 .input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
-.input-wrap input { width: 100%; border-radius: var(--radius-full); padding: 10px 16px; padding-right: 44px; background: #141414; }
-.input-wrap :deep(.emoji-wrap) { position: absolute; right: 8px; }
-.send-btn { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+.input-wrap input { width: 100%; border-radius: 22px; padding: 12px 50px 12px 18px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); font-size: 16px; color: white; }
+.input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
+.input-wrap :deep(.emoji-wrap) { position: absolute; right: 12px; }
+.send-btn { width: 44px; height: 44px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
 .send-btn:hover:not(:disabled) { transform: scale(1.05); }
 .send-btn:disabled { opacity: 0.5; }
 .send-btn svg { width: 20px; height: 20px; }
-.voice-btn { background: rgba(255,255,255,0.05); transition: all 0.2s; }
-.voice-btn:active { background: rgba(255,100,100,0.3); color: #ff6666; }
-.voice-btn.circle-mode { background: rgba(100,126,234,0.2); color: #667eea; }
+.voice-btn { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+.voice-btn:hover { background: rgba(255,255,255,0.12); color: white; }
 .msg-menu { position: fixed; z-index: 500; min-width: 180px; padding: 6px; }
 .menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--text-secondary); border-radius: var(--radius); font-size: 14px; }
 .menu-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
@@ -805,7 +778,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 
-/* Mobile responsive */
 @media (max-width: 900px) {
   .messages-container { grid-template-columns: 1fr; }
   .messages-container .chat-empty { display: none; }
@@ -896,7 +868,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     height: 16px;
   }
   
-  /* Chat panel mobile - fullscreen */
   .messages-container.show-chat {
     padding-bottom: 0;
   }
@@ -995,13 +966,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     display: none;
   }
   
-  .chat-input-area {
-    background: rgba(14, 14, 14, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255,255,255,0.06);
-  }
-  
   .chat-input {
     padding: 8px 10px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
@@ -1035,7 +999,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     padding: 10px 12px;
   }
   
-  /* Mobile circle and voice */
   .circle-video-wrap {
     width: 200px;
     height: 200px;
