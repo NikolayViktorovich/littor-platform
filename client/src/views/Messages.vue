@@ -185,9 +185,9 @@
       <Teleport to="body">
         <Transition name="menu">
           <div v-if="showMsgMenu" class="msg-menu glass-modal" :style="{ top: msgMenuY + 'px', left: msgMenuX + 'px' }" @click.stop>
-            <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7"/><path d="M20 12H4"/></svg>Переслать</button>
-            <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2z"/><path d="M9 9v8"/><path d="M15 9v8"/><path d="M3 5h18"/><path d="M9 5V3h6v2"/></svg>Удалить для всех</button>
-            <button class="menu-item muted" @click="confirmDeleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2z"/><path d="M3 5h18"/><path d="M9 5V3h6v2"/></svg>Удалить для себя</button>
+            <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M20 12H4"/></svg>Переслать</button>
+            <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
+            <button class="menu-item muted" @click="confirmDeleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
           </div>
         </Transition>
 
@@ -878,8 +878,8 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .menu-item:active { transform: scale(0.98); }
 .menu-item.danger { color: #ff6666; }
 .menu-item.danger:hover { background: rgba(255,100,100,0.1); }
-.menu-item.muted { color: rgba(255,255,255,0.4); }
-.menu-item.muted:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); }
+.menu-item.muted { color: var(--text-secondary); }
+.menu-item.muted:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
 .menu-item svg { width: 18px; height: 18px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal { width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
