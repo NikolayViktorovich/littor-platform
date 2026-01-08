@@ -19,11 +19,38 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(data) {
     const res = await api.post('/auth/register', data)
+    // Returns email for verification, not token yet
+    return res.data
+  }
+
+  async function verifyEmail(email, code) {
+    const res = await api.post('/auth/verify-email', { email, code })
     token.value = res.data.token
     user.value = res.data.user
     localStorage.setItem('token', res.data.token)
     localStorage.setItem('user', JSON.stringify(res.data.user))
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`
+    return res.data
+  }
+
+  async function resendVerification(email) {
+    const res = await api.post('/auth/resend-verification', { email })
+    return res.data
+  }
+
+  async function forgotPassword(email) {
+    const res = await api.post('/auth/forgot-password', { email })
+    return res.data
+  }
+
+  async function verifyResetCode(email, code) {
+    const res = await api.post('/auth/verify-reset-code', { email, code })
+    return res.data
+  }
+
+  async function resetPassword(email, code, newPassword) {
+    const res = await api.post('/auth/reset-password', { email, code, newPassword })
+    return res.data
   }
 
   async function checkAuth() {
@@ -57,5 +84,10 @@ export const useAuthStore = defineStore('auth', () => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
   }
 
-  return { user, token, isAuthenticated, login, register, checkAuth, logout, updateUser }
+  return { 
+    user, token, isAuthenticated, 
+    login, register, verifyEmail, resendVerification,
+    forgotPassword, verifyResetCode, resetPassword,
+    checkAuth, logout, updateUser 
+  }
 })

@@ -26,6 +26,7 @@ export async function initDb() {
       cover TEXT,
       bio TEXT,
       lastSeen TEXT,
+      emailVerified INTEGER DEFAULT 0,
       createdAt TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
@@ -36,7 +37,20 @@ export async function initDb() {
     const colNames = cols[0]?.values?.map(c => c[1]) || []
     if (!colNames.includes('cover')) db.run(`ALTER TABLE users ADD COLUMN cover TEXT`)
     if (!colNames.includes('lastSeen')) db.run(`ALTER TABLE users ADD COLUMN lastSeen TEXT`)
+    if (!colNames.includes('emailVerified')) db.run(`ALTER TABLE users ADD COLUMN emailVerified INTEGER DEFAULT 0`)
   } catch (e) {}
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS verification_codes (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      code TEXT NOT NULL,
+      type TEXT NOT NULL,
+      expiresAt TEXT NOT NULL,
+      used INTEGER DEFAULT 0,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
 
   db.run(`
     CREATE TABLE IF NOT EXISTS posts (
