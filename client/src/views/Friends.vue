@@ -2,7 +2,61 @@
   <div class="friends-page">
     <div class="friends-container">
       <div class="friends-header glass">
-        <h1>Друзья</h1>
+        <div class="header-top">
+          <h1>Друзья</h1>
+          <button class="add-btn" :class="{ active: showSearch }" @click="showSearch = !showSearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <Transition name="search">
+          <div v-if="showSearch" class="search-section">
+            <div class="search-input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="M21 21l-4-4"/>
+              </svg>
+              <input 
+                v-model="searchQuery" 
+                @input="handleSearch"
+                placeholder="Поиск по имени или юзернейму..." 
+                ref="searchInput"
+              >
+            </div>
+            
+            <div v-if="searching" class="search-loading">
+              <div class="spinner-sm"></div>
+            </div>
+            
+            <div v-else-if="searchResults.length" class="search-results">
+              <div v-for="user in searchResults" :key="user.id" class="search-item">
+                <router-link :to="`/profile/${user.id}`" class="friend-info" @click="showSearch = false">
+                  <img :src="getAvatarUrl(user.avatar)" class="avatar" alt="" @error="handleAvatarError">
+                  <div class="friend-details">
+                    <span class="friend-name">{{ user.name }}</span>
+                    <span v-if="user.username" class="friend-username">@{{ user.username }}</span>
+                  </div>
+                </router-link>
+                <button 
+                  v-if="!isFriend(user.id) && user.id !== authStore.user?.id"
+                  @click="sendRequest(user.id)" 
+                  class="btn btn-primary btn-sm"
+                  :disabled="isPending(user.id)"
+                >
+                  {{ isPending(user.id) ? 'Отправлено' : 'Добавить' }}
+                </button>
+              </div>
+            </div>
+            
+            <div v-else-if="searchQuery && !searching" class="empty-search">
+              <p>Никого не найдено</p>
+            </div>
+          </div>
+        </Transition>
+        
         <div class="liquid-tabs">
           <button 
             v-for="tab in tabs" 
@@ -64,11 +118,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import { cache } from '../stores/cache'
 import api from '../api'
 
+const authStore = useAuthStore()
 const notifications = useNotificationsStore()
 
 const activeTab = ref('friends')
@@ -76,6 +132,13 @@ const friends = ref(cache.friends.friends)
 const incoming = ref(cache.friends.incoming)
 const outgoing = ref(cache.friends.outgoing)
 const loading = ref(!cache.friends.loaded)
+
+const showSearch = ref(false)
+const searchQuery = ref('')
+const searchResults = ref([])
+const searching = ref(false)
+const searchInput = ref(null)
+let searchTimeout = null
 
 const tabs = computed(() => [
   { key: 'friends', label: 'Друзья', count: friends.value.length },
@@ -97,6 +160,54 @@ function getAvatarUrl(avatar) {
 function handleAvatarError(e) {
   e.target.src = '/default-avatar.svg'
 }
+
+function isFriend(userId) {
+  return friends.value.some(f => f.id === userId)
+}
+
+function isPending(userId) {
+  return outgoing.value.some(u => u.id === userId)
+}
+
+function handleSearch() {
+  clearTimeout(searchTimeout)
+  if (!searchQuery.value.trim()) {
+    searchResults.value = []
+    return
+  }
+  searching.value = true
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await api.get('/users/search', { params: { q: searchQuery.value } })
+      searchResults.value = res.data
+    } catch (err) {
+      notifications.error(err.message)
+    } finally {
+      searching.value = false
+    }
+  }, 300)
+}
+
+async function sendRequest(userId) {
+  try {
+    await api.post(`/friends/request/${userId}`)
+    const user = searchResults.value.find(u => u.id === userId)
+    if (user) outgoing.value.push(user)
+    cache.friends.outgoing = outgoing.value
+    notifications.success('Заявка отправлена')
+  } catch (err) {
+    notifications.error(err.message)
+  }
+}
+
+watch(showSearch, (val) => {
+  if (val) {
+    nextTick(() => searchInput.value?.focus())
+  } else {
+    searchQuery.value = ''
+    searchResults.value = []
+  }
+})
 
 async function fetchData() {
   if (!cache.friends.loaded) {
@@ -186,12 +297,164 @@ fetchData()
 .friends-header {
   padding: 20px 24px;
   margin-bottom: 20px;
+  overflow: visible;
 }
 
 .friends-header h1 {
   font-size: 24px;
   font-weight: 600;
-  margin-bottom: 20px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.add-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+}
+
+.add-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.add-btn svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+
+.add-btn.active svg {
+  transform: rotate(45deg);
+}
+
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  overflow: visible;
+}
+
+.search-input-wrap svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.search-input-wrap input {
+  flex: 1;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--text-primary);
+  font-size: 15px;
+  padding: 0 !important;
+  caret-color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+}
+
+.search-input-wrap input::placeholder {
+  color: var(--text-muted);
+  transition: opacity 0.15s ease;
+}
+
+.search-input-wrap input:focus::placeholder {
+  opacity: 0;
+}
+
+.search-input-wrap input:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: none !important;
+  border-radius: 0 !important;
+}
+
+.search-section {
+  margin-bottom: 16px;
+  overflow: visible;
+}
+
+.search-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.spinner-sm {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  transition: background var(--transition);
+}
+
+.search-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.search-item .friend-info {
+  gap: 12px;
+}
+
+.friend-username {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.empty-search {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.search-enter-active,
+.search-leave-active {
+  transition: all 0.15s ease;
+}
+
+.search-enter-from,
+.search-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .liquid-tabs {
@@ -331,6 +594,11 @@ fetchData()
   
   .friend-actions .btn {
     flex: 1;
+  }
+  
+  .search-dropdown {
+    width: 280px;
+    right: -60px;
   }
 }
 </style>

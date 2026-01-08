@@ -1,5 +1,5 @@
 <template>
-  <article class="post glass">
+  <article class="post glass" :class="{ 'menu-open': menuOpen }">
     <div class="post-header">
       <router-link :to="`/profile/${post.author.id}`" class="post-author">
         <img :src="authorAvatar" class="avatar" alt="" @error="handleAvatarError">
@@ -10,7 +10,7 @@
       </router-link>
       
       <div class="post-menu-wrap">
-        <button @click.stop="showMenu = !showMenu" class="post-menu-btn">
+        <button @click.stop="toggleMenu" class="post-menu-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <circle cx="12" cy="6" r="1.5"/>
             <circle cx="12" cy="12" r="1.5"/>
@@ -18,7 +18,7 @@
           </svg>
         </button>
         
-        <Transition name="menu">
+        <Transition name="menu" @after-leave="menuOpen = false">
           <div v-if="showMenu" class="post-dropdown glass-modal" v-click-outside="closeMenu">
             <button class="dropdown-item" v-if="isOwner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -147,6 +147,7 @@ const emit = defineEmits(['delete', 'update'])
 const authStore = useAuthStore()
 const showComments = ref(false)
 const showMenu = ref(false)
+const menuOpen = ref(false)
 const comments = ref([])
 const newComment = ref('')
 const loadingComments = ref(false)
@@ -170,6 +171,15 @@ function getAvatarUrl(avatar) {
 
 function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
 function handleImageError(e) { e.target.style.display = 'none' }
+
+function toggleMenu() {
+  if (!showMenu.value) {
+    menuOpen.value = true
+    showMenu.value = true
+  } else {
+    showMenu.value = false
+  }
+}
 
 function closeMenu() {
   showMenu.value = false
@@ -271,6 +281,11 @@ const vClickOutside = {
 .post {
   padding: 20px;
   position: relative;
+  overflow: visible !important;
+}
+
+.post.menu-open {
+  z-index: 60;
 }
 
 .post-header {
@@ -309,6 +324,7 @@ const vClickOutside = {
 
 .post-menu-wrap {
   position: relative;
+  z-index: 50;
 }
 
 .post-menu-btn {
@@ -338,7 +354,7 @@ const vClickOutside = {
   margin-top: 4px;
   min-width: 200px;
   padding: 6px;
-  z-index: 10;
+  z-index: 100;
   will-change: transform, opacity;
   transform: translateZ(0);
 }
