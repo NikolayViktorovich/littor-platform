@@ -129,12 +129,12 @@ const categories = {
 
 .emoji-tabs button:hover {
   opacity: 0.8;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .emoji-tabs button.active {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .emoji-content {
@@ -157,7 +157,7 @@ const categories = {
 }
 
 .emoji-grid button:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .picker-enter-active {

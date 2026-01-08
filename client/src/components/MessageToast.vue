@@ -107,8 +107,8 @@ onUnmounted(() => {
 .toast-content { flex: 1; min-width: 0; }
 .toast-name { font-weight: 600; font-size: 14px; display: block; margin-bottom: 2px; }
 .toast-text { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.reply-btn { padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: var(--radius-full); font-size: 13px; font-weight: 500; color: var(--text-primary); transition: all var(--transition); flex-shrink: 0; }
-.reply-btn:hover { background: rgba(255,255,255,0.25); }
+.reply-btn { padding: 6px 12px; background: rgba(255,255,255,0.08); border-radius: var(--radius-full); font-size: 13px; font-weight: 500; color: var(--text-primary); transition: all var(--transition); flex-shrink: 0; }
+.reply-btn:hover { background: rgba(255,255,255,0.12); }
 .close-toast { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; }
 .close-toast svg { width: 14px; height: 14px; }
 .toast-enter-active, .toast-leave-active { transition: all 0.2s ease; }

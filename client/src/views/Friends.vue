@@ -327,15 +327,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 50%;
   color: var(--text-secondary);
   transition: all var(--transition);
 }
 
 .add-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
@@ -353,7 +353,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
   border: none;
   border-radius: var(--radius-lg);
   padding: 14px 16px;
@@ -436,7 +436,7 @@ onUnmounted(() => {
 }
 
 .search-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .search-item .friend-info {
@@ -474,7 +474,7 @@ onUnmounted(() => {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-full);
   font-size: 12px;
   display: inline-flex;
@@ -515,7 +515,7 @@ onUnmounted(() => {
 .empty-icon {
   width: 64px;
   height: 64px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
@@ -544,7 +544,7 @@ onUnmounted(() => {
 }
 
 .friend-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .friend-info {

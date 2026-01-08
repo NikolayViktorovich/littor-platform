@@ -201,7 +201,7 @@ onUnmounted(() => {
 .notif-list { flex: 1; overflow-y: auto; padding: 8px; }
 .notif-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); }
 .notif-item { display: flex; gap: 12px; padding: 12px; border-radius: var(--radius-lg); cursor: pointer; transition: background var(--transition); }
-.notif-item:hover { background: rgba(255,255,255,0.08); }
+.notif-item:hover { background: rgba(255,255,255,0.04); }
 .notif-content { flex: 1; min-width: 0; }
 .notif-content p { font-size: 14px; margin-bottom: 4px; }
 .notif-time { font-size: 12px; color: var(--text-muted); }
@@ -215,13 +215,13 @@ onUnmounted(() => {
 .nav-item.active svg { transform: scale(1.1); }
 .nav-item svg { width: 26px; height: 26px; transition: transform 0.15s ease; }
 .nav-item.pressed { transform: scale(0.85); }
-.nav-item.create-btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); }
-.nav-item.create-btn:hover { background: rgba(255, 255, 255, 0.15); }
+.nav-item.create-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
+.nav-item.create-btn:hover { background: rgba(255, 255, 255, 0.08); }
 .nav-badge { position: absolute; top: 6px; right: 6px; min-width: 16px; height: 16px; padding: 0 4px; background: #ff3b5c; color: white; font-size: 10px; font-weight: 600; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; }
 .sidebar-bottom { padding: 40px 0 20px; position: relative; }
 .user-menu { position: absolute; bottom: 0; left: 72px; width: 200px; padding: 8px; }
 .menu-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; color: var(--text-secondary); border-radius: var(--radius); font-size: 14px; transition: all var(--transition); text-decoration: none; }
-.menu-item:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-primary); }
+.menu-item:hover { background: rgba(255, 255, 255, 0.04); color: var(--text-primary); }
 .menu-item.danger:hover { color: var(--danger); }
 .menu-item svg { width: 18px; height: 18px; }
 

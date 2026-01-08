@@ -9,7 +9,7 @@ const router = Router()
 router.get('/dialogs', authMiddleware, (req, res) => {
   const dialogs = db.prepare(`
     SELECT 
-      u.id, u.name, u.avatar,
+      u.id, u.name, u.avatar, u.lastSeen,
       m.id as messageId, m.content, m.senderId, m.createdAt, m.mediaType,
       (SELECT COUNT(*) FROM messages 
        WHERE senderId = u.id AND receiverId = ? AND isRead = 0) as unreadCount
@@ -24,7 +24,12 @@ router.get('/dialogs', authMiddleware, (req, res) => {
   `).all(req.userId, req.userId, req.userId, req.userId)
 
   const result = dialogs.map(d => ({
-    user: { id: d.id, name: d.name, avatar: d.avatar },
+    user: { 
+      id: d.id, 
+      name: d.name, 
+      avatar: d.avatar,
+      isOnline: d.lastSeen && (Date.now() - new Date(d.lastSeen).getTime()) < 300000
+    },
     lastMessage: { 
       id: d.messageId, 
       content: d.content || getMediaPreview(d.mediaType), 

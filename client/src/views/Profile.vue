@@ -31,8 +31,7 @@
           <h1 v-if="user">{{ user.name }}</h1>
           <p v-if="user?.bio" class="bio">{{ user.bio }}</p>
           <div class="online-status" v-if="user && !isOwner">
-            <span v-if="user.isOnline" class="status online">в сети</span>
-            <span v-else class="status offline">{{ formatLastSeen(user.lastSeen) }}</span>
+            <span class="status">{{ user.isOnline ? 'в сети' : formatLastSeen(user.lastSeen) }}</span>
           </div>
           <div class="profile-meta">
             <span class="meta-item">{{ user?.friendsCount || 0 }} друзей</span>
@@ -84,13 +83,35 @@
         <div v-if="!videos.length" class="empty-state glass"><p>Нет видео</p></div>
       </div>
 
-      <div v-else-if="activeTab === 'friends'" class="friends-grid">
+      <div v-else-if="activeTab === 'friends'" class="friends-section">
         <div v-if="friendsLoading" class="loading-state"><div class="spinner"></div></div>
-        <div v-else-if="!friendsList.length" class="empty-state glass"><p>Нет друзей</p></div>
-        <router-link v-else v-for="friend in friendsList" :key="friend.id" :to="`/profile/${friend.id}`" class="friend-card glass">
-          <img :src="friend.avatar || '/default-avatar.svg'" class="avatar avatar-lg" alt="" @error="handleAvatarError">
-          <span class="friend-name">{{ friend.name }}</span>
-        </router-link>
+        <template v-else>
+          <div v-if="onlineFriends.length" class="friends-group">
+            <h3 class="group-title">Онлайн <span class="count">{{ onlineFriends.length }}</span></h3>
+            <div class="friends-list-view">
+              <router-link v-for="friend in onlineFriends" :key="friend.id" :to="`/profile/${friend.id}`" class="friend-row">
+                <div class="friend-avatar-wrap">
+                  <img :src="friend.avatar || '/default-avatar.svg'" class="avatar" alt="" @error="handleAvatarError">
+                  <span class="online-indicator"></span>
+                </div>
+                <span class="friend-name">{{ friend.name }}</span>
+              </router-link>
+            </div>
+          </div>
+          <div class="friends-group">
+            <h3 class="group-title">Все друзья <span class="count">{{ friendsList.length }}</span></h3>
+            <div v-if="!friendsList.length" class="empty-state glass"><p>Нет друзей</p></div>
+            <div v-else class="friends-list-view">
+              <router-link v-for="friend in friendsList" :key="friend.id" :to="`/profile/${friend.id}`" class="friend-row">
+                <div class="friend-avatar-wrap">
+                  <img :src="friend.avatar || '/default-avatar.svg'" class="avatar" alt="" @error="handleAvatarError">
+                  <span v-if="friend.isOnline" class="online-indicator"></span>
+                </div>
+                <span class="friend-name">{{ friend.name }}</span>
+              </router-link>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -186,6 +207,7 @@ const friendsList = ref([])
 const friendsLoading = ref(false)
 
 const isOwner = computed(() => authStore.user?.id === user.value?.id)
+const onlineFriends = computed(() => friendsList.value.filter(f => f.isOnline))
 const userAvatar = computed(() => user.value?.avatar || '/default-avatar.svg')
 const coverStyle = computed(() => user.value?.cover ? { backgroundImage: `url(${user.value.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {})
 
@@ -303,26 +325,24 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 <style scoped>
 .profile-page { min-height: 100vh; padding-left: var(--sidebar-width); }
 .profile-header { position: relative; padding: 20px; }
-.back-btn { position: absolute; top: 32px; left: 32px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10; color: var(--text-primary); background: rgba(35, 35, 35, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-xl); }
+.back-btn { position: absolute; top: 32px; left: 32px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10; color: var(--text-primary); background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl); }
 .back-btn svg { width: 20px; height: 20px; }
-.profile-cover { height: 200px; border-radius: var(--radius-2xl); overflow: hidden; position: relative; background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%); }
+.profile-cover { height: 200px; border-radius: var(--radius-2xl); overflow: hidden; position: relative; background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%); }
 .cover-gradient { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5)); }
 .cover-edit { position: absolute; bottom: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); }
 .cover-edit:hover { background: rgba(0,0,0,0.7); }
 .cover-edit svg { width: 20px; height: 20px; color: white; }
-.profile-info { max-width: 700px; margin: -60px auto 0; padding: 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; background: rgba(35, 35, 35, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-xl); }
+.profile-info { max-width: 700px; margin: -60px auto 0; padding: 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; background: rgba(18, 18, 18, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: var(--radius-xl); }
 .profile-avatar-wrap { position: relative; flex-shrink: 0; }
 .avatar-xl { border: 4px solid var(--bg-primary); }
-.avatar-edit { position: absolute; bottom: 4px; right: 4px; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.avatar-edit:hover { background: rgba(255, 255, 255, 0.15); }
+.avatar-edit { position: absolute; bottom: 4px; right: 4px; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.avatar-edit:hover { background: rgba(255, 255, 255, 0.08); }
 .avatar-edit svg { width: 16px; height: 16px; color: var(--text-secondary); }
 .profile-details { flex: 1; min-width: 200px; }
 .profile-details h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
 .bio { color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
 .online-status { margin-bottom: 8px; }
-.status { font-size: 14px; }
-.status.online { color: #4ade80; }
-.status.offline { color: var(--text-muted); }
+.status { font-size: 14px; color: var(--text-muted); }
 .profile-meta { display: flex; gap: 20px; }
 .meta-item { color: var(--text-muted); font-size: 14px; }
 .profile-actions { display: flex; gap: 10px; flex-shrink: 0; }
@@ -330,7 +350,7 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; }
 .liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all var(--transition); }
 .liquid-tab:hover { color: var(--text-secondary); }
-.liquid-tab.active { color: var(--text-primary); background: rgba(255,255,255,0.1); }
+.liquid-tab.active { color: var(--text-primary); background: rgba(255,255,255,0.05); }
 .profile-posts { display: flex; flex-direction: column; gap: 16px; }
 .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .media-item { aspect-ratio: 1; overflow: hidden; border-radius: var(--radius); cursor: pointer; position: relative; }
@@ -344,7 +364,7 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 .modal-header h2 { font-size: 18px; font-weight: 600; }
 .close-btn { color: var(--text-muted); padding: 4px; border-radius: var(--radius); }
-.close-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-primary); }
+.close-btn:hover { background: rgba(255, 255, 255, 0.04); color: var(--text-primary); }
 .close-btn svg { width: 20px; height: 20px; }
 .modal-body { padding: 24px; }
 .form-group { margin-bottom: 20px; }
@@ -358,11 +378,11 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .cover-controls span { color: var(--text-secondary); font-size: 14px; }
 .cover-controls input[type="range"] { flex: 1; }
 .media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
-.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.1); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
-.viewer-close:hover { background: rgba(255,255,255,0.2); }
+.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
+.viewer-close:hover { background: rgba(255,255,255,0.1); }
 .viewer-close svg { width: 24px; height: 24px; }
-.viewer-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; }
-.viewer-nav:hover { background: rgba(255,255,255,0.2); }
+.viewer-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; }
+.viewer-nav:hover { background: rgba(255,255,255,0.1); }
 .viewer-nav.prev { left: 20px; }
 .viewer-nav.next { right: 20px; }
 .viewer-nav svg { width: 24px; height: 24px; }
@@ -370,11 +390,16 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
-.friends-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
-.friend-card { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 16px; text-decoration: none; color: inherit; transition: all var(--transition); }
-.friend-card:hover { transform: translateY(-2px); }
-.friend-card .avatar-lg { width: 72px; height: 72px; }
-.friend-name { font-weight: 500; font-size: 14px; text-align: center; }
+.friends-section { display: flex; flex-direction: column; gap: 24px; }
+.friends-group { }
+.group-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.group-title .count { color: var(--text-secondary); }
+.friends-list-view { display: flex; flex-direction: column; gap: 4px; }
+.friend-row { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: var(--radius-lg); text-decoration: none; color: inherit; transition: background var(--transition); }
+.friend-row:hover { background: rgba(255,255,255,0.03); }
+.friend-avatar-wrap { position: relative; flex-shrink: 0; }
+.online-indicator { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; background: #3b82f6; border: 3px solid var(--bg-primary); border-radius: 50%; }
+.friend-name { font-weight: 500; font-size: 15px; }
 .loading-state { display: flex; justify-content: center; padding: 40px; grid-column: 1 / -1; }
 .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

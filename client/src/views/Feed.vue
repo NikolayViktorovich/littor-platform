@@ -230,7 +230,7 @@ onUnmounted(() => {
 .empty-icon {
   width: 64px;
   height: 64px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
@@ -282,8 +282,8 @@ onUnmounted(() => {
 }
 
 .media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
-.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.1); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
-.viewer-close:hover { background: rgba(255,255,255,0.2); }
+.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
+.viewer-close:hover { background: rgba(255,255,255,0.1); }
 .viewer-close svg { width: 24px; height: 24px; }
 .viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }

@@ -152,14 +152,21 @@ router.get('/:id/videos', authMiddleware, (req, res) => {
 
 router.get('/:id/friends', authMiddleware, (req, res) => {
   const friends = db.prepare(`
-    SELECT u.id, u.name, u.avatar
+    SELECT u.id, u.name, u.avatar, u.lastSeen
     FROM users u
     JOIN friendships f ON (f.userId = u.id OR f.friendId = u.id)
     WHERE (f.userId = ? OR f.friendId = ?) 
       AND f.status = 'accepted'
       AND u.id != ?
   `).all(req.params.id, req.params.id, req.params.id)
-  res.json(friends)
+  
+  // Add isOnline status
+  const result = friends.map(f => ({
+    ...f,
+    isOnline: f.lastSeen && (Date.now() - new Date(f.lastSeen).getTime()) < 300000
+  }))
+  
+  res.json(result)
 })
 
 export default router

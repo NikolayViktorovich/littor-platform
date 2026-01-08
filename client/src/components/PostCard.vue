@@ -496,7 +496,7 @@ const vClickOutside = {
 }
 
 .post-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -532,7 +532,7 @@ const vClickOutside = {
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
 }
 
@@ -542,7 +542,7 @@ const vClickOutside = {
 
 .dropdown-item.danger:hover {
   color: #ff5555;
-  background: rgba(255, 80, 80, 0.1);
+  background: rgba(255, 80, 80, 0.05);
 }
 
 .dropdown-item svg {
@@ -583,7 +583,7 @@ const vClickOutside = {
   margin-bottom: 14px;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .post-image {
@@ -857,12 +857,12 @@ const vClickOutside = {
 
 .send-inside {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   transition: all 0.2s ease;
 }
 
 .send-inside:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .send-inside:disabled {
@@ -872,13 +872,13 @@ const vClickOutside = {
 
 .cancel-inside {
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   transition: all 0.2s ease;
   animation: morph-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .cancel-inside:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
@@ -899,14 +899,14 @@ const vClickOutside = {
   align-items: center;
   justify-content: center;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.2s ease, opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .outside-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .outside-btn:disabled {
