@@ -71,9 +71,10 @@
 
     <p v-if="post.content" class="post-content">{{ post.content }}</p>
     
-    <div v-if="post.image" class="post-image-wrap">
+    <div v-if="post.image" class="post-image-wrap" @click="openMedia">
       <img :src="postImage" class="post-image" alt="" @error="handleImageError" @load="imageLoaded = true">
-      <div v-if="!imageLoaded" class="image-placeholder skeleton"></div>
+      <video v-if="isVideo" :src="postImage" class="post-image post-video" controls @click.stop></video>
+      <div v-if="!imageLoaded && !isVideo" class="image-placeholder skeleton"></div>
     </div>
 
     <div class="post-stats" v-if="post.commentsCount">
@@ -203,7 +204,7 @@ const props = defineProps({
   post: { type: Object, required: true }
 })
 
-const emit = defineEmits(['delete', 'update'])
+const emit = defineEmits(['delete', 'update', 'open-media'])
 
 const authStore = useAuthStore()
 const showComments = ref(false)
@@ -243,6 +244,17 @@ const postImage = computed(() => {
   if (!img) return null
   return img
 })
+
+const isVideo = computed(() => {
+  const img = props.post.image
+  if (!img) return false
+  return img.match(/\.(mp4|webm|mov)$/i)
+})
+
+function openMedia() {
+  if (isVideo.value) return
+  emit('open-media', props.post.image, 'image', 0, [{ src: props.post.image, type: 'image' }])
+}
 
 function getAvatarUrl(avatar) {
   if (!avatar) return '/default-avatar.svg'
@@ -579,6 +591,19 @@ const vClickOutside = {
   max-height: 500px;
   object-fit: cover;
   display: block;
+  cursor: pointer;
+}
+
+.post-video {
+  cursor: default;
+}
+
+.post-image-wrap img + video {
+  display: none;
+}
+
+.post-image-wrap:has(video) img {
+  display: none;
 }
 
 .image-placeholder {

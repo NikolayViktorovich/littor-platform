@@ -22,6 +22,7 @@
           :post="post"
           @delete="deletePost"
           @update="updatePost"
+          @open-media="openMedia"
         />
       </TransitionGroup>
       
@@ -39,6 +40,15 @@
         <div v-if="loading" class="spinner"></div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showMediaViewer" class="media-viewer-overlay" @click.self="closeMedia">
+          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <div class="viewer-content"><img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt=""><video v-else :src="mediaViewerSrc" controls autoplay></video></div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -51,47 +61,76 @@ import { cache } from '../stores/cache'
 import api from '../api'
 
 const notifications = useNotificationsStore()
-const posts = ref(cache.feed.posts)
+const posts = ref([])
 const loading = ref(false)
-const hasMore = ref(cache.feed.hasMore)
-const page = ref(cache.feed.page)
+const hasMore = ref(true)
+const page = ref(1)
 const loadMore = ref(null)
 let observer
+let pollInterval = null
 
-async function fetchPosts() {
-  if (loading.value || !hasMore.value) return
+const showMediaViewer = ref(false)
+const mediaViewerSrc = ref('')
+const mediaViewerType = ref('image')
+
+function openMedia(src, type) { mediaViewerSrc.value = src; mediaViewerType.value = type; showMediaViewer.value = true }
+function closeMedia() { showMediaViewer.value = false }
+
+async function fetchPosts(reset = false) {
+  if (loading.value) return
+  if (!reset && !hasMore.value) return
   
   loading.value = true
   try {
-    const res = await api.get('/posts', { params: { page: page.value, limit: 10 } })
-    posts.value.push(...res.data.posts)
-    hasMore.value = res.data.hasMore
-    page.value++
+    const currentPage = reset ? 1 : page.value
+    const res = await api.get('/posts', { params: { page: currentPage, limit: 10 } })
     
-    cache.feed.posts = posts.value
-    cache.feed.page = page.value
-    cache.feed.hasMore = hasMore.value
-    cache.feed.loaded = true
+    if (reset) {
+      posts.value = res.data.posts
+      page.value = 2
+    } else {
+      posts.value.push(...res.data.posts)
+      page.value++
+    }
+    hasMore.value = res.data.hasMore
   } catch (err) {
-    notifications.error(err.message)
+    console.log('Failed to fetch posts:', err)
   } finally {
     loading.value = false
   }
 }
 
+async function pollNewPosts() {
+  try {
+    const res = await api.get('/posts', { params: { page: 1, limit: 5 } })
+    const newPosts = res.data.posts
+    
+    // Check for new posts that we don't have
+    for (const newPost of newPosts) {
+      const exists = posts.value.find(p => p.id === newPost.id)
+      if (!exists) {
+        posts.value.unshift(newPost)
+      } else {
+        // Update existing post (likes, comments count)
+        const idx = posts.value.findIndex(p => p.id === newPost.id)
+        if (idx !== -1) {
+          posts.value[idx] = { ...posts.value[idx], likesCount: newPost.likesCount, commentsCount: newPost.commentsCount }
+        }
+      }
+    }
+  } catch {}
+}
+
 function addPost(post) {
   posts.value.unshift(post)
-  cache.feed.posts = posts.value
 }
 
 async function deletePost(id) {
   try {
     await api.delete(`/posts/${id}`)
     posts.value = posts.value.filter(p => p.id !== id)
-    cache.feed.posts = posts.value
-    notifications.success('Запись удалена')
   } catch (err) {
-    notifications.error(err.message)
+    console.log('Failed to delete post:', err)
   }
 }
 
@@ -99,14 +138,14 @@ function updatePost(updated) {
   const idx = posts.value.findIndex(p => p.id === updated.id)
   if (idx !== -1) {
     posts.value[idx] = updated
-    cache.feed.posts = posts.value
   }
 }
 
 onMounted(() => {
-  if (!cache.feed.loaded) {
-    fetchPosts()
-  }
+  fetchPosts(true)
+  
+  // Poll for new posts every 5 seconds
+  pollInterval = setInterval(pollNewPosts, 5000)
   
   observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) fetchPosts()
@@ -115,7 +154,10 @@ onMounted(() => {
   if (loadMore.value) observer.observe(loadMore.value)
 })
 
-onUnmounted(() => observer?.disconnect())
+onUnmounted(() => {
+  observer?.disconnect()
+  if (pollInterval) clearInterval(pollInterval)
+})
 </script>
 
 <style scoped>
@@ -238,4 +280,12 @@ onUnmounted(() => observer?.disconnect())
     padding-left: 20px;
   }
 }
+
+.media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
+.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.1); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
+.viewer-close:hover { background: rgba(255,255,255,0.2); }
+.viewer-close svg { width: 24px; height: 24px; }
+.viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+.modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
 </style>

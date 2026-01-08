@@ -2,13 +2,17 @@
   <div class="profile-page">
     <div class="profile-header">
       <button @click="$router.back()" class="back-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
 
-      <div class="profile-cover">
+      <div class="profile-cover" :style="coverStyle">
         <div class="cover-gradient"></div>
+        <label v-if="isOwner" class="cover-edit">
+          <input type="file" accept="image/*" @change="selectCover" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+          </svg>
+        </label>
       </div>
 
       <div class="profile-info">
@@ -25,8 +29,11 @@
 
         <div class="profile-details">
           <h1 v-if="user">{{ user.name }}</h1>
-          <div v-else class="skeleton" style="height: 28px; width: 150px; margin-bottom: 8px;"></div>
           <p v-if="user?.bio" class="bio">{{ user.bio }}</p>
+          <div class="online-status" v-if="user && !isOwner">
+            <span v-if="user.isOnline" class="status online">в сети</span>
+            <span v-else class="status offline">{{ formatLastSeen(user.lastSeen) }}</span>
+          </div>
           <div class="profile-meta">
             <span class="meta-item">{{ user?.friendsCount || 0 }} друзей</span>
             <span class="meta-item">{{ user?.postsCount || 0 }} записей</span>
@@ -50,56 +57,79 @@
 
     <div class="profile-content" v-if="user">
       <div class="liquid-tabs">
-        <button class="liquid-tab active">Записи</button>
-        <button class="liquid-tab">Фото</button>
-        <button class="liquid-tab">Видео</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="activeTab = 'posts'">Записи</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="switchTab('photos')">Фото</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="switchTab('videos')">Видео</button>
       </div>
 
-      <div class="profile-posts">
+      <div v-if="activeTab === 'posts'" class="profile-posts">
         <CreatePost v-if="isOwner" @created="addPost" />
-        
-        <PostCard 
-          v-for="post in posts" 
-          :key="post.id" 
-          :post="post"
-          @delete="deletePost"
-          @update="updatePost"
-        />
-        
-        <div v-if="!posts.length" class="empty-state glass">
-          <p>Нет записей</p>
+        <PostCard v-for="post in posts" :key="post.id" :post="post" @delete="deletePost" @update="updatePost" @open-media="openMedia"/>
+        <div v-if="!posts.length" class="empty-state glass"><p>Нет записей</p></div>
+      </div>
+
+      <div v-else-if="activeTab === 'photos'" class="media-grid">
+        <div v-for="(photo, idx) in photos" :key="photo.id" class="media-item" @click="openMedia(photo.image, 'image', idx, photos.map(p => ({ src: p.image, type: 'image' })))">
+          <img :src="photo.image" alt="">
         </div>
+        <div v-if="!photos.length" class="empty-state glass"><p>Нет фотографий</p></div>
+      </div>
+
+      <div v-else-if="activeTab === 'videos'" class="media-grid">
+        <div v-for="(video, idx) in videos" :key="video.id" class="media-item video-item" @click="openMedia(video.video, 'video', idx, videos.map(v => ({ src: v.video, type: 'video' })))">
+          <video :src="video.video" muted></video>
+          <div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+        </div>
+        <div v-if="!videos.length" class="empty-state glass"><p>Нет видео</p></div>
       </div>
     </div>
 
-    <Teleport to="body" v-if="user">
+    <Teleport to="body">
       <Transition name="modal">
         <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
           <div class="modal glass-modal">
-            <div class="modal-header">
-              <h2>Редактировать профиль</h2>
-              <button @click="showEditModal = false" class="close-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
+            <div class="modal-header"><h2>Редактировать профиль</h2>
+              <button @click="showEditModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <form @submit.prevent="saveProfile" class="modal-body">
-              <div class="form-group">
-                <label>Имя</label>
-                <input v-model="editForm.name" placeholder="Ваше имя" required>
-              </div>
-              <div class="form-group">
-                <label>О себе</label>
-                <textarea v-model="editForm.bio" placeholder="Расскажите о себе" rows="3"></textarea>
-              </div>
+              <div class="form-group"><label>Имя</label><input v-model="editForm.name" required></div>
+              <div class="form-group"><label>О себе</label><textarea v-model="editForm.bio" rows="3"></textarea></div>
               <div class="modal-actions">
                 <button type="button" @click="showEditModal = false" class="btn btn-secondary">Отмена</button>
                 <button type="submit" class="btn btn-primary">Сохранить</button>
               </div>
             </form>
           </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div v-if="showCoverEditor" class="modal-overlay" @click.self="cancelCover">
+          <div class="cover-editor glass-modal">
+            <div class="modal-header"><h2>Редактировать обложку</h2>
+              <button @click="cancelCover" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="cover-preview-wrap">
+              <div class="cover-preview"><img :src="coverPreview" :style="{ transform: `scale(${coverScale}) translate(${coverX}px, ${coverY}px)` }" @mousedown="startDrag" draggable="false"></div>
+            </div>
+            <div class="cover-controls"><span>Масштаб</span><input type="range" v-model="coverScale" min="1" max="3" step="0.1"></div>
+            <div class="modal-actions">
+              <button type="button" @click="cancelCover" class="btn btn-secondary">Отмена</button>
+              <button type="button" @click="saveCover" class="btn btn-primary">Сохранить</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div v-if="showMediaViewer" class="media-viewer-overlay" @click.self="closeMedia">
+          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button v-if="mediaList.length > 1" class="viewer-nav prev" @click="prevMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div class="viewer-content">
+            <img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt="">
+            <video v-else :src="mediaViewerSrc" controls autoplay></video>
+          </div>
+          <button v-if="mediaList.length > 1" class="viewer-nav next" @click="nextMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
       </Transition>
     </Teleport>
@@ -122,57 +152,104 @@ const notifications = useNotificationsStore()
 
 const user = ref(null)
 const posts = ref([])
+const photos = ref([])
+const videos = ref([])
+const activeTab = ref('posts')
 const showEditModal = ref(false)
 const editForm = reactive({ name: '', bio: '' })
 
+const showCoverEditor = ref(false)
+const coverPreview = ref(null)
+const coverFile = ref(null)
+const coverScale = ref(1)
+const coverX = ref(0)
+const coverY = ref(0)
+let isDragging = false, dragStartX = 0, dragStartY = 0, startX = 0, startY = 0
+
+const showMediaViewer = ref(false)
+const mediaViewerSrc = ref('')
+const mediaViewerType = ref('image')
+const mediaIndex = ref(0)
+const mediaList = ref([])
+
 const isOwner = computed(() => authStore.user?.id === user.value?.id)
-const userAvatar = computed(() => {
-  const avatar = user.value?.avatar
-  if (!avatar) return '/default-avatar.svg'
-  return avatar
-})
+const userAvatar = computed(() => user.value?.avatar || '/default-avatar.svg')
+const coverStyle = computed(() => user.value?.cover ? { backgroundImage: `url(${user.value.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {})
 
 function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
 
+function formatLastSeen(lastSeen) {
+  if (!lastSeen) return 'был(а) давно'
+  const d = new Date(lastSeen), now = new Date(), diff = (now - d) / 1000
+  if (diff < 60) return 'был(а) только что'
+  if (diff < 3600) return `был(а) ${Math.floor(diff / 60)} мин назад`
+  if (diff < 86400) return `был(а) ${Math.floor(diff / 3600)} ч назад`
+  return `был(а) ${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`
+}
+
 async function fetchProfile() {
   const id = route.params.id || authStore.user?.id
-  
-  if (cache.profiles[id]) {
-    user.value = cache.profiles[id].user
-    posts.value = cache.profiles[id].posts
-    editForm.name = user.value.name
-    editForm.bio = user.value.bio || ''
-  }
-  
   try {
-    const [userRes, postsRes] = await Promise.all([
-      api.get(`/users/${id}`),
-      api.get(`/users/${id}/posts`)
-    ])
+    const [userRes, postsRes] = await Promise.all([api.get(`/users/${id}`), api.get(`/users/${id}/posts`)])
     user.value = userRes.data
     posts.value = postsRes.data
     editForm.name = user.value.name
     editForm.bio = user.value.bio || ''
-    
-    cache.profiles[id] = { user: userRes.data, posts: postsRes.data }
-  } catch (err) {
-    notifications.error(err.message)
-  }
+  } catch (err) { notifications.error(err.message) }
+}
+
+async function fetchPhotos() {
+  const id = route.params.id || authStore.user?.id
+  try { const res = await api.get(`/users/${id}/photos`); photos.value = res.data } catch {}
+}
+
+async function fetchVideos() {
+  const id = route.params.id || authStore.user?.id
+  try { const res = await api.get(`/users/${id}/videos`); videos.value = res.data } catch {}
+}
+
+function switchTab(tab) {
+  activeTab.value = tab
+  if (tab === 'photos' && !photos.value.length) fetchPhotos()
+  if (tab === 'videos' && !videos.value.length) fetchVideos()
 }
 
 async function uploadAvatar(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  const formData = new FormData()
-  formData.append('avatar', file)
+  const file = e.target.files[0]; if (!file) return
+  const formData = new FormData(); formData.append('avatar', file)
   try {
     const res = await api.post('/users/avatar', formData)
     user.value.avatar = res.data.avatar
     authStore.updateUser({ avatar: res.data.avatar })
-    notifications.success('Аватар обновлён')
-  } catch (err) {
-    notifications.error(err.message)
-  }
+  } catch (err) { notifications.error(err.message) }
+}
+
+function selectCover(e) {
+  const file = e.target.files[0]; if (!file) return
+  coverFile.value = file
+  coverPreview.value = URL.createObjectURL(file)
+  coverScale.value = 1; coverX.value = 0; coverY.value = 0
+  showCoverEditor.value = true
+}
+
+function startDrag(e) {
+  isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; startX = coverX.value; startY = coverY.value
+  document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', stopDrag)
+}
+function onDrag(e) { if (!isDragging) return; coverX.value = startX + (e.clientX - dragStartX) / coverScale.value; coverY.value = startY + (e.clientY - dragStartY) / coverScale.value }
+function stopDrag() { isDragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag) }
+
+function cancelCover() { showCoverEditor.value = false; if (coverPreview.value) URL.revokeObjectURL(coverPreview.value); coverFile.value = null; coverPreview.value = null }
+
+async function saveCover() {
+  if (!coverFile.value) return
+  const formData = new FormData(); formData.append('cover', coverFile.value)
+  try {
+    const res = await api.post('/users/cover', formData)
+    user.value.cover = res.data.cover
+    showCoverEditor.value = false
+    if (coverPreview.value) URL.revokeObjectURL(coverPreview.value)
+  } catch (err) { notifications.error(err.message) }
 }
 
 async function saveProfile() {
@@ -181,311 +258,100 @@ async function saveProfile() {
     user.value = { ...user.value, ...res.data }
     authStore.updateUser(res.data)
     showEditModal.value = false
-    notifications.success('Профиль обновлён')
-  } catch (err) {
-    notifications.error(err.message)
-  }
-}
-
-async function addFriend() {
-  try {
-    await api.post(`/friends/request/${user.value.id}`)
-    user.value.friendStatus = 'pending'
-    notifications.success('Заявка отправлена')
   } catch (err) { notifications.error(err.message) }
 }
 
-async function acceptFriend() {
-  try {
-    await api.post(`/friends/accept/${user.value.id}`)
-    user.value.friendStatus = 'friends'
-    notifications.success('Заявка принята')
-  } catch (err) { notifications.error(err.message) }
-}
-
-async function removeFriend() {
-  try {
-    await api.delete(`/friends/${user.value.id}`)
-    user.value.friendStatus = 'none'
-    notifications.success('Удалён из друзей')
-  } catch (err) { notifications.error(err.message) }
-}
+async function addFriend() { try { await api.post(`/friends/request/${user.value.id}`); user.value.friendStatus = 'pending' } catch (err) { notifications.error(err.message) } }
+async function acceptFriend() { try { await api.post(`/friends/accept/${user.value.id}`); user.value.friendStatus = 'friends' } catch (err) { notifications.error(err.message) } }
+async function removeFriend() { try { await api.delete(`/friends/${user.value.id}`); user.value.friendStatus = 'none' } catch (err) { notifications.error(err.message) } }
 
 function addPost(post) { posts.value.unshift(post) }
-async function deletePost(id) {
-  try {
-    await api.delete(`/posts/${id}`)
-    posts.value = posts.value.filter(p => p.id !== id)
-  } catch (err) { notifications.error(err.message) }
-}
-function updatePost(updated) {
-  const idx = posts.value.findIndex(p => p.id === updated.id)
-  if (idx !== -1) posts.value[idx] = updated
-}
+async function deletePost(id) { try { await api.delete(`/posts/${id}`); posts.value = posts.value.filter(p => p.id !== id) } catch (err) { notifications.error(err.message) } }
+function updatePost(updated) { const idx = posts.value.findIndex(p => p.id === updated.id); if (idx !== -1) posts.value[idx] = updated }
 
-watch(() => route.params.id, fetchProfile, { immediate: true })
+function openMedia(src, type, idx = 0, list = []) { mediaViewerSrc.value = src; mediaViewerType.value = type; mediaIndex.value = idx; mediaList.value = list; showMediaViewer.value = true }
+function closeMedia() { showMediaViewer.value = false }
+function prevMedia() { if (mediaIndex.value > 0) { mediaIndex.value--; const item = mediaList.value[mediaIndex.value]; mediaViewerSrc.value = item.src; mediaViewerType.value = item.type } }
+function nextMedia() { if (mediaIndex.value < mediaList.value.length - 1) { mediaIndex.value++; const item = mediaList.value[mediaIndex.value]; mediaViewerSrc.value = item.src; mediaViewerType.value = item.type } }
+
+watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; fetchProfile() }, { immediate: true })
 </script>
 
 <style scoped>
-.profile-page {
-  min-height: 100vh;
-  padding-left: var(--sidebar-width);
-}
-
-.profile-header {
-  position: relative;
-  padding: 20px;
-}
-
-.back-btn {
-  position: absolute;
-  top: 32px;
-  left: 32px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  color: var(--text-primary);
-  background: rgba(35, 35, 35, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-xl);
-}
-
-.back-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.profile-cover {
-  height: 200px;
-  border-radius: var(--radius-2xl);
-  overflow: hidden;
-  position: relative;
-}
-
-.cover-gradient {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  opacity: 1;
-}
-
-.profile-info {
-  max-width: 700px;
-  margin: -60px auto 0;
-  padding: 24px;
-  position: relative;
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  background: rgba(35, 35, 35, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow);
-}
-
-.profile-avatar-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.avatar-xl {
-  border: 4px solid var(--bg-primary);
-  box-shadow: var(--glass-shadow);
-}
-
-.avatar-edit {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.avatar-edit:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.avatar-edit svg {
-  width: 16px;
-  height: 16px;
-  color: var(--text-secondary);
-}
-
-.profile-details {
-  flex: 1;
-  min-width: 200px;
-}
-
-.profile-details h1 {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.bio {
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  line-height: 1.5;
-}
-
-.profile-meta {
-  display: flex;
-  gap: 20px;
-}
-
-.meta-item {
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.profile-content {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 0 20px 40px;
-}
-
-.liquid-tabs {
-  margin-bottom: 20px;
-  justify-content: center;
-  display: flex;
-}
-
-.profile-posts {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text-secondary);
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 20px;
-  will-change: opacity;
-}
-
-.modal {
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  will-change: transform, opacity;
-  transform: translateZ(0);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.modal-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.close-btn {
-  color: var(--text-muted);
-  padding: 4px;
-  border-radius: var(--radius);
-  transition: all var(--transition);
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-}
-
-.close-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 24px;
-}
-
-.modal-enter-active {
-  transition: opacity 0.1s ease-out;
-}
-
-.modal-enter-active .modal {
-  transition: transform 0.1s ease-out;
-}
-
-.modal-leave-active {
-  transition: opacity 0.08s ease-in;
-}
-
-.modal-leave-active .modal {
-  transition: transform 0.08s ease-in;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal,
-.modal-leave-to .modal {
-  transform: translateZ(0) scale(0.97);
-}
-
+.profile-page { min-height: 100vh; padding-left: var(--sidebar-width); }
+.profile-header { position: relative; padding: 20px; }
+.back-btn { position: absolute; top: 32px; left: 32px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10; color: var(--text-primary); background: rgba(35, 35, 35, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-xl); }
+.back-btn svg { width: 20px; height: 20px; }
+.profile-cover { height: 200px; border-radius: var(--radius-2xl); overflow: hidden; position: relative; background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%); }
+.cover-gradient { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5)); }
+.cover-edit { position: absolute; bottom: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); }
+.cover-edit:hover { background: rgba(0,0,0,0.7); }
+.cover-edit svg { width: 20px; height: 20px; color: white; }
+.profile-info { max-width: 700px; margin: -60px auto 0; padding: 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; background: rgba(35, 35, 35, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-xl); }
+.profile-avatar-wrap { position: relative; flex-shrink: 0; }
+.avatar-xl { border: 4px solid var(--bg-primary); }
+.avatar-edit { position: absolute; bottom: 4px; right: 4px; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.avatar-edit:hover { background: rgba(255, 255, 255, 0.15); }
+.avatar-edit svg { width: 16px; height: 16px; color: var(--text-secondary); }
+.profile-details { flex: 1; min-width: 200px; }
+.profile-details h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.bio { color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
+.online-status { margin-bottom: 8px; }
+.status { font-size: 14px; }
+.status.online { color: #4ade80; }
+.status.offline { color: var(--text-muted); }
+.profile-meta { display: flex; gap: 20px; }
+.meta-item { color: var(--text-muted); font-size: 14px; }
+.profile-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.profile-content { max-width: 600px; margin: 0 auto; padding: 0 20px 40px; }
+.liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; }
+.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all var(--transition); }
+.liquid-tab:hover { color: var(--text-secondary); }
+.liquid-tab.active { color: var(--text-primary); background: rgba(255,255,255,0.1); }
+.profile-posts { display: flex; flex-direction: column; gap: 16px; }
+.media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.media-item { aspect-ratio: 1; overflow: hidden; border-radius: var(--radius); cursor: pointer; position: relative; }
+.media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+.media-item:hover img, .media-item:hover video { transform: scale(1.05); }
+.video-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
+.play-icon svg { width: 40px; height: 40px; color: white; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); grid-column: 1 / -1; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+.modal { width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.modal-header h2 { font-size: 18px; font-weight: 600; }
+.close-btn { color: var(--text-muted); padding: 4px; border-radius: var(--radius); }
+.close-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-primary); }
+.close-btn svg { width: 20px; height: 20px; }
+.modal-body { padding: 24px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.cover-editor { width: 100%; max-width: 600px; }
+.cover-preview-wrap { padding: 20px; }
+.cover-preview { width: 100%; height: 200px; overflow: hidden; border-radius: var(--radius-lg); cursor: move; }
+.cover-preview img { width: 100%; height: 100%; object-fit: cover; user-select: none; }
+.cover-controls { padding: 0 20px 20px; display: flex; align-items: center; gap: 12px; }
+.cover-controls span { color: var(--text-secondary); font-size: 14px; }
+.cover-controls input[type="range"] { flex: 1; }
+.media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
+.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.1); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
+.viewer-close:hover { background: rgba(255,255,255,0.2); }
+.viewer-close svg { width: 24px; height: 24px; }
+.viewer-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; }
+.viewer-nav:hover { background: rgba(255,255,255,0.2); }
+.viewer-nav.prev { left: 20px; }
+.viewer-nav.next { right: 20px; }
+.viewer-nav svg { width: 24px; height: 24px; }
+.viewer-content { max-width: 90vw; max-height: 90vh; }
+.viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+.modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
 @media (max-width: 768px) {
   .profile-page { padding-left: 0; }
-  .back-btn { left: 32px; top: 32px; }
   .profile-info { flex-direction: column; align-items: center; text-align: center; }
   .profile-meta { justify-content: center; }
   .profile-actions { width: 100%; justify-content: center; }
+  .media-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

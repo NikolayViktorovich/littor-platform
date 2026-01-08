@@ -2,50 +2,28 @@
   <div class="messages-page">
     <div class="messages-container">
       <div class="dialogs-panel glass">
-        <div class="dialogs-header">
-          <h1>Сообщения</h1>
-        </div>
-
+        <div class="dialogs-header"><h1>Сообщения</h1></div>
         <div class="dialogs-list">
-          <div v-if="loading" class="loading-state">
-            <div class="spinner"></div>
-          </div>
-          
-          <div v-else-if="!dialogs.length" class="empty-state">
-            <p>Нет диалогов</p>
-          </div>
-          
-          <div 
-            v-else
-            v-for="dialog in dialogs" 
-            :key="dialog.user.id"
-            @click="selectDialog(dialog.user.id)"
-            class="dialog-item"
-            :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0 }"
-          >
+          <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
+          <div v-else-if="!dialogs.length" class="empty-state"><p>Нет диалогов</p></div>
+          <div v-else v-for="dialog in dialogs" :key="dialog.user.id" @click="selectDialog(dialog.user.id)" class="dialog-item" :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0 }">
             <div class="dialog-avatar-wrap">
               <img :src="getAvatarUrl(dialog.user.avatar)" class="avatar" alt="" @error="handleAvatarError">
+              <span v-if="dialog.user.isOnline" class="online-dot"></span>
             </div>
             <div class="dialog-content">
               <div class="dialog-header">
                 <span class="dialog-name">{{ dialog.user.name }}</span>
                 <span class="dialog-time">{{ formatTime(dialog.lastMessage.createdAt) }}</span>
               </div>
-              <p class="dialog-preview">
-                <span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>
-                {{ dialog.lastMessage.content }}
-              </p>
+              <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content }}</p>
             </div>
           </div>
         </div>
       </div>
 
       <div v-if="!selectedUserId" class="chat-empty glass">
-        <div class="empty-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-        </div>
+        <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <h3>Ваши сообщения</h3>
         <p>Выберите диалог, чтобы начать общение</p>
       </div>
@@ -53,31 +31,26 @@
       <div v-else class="chat-panel glass">
         <div class="chat-header">
           <router-link v-if="chatUser" :to="`/profile/${chatUser.id}`" class="chat-user">
-            <img :src="getAvatarUrl(chatUser.avatar)" class="avatar" alt="" @error="handleAvatarError">
+            <div class="chat-avatar-wrap">
+              <img :src="getAvatarUrl(chatUser.avatar)" class="avatar" alt="" @error="handleAvatarError">
+              <span v-if="chatUser.isOnline" class="online-dot"></span>
+            </div>
             <div class="user-info">
               <span class="user-name">{{ chatUser.name }}</span>
-              <span class="user-status">в сети</span>
+              <span class="user-status" :class="{ online: chatUser.isOnline }">{{ chatUser.isOnline ? 'в сети' : formatLastSeen(chatUser.lastSeen) }}</span>
             </div>
           </router-link>
         </div>
 
         <div class="chat-messages" ref="messagesContainer">
-          <div v-if="chatLoading" class="loading-state">
-            <div class="spinner"></div>
-          </div>
+          <div v-if="chatLoading" class="loading-state"><div class="spinner"></div></div>
           <template v-else>
-            <div 
-              v-for="msg in messages" 
-              :key="msg.id" 
-              class="message"
-              :class="{ own: msg.senderId === authStore.user?.id }"
-            >
+            <div v-for="msg in messages" :key="msg.id" class="message" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded }" @contextmenu.prevent="openMsgMenu($event, msg)">
               <div class="message-bubble">
-                <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="">
+                <span v-if="msg.forwarded" class="forwarded-label">Переслано</span>
+                <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="" @click="openMediaViewer(msg.media, 'image')">
                 <video v-else-if="msg.mediaType === 'video'" :src="msg.media" class="message-media" controls></video>
-                <div v-else-if="msg.mediaType === 'circle'" class="circle-video" @click="toggleVideo($event)">
-                  <video :src="msg.media" class="circle-player"></video>
-                </div>
+                <div v-else-if="msg.mediaType === 'circle'" class="circle-video" @click="toggleVideo($event)"><video :src="msg.media" class="circle-player"></video></div>
                 <audio v-else-if="msg.mediaType === 'voice'" :src="msg.media" controls class="voice-message"></audio>
                 <p v-if="msg.content">{{ msg.content }}</p>
                 <span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span>
@@ -90,42 +63,22 @@
           <div v-if="mediaPreview" class="media-preview">
             <img v-if="mediaType === 'image'" :src="mediaPreview" alt="">
             <video v-else-if="mediaType === 'video' || mediaType === 'circle'" :src="mediaPreview" :class="{ circle: mediaType === 'circle' }"></video>
-            <div v-else-if="mediaType === 'voice'" class="voice-preview">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
-              <span>Голосовое сообщение</span>
-            </div>
-            <button @click="clearMedia" class="clear-media">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            <div v-else-if="mediaType === 'voice'" class="voice-preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><span>Голосовое</span></div>
+            <button @click="clearMedia" class="clear-media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
-
-          <div v-if="isRecording" class="recording-indicator">
-            <div class="recording-dot"></div>
-            <span>{{ formatRecTime(recordingTime) }}</span>
-            <button @click="cancelRecording" class="cancel-rec">Отмена</button>
-          </div>
-
+          <div v-if="isRecording" class="recording-indicator"><div class="recording-dot"></div><span>{{ formatRecTime(recordingTime) }}</span><button @click="cancelRecording" class="cancel-rec">Отмена</button></div>
           <form @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
             <div class="input-actions-left">
-              <label class="action-btn">
-                <input type="file" accept="image/*,video/*" @change="handleMediaSelect" hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              </label>
-              <button type="button" class="action-btn" @click="startCircle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
+              <label class="action-btn"><input type="file" accept="image/*,video/*" @change="handleMediaSelect" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></label>
+              <button type="button" class="action-btn" @click="startCircle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
             <div class="input-wrap">
               <input v-model="newMessage" placeholder="Написать сообщение..." autocomplete="off" ref="msgInput">
               <EmojiPicker @select="insertEmoji" />
             </div>
             <div class="input-actions-right">
-              <button v-if="!newMessage.trim() && !mediaPreview" type="button" class="action-btn voice-btn" @mousedown="startVoice" @mouseup="stopVoice" @mouseleave="stopVoice" @touchstart.prevent="startVoice" @touchend.prevent="stopVoice">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              </button>
-              <button v-else type="submit" class="send-btn" :disabled="!canSend">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-              </button>
+              <button v-if="!newMessage.trim() && !mediaPreview" type="button" class="action-btn voice-btn" @mousedown="startVoice" @mouseup="stopVoice" @mouseleave="stopVoice" @touchstart.prevent="startVoice" @touchend.prevent="stopVoice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+              <button v-else type="submit" class="send-btn" :disabled="!canSend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></button>
             </div>
           </form>
         </div>
@@ -133,19 +86,41 @@
 
       <div v-if="showCircleOverlay" class="circle-overlay">
         <video ref="circlePreviewEl" class="circle-preview-video" autoplay muted playsinline></video>
-        <div class="circle-controls">
-          <span>{{ formatRecTime(recordingTime) }}</span>
-          <button @click="stopCircle" class="stop-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
-          <button @click="cancelRecording" class="cancel-btn">Отмена</button>
-        </div>
+        <div class="circle-controls"><span>{{ formatRecTime(recordingTime) }}</span><button @click="stopCircle" class="stop-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button><button @click="cancelRecording" class="cancel-btn">Отмена</button></div>
       </div>
+
+      <Teleport to="body">
+        <div v-if="showMsgMenu" class="msg-menu glass-modal" :style="{ top: msgMenuY + 'px', left: msgMenuX + 'px' }" @click.stop>
+          <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/></svg>Переслать</button>
+          <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item" @click="deleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>Удалить для всех</button>
+          <button class="menu-item danger" @click="deleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>Удалить для себя</button>
+        </div>
+
+        <Transition name="modal">
+          <div v-if="showForwardModal" class="modal-overlay" @click.self="showForwardModal = false">
+            <div class="modal glass-modal">
+              <div class="modal-header"><h2>Переслать сообщение</h2><button @click="showForwardModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+              <div class="forward-list">
+                <div v-for="d in dialogs" :key="d.user.id" class="forward-item" @click="doForward(d.user.id)"><img :src="getAvatarUrl(d.user.avatar)" class="avatar" alt=""><span>{{ d.user.name }}</span></div>
+              </div>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
+          <div v-if="showMediaViewerModal" class="media-viewer-overlay" @click.self="showMediaViewerModal = false">
+            <button class="viewer-close" @click="showMediaViewerModal = false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <div class="viewer-content"><img v-if="viewerType === 'image'" :src="viewerSrc" alt=""><video v-else :src="viewerSrc" controls autoplay></video></div>
+          </div>
+        </Transition>
+      </Teleport>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import { cache } from '../stores/cache'
@@ -153,12 +128,11 @@ import EmojiPicker from '../components/EmojiPicker.vue'
 import api from '../api'
 
 const route = useRoute()
-const router = useRouter()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
 
-const dialogs = ref(cache.messages.dialogs)
-const loading = ref(!cache.messages.loaded)
+const dialogs = ref([])
+const loading = ref(true)
 const selectedUserId = ref(null)
 const chatUser = ref(null)
 const messages = ref([])
@@ -174,166 +148,55 @@ const mediaType = ref(null)
 const isRecording = ref(false)
 const showCircleOverlay = ref(false)
 const recordingTime = ref(0)
-let mediaRecorder = null
-let recordedChunks = []
-let recordingInterval = null
-let stream = null
-let pollInterval = null
+let mediaRecorder = null, recordedChunks = [], recordingInterval = null, stream = null, pollInterval = null
+
+const showMsgMenu = ref(false)
+const msgMenuX = ref(0)
+const msgMenuY = ref(0)
+const selectedMsg = ref(null)
+const showForwardModal = ref(false)
+const showMediaViewerModal = ref(false)
+const viewerSrc = ref('')
+const viewerType = ref('image')
 
 const canSend = computed(() => newMessage.value.trim() || mediaFile.value)
 
 function getAvatarUrl(a) { return a || '/default-avatar.svg' }
 function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
-function formatTime(d) {
-  const date = new Date(d), now = new Date(), diff = (now - date) / 1000
-  if (diff < 86400) return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-  if (diff < 604800) return date.toLocaleDateString('ru-RU', { weekday: 'short' })
-  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-}
+function formatTime(d) { const date = new Date(d), now = new Date(), diff = (now - date) / 1000; if (diff < 86400) return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); if (diff < 604800) return date.toLocaleDateString('ru-RU', { weekday: 'short' }); return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) }
 function formatMsgTime(d) { return new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
 function formatRecTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}` }
+function formatLastSeen(lastSeen) { if (!lastSeen) return 'был(а) давно'; const d = new Date(lastSeen), now = new Date(), diff = (now - d) / 1000; if (diff < 60) return 'был(а) только что'; if (diff < 3600) return `был(а) ${Math.floor(diff / 60)} мин назад`; if (diff < 86400) return `был(а) ${Math.floor(diff / 3600)} ч назад`; return `был(а) ${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` }
 function scrollToBottom() { nextTick(() => { if (messagesContainer.value) messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight }) }
 function toggleVideo(e) { const v = e.target.querySelector('video') || e.target; v.paused ? v.play() : v.pause() }
 
-function insertEmoji(emoji) {
-  const input = msgInput.value
-  if (input) {
-    const start = input.selectionStart, end = input.selectionEnd
-    newMessage.value = newMessage.value.substring(0, start) + emoji + newMessage.value.substring(end)
-    nextTick(() => { input.focus(); input.setSelectionRange(start + emoji.length, start + emoji.length) })
-  } else newMessage.value += emoji
-}
+function insertEmoji(emoji) { const input = msgInput.value; if (input) { const start = input.selectionStart, end = input.selectionEnd; newMessage.value = newMessage.value.substring(0, start) + emoji + newMessage.value.substring(end); nextTick(() => { input.focus(); input.setSelectionRange(start + emoji.length, start + emoji.length) }) } else newMessage.value += emoji }
+function handleMediaSelect(e) { const file = e.target.files[0]; if (!file) return; mediaFile.value = file; mediaPreview.value = URL.createObjectURL(file); mediaType.value = file.type.startsWith('image/') ? 'image' : 'video'; e.target.value = '' }
+function clearMedia() { if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value); mediaFile.value = null; mediaPreview.value = null; mediaType.value = null }
 
-function handleMediaSelect(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  mediaFile.value = file
-  mediaPreview.value = URL.createObjectURL(file)
-  mediaType.value = file.type.startsWith('image/') ? 'image' : 'video'
-  e.target.value = ''
-}
-
-function clearMedia() {
-  if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value)
-  mediaFile.value = null; mediaPreview.value = null; mediaType.value = null
-}
-
-async function startVoice() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder = new MediaRecorder(stream)
-    recordedChunks = []
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data) }
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(recordedChunks, { type: 'audio/webm' })
-      mediaFile.value = new File([blob], 'voice.webm', { type: 'audio/webm' })
-      mediaPreview.value = URL.createObjectURL(blob)
-      mediaType.value = 'voice'
-      stream.getTracks().forEach(t => t.stop())
-    }
-    mediaRecorder.start()
-    isRecording.value = true
-    recordingTime.value = 0
-    recordingInterval = setInterval(() => recordingTime.value++, 1000)
-  } catch { notifications.error('Нет доступа к микрофону') }
-}
-
-function stopVoice() {
-  if (mediaRecorder && isRecording.value) {
-    mediaRecorder.stop()
-    isRecording.value = false
-    clearInterval(recordingInterval)
-  }
-}
-
-async function startCircle() {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 480, height: 480 }, audio: true })
-    showCircleOverlay.value = true
-    await nextTick()
-    if (circlePreviewEl.value) circlePreviewEl.value.srcObject = stream
-    mediaRecorder = new MediaRecorder(stream)
-    recordedChunks = []
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data) }
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' })
-      mediaFile.value = new File([blob], 'circle.webm', { type: 'video/webm' })
-      mediaPreview.value = URL.createObjectURL(blob)
-      mediaType.value = 'circle'
-      stream.getTracks().forEach(t => t.stop())
-      showCircleOverlay.value = false
-    }
-    mediaRecorder.start()
-    recordingTime.value = 0
-    recordingInterval = setInterval(() => recordingTime.value++, 1000)
-  } catch { notifications.error('Нет доступа к камере'); showCircleOverlay.value = false }
-}
-
+async function startVoice() { try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream); recordedChunks = []; mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data) }; mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: 'audio/webm' }); mediaFile.value = new File([blob], 'voice.webm', { type: 'audio/webm' }); mediaPreview.value = URL.createObjectURL(blob); mediaType.value = 'voice'; stream.getTracks().forEach(t => t.stop()) }; mediaRecorder.start(); isRecording.value = true; recordingTime.value = 0; recordingInterval = setInterval(() => recordingTime.value++, 1000) } catch { notifications.error('Нет доступа к микрофону') } }
+function stopVoice() { if (mediaRecorder && isRecording.value) { mediaRecorder.stop(); isRecording.value = false; clearInterval(recordingInterval) } }
+async function startCircle() { try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 480, height: 480 }, audio: true }); showCircleOverlay.value = true; await nextTick(); if (circlePreviewEl.value) circlePreviewEl.value.srcObject = stream; mediaRecorder = new MediaRecorder(stream); recordedChunks = []; mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data) }; mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: 'video/webm' }); mediaFile.value = new File([blob], 'circle.webm', { type: 'video/webm' }); mediaPreview.value = URL.createObjectURL(blob); mediaType.value = 'circle'; stream.getTracks().forEach(t => t.stop()); showCircleOverlay.value = false }; mediaRecorder.start(); recordingTime.value = 0; recordingInterval = setInterval(() => recordingTime.value++, 1000) } catch { notifications.error('Нет доступа к камере'); showCircleOverlay.value = false } }
 function stopCircle() { if (mediaRecorder) { mediaRecorder.stop(); clearInterval(recordingInterval) } }
-function cancelRecording() {
-  if (mediaRecorder) { mediaRecorder.stop(); recordedChunks = [] }
-  if (stream) stream.getTracks().forEach(t => t.stop())
-  isRecording.value = false; showCircleOverlay.value = false
-  clearInterval(recordingInterval); clearMedia()
-}
+function cancelRecording() { if (mediaRecorder) { mediaRecorder.stop(); recordedChunks = [] }; if (stream) stream.getTracks().forEach(t => t.stop()); isRecording.value = false; showCircleOverlay.value = false; clearInterval(recordingInterval); clearMedia() }
 
-async function fetchDialogs() {
-  try {
-    const res = await api.get('/messages/dialogs')
-    dialogs.value = res.data
-    cache.messages.dialogs = res.data
-    cache.messages.loaded = true
-  } catch (err) { notifications.error(err.message) }
-  finally { loading.value = false }
-}
+async function fetchDialogs() { try { const res = await api.get('/messages/dialogs'); dialogs.value = res.data } catch (err) { console.log('Failed to fetch dialogs:', err) } finally { loading.value = false } }
+async function selectDialog(userId) { selectedUserId.value = userId; chatLoading.value = true; messages.value = []; try { const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)]); chatUser.value = userRes.data; messages.value = msgRes.data; scrollToBottom(); await api.post(`/messages/${userId}/read`) } catch (err) { notifications.error(err.message) } finally { chatLoading.value = false } }
+async function pollMessages() { if (!selectedUserId.value) return; try { const res = await api.get(`/messages/${selectedUserId.value}`); if (res.data.length !== messages.value.length) { messages.value = res.data; scrollToBottom(); await api.post(`/messages/${selectedUserId.value}/read`) } } catch {} }
+async function sendMessage() { if (!canSend.value || !selectedUserId.value) return; try { const formData = new FormData(); if (newMessage.value.trim()) formData.append('content', newMessage.value.trim()); if (mediaFile.value) { formData.append('media', mediaFile.value); formData.append('mediaType', mediaType.value) }; const res = await api.post(`/messages/${selectedUserId.value}`, formData); messages.value.push(res.data); newMessage.value = ''; clearMedia(); scrollToBottom(); fetchDialogs() } catch (err) { notifications.error(err.message) } }
 
-async function selectDialog(userId) {
-  selectedUserId.value = userId
-  chatLoading.value = true
-  messages.value = []
-  try {
-    const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)])
-    chatUser.value = userRes.data
-    messages.value = msgRes.data
-    scrollToBottom()
-    await api.post(`/messages/${userId}/read`)
-  } catch (err) { notifications.error(err.message) }
-  finally { chatLoading.value = false }
-}
+function openMsgMenu(e, msg) { selectedMsg.value = msg; msgMenuX.value = Math.min(e.clientX, window.innerWidth - 200); msgMenuY.value = Math.min(e.clientY, window.innerHeight - 150); showMsgMenu.value = true }
+function closeMsgMenu() { showMsgMenu.value = false; selectedMsg.value = null }
+function forwardMessage() { showMsgMenu.value = false; showForwardModal.value = true }
+async function doForward(toUserId) { if (!selectedMsg.value) return; try { await api.post('/messages/forward', { messageId: selectedMsg.value.id, toUserId }); showForwardModal.value = false; selectedMsg.value = null } catch (err) { notifications.error(err.message) } }
+async function deleteForAll() { if (!selectedMsg.value) return; try { await api.delete(`/messages/${selectedMsg.value.id}?forAll=true`); messages.value = messages.value.filter(m => m.id !== selectedMsg.value.id); closeMsgMenu() } catch (err) { notifications.error(err.message) } }
+async function deleteForMe() { if (!selectedMsg.value) return; try { await api.delete(`/messages/${selectedMsg.value.id}`); messages.value = messages.value.filter(m => m.id !== selectedMsg.value.id); closeMsgMenu() } catch (err) { notifications.error(err.message) } }
+function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = type; showMediaViewerModal.value = true }
 
-async function pollMessages() {
-  if (!selectedUserId.value) return
-  try {
-    const res = await api.get(`/messages/${selectedUserId.value}`)
-    if (res.data.length > messages.value.length) {
-      messages.value = res.data
-      scrollToBottom()
-      await api.post(`/messages/${selectedUserId.value}/read`)
-    }
-  } catch {}
-}
+function handleClickOutside(e) { if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu() }
 
-async function sendMessage() {
-  if (!canSend.value || !selectedUserId.value) return
-  try {
-    const formData = new FormData()
-    if (newMessage.value.trim()) formData.append('content', newMessage.value.trim())
-    if (mediaFile.value) { formData.append('media', mediaFile.value); formData.append('mediaType', mediaType.value) }
-    const res = await api.post(`/messages/${selectedUserId.value}`, formData)
-    messages.value.push(res.data)
-    newMessage.value = ''
-    clearMedia()
-    scrollToBottom()
-    fetchDialogs()
-  } catch (err) { notifications.error(err.message) }
-}
-
-onMounted(() => {
-  fetchDialogs()
-  pollInterval = setInterval(pollMessages, 3000)
-  if (route.params.id) selectDialog(route.params.id)
-})
-onUnmounted(() => { clearInterval(pollInterval); if (stream) stream.getTracks().forEach(t => t.stop()) })
+onMounted(() => { fetchDialogs(); pollInterval = setInterval(() => { pollMessages(); fetchDialogs() }, 3000); if (route.params.id) selectDialog(route.params.id); document.addEventListener('click', handleClickOutside) })
+onUnmounted(() => { clearInterval(pollInterval); if (stream) stream.getTracks().forEach(t => t.stop()); document.removeEventListener('click', handleClickOutside) })
 watch(() => route.params.id, id => { if (id) selectDialog(id) })
 </script>
 
@@ -350,7 +213,8 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .dialog-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-lg); transition: all var(--transition); cursor: pointer; }
 .dialog-item:hover, .dialog-item.active { background: rgba(255,255,255,0.08); }
 .dialog-item.unread { background: rgba(255,255,255,0.06); }
-.dialog-avatar-wrap { position: relative; }
+.dialog-avatar-wrap, .chat-avatar-wrap { position: relative; }
+.online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background: #4ade80; border: 2px solid var(--bg-primary); border-radius: 50%; }
 .dialog-content { flex: 1; min-width: 0; }
 .dialog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .dialog-name { font-weight: 600; font-size: 15px; }
@@ -362,20 +226,21 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .empty-icon svg { width: 40px; height: 40px; color: var(--text-muted); }
 .chat-empty h3 { font-size: 20px; font-weight: 600; }
 .chat-empty p { color: var(--text-secondary); }
-
 .chat-panel { display: flex; flex-direction: column; }
 .chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .chat-user { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
 .user-info { display: flex; flex-direction: column; }
 .user-name { font-weight: 600; font-size: 16px; }
-.user-status { font-size: 13px; color: var(--text-secondary); }
+.user-status { font-size: 13px; color: var(--text-muted); }
+.user-status.online { color: #4ade80; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .message { display: flex; max-width: 70%; }
 .message.own { align-self: flex-end; }
-.message-bubble { padding: 12px 16px; background: rgba(255,255,255,0.08); border-radius: var(--radius-xl); border-bottom-left-radius: var(--radius-sm); }
+.message-bubble { padding: 12px 16px; background: rgba(255,255,255,0.08); border-radius: var(--radius-xl); border-bottom-left-radius: var(--radius-sm); position: relative; }
 .message.own .message-bubble { background: rgba(255,255,255,0.15); border-bottom-left-radius: var(--radius-xl); border-bottom-right-radius: var(--radius-sm); }
+.forwarded-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-style: italic; }
 .message-bubble p { word-break: break-word; line-height: 1.5; }
-.message-media { max-width: 100%; max-height: 250px; border-radius: var(--radius-lg); margin-bottom: 8px; }
+.message-media { max-width: 100%; max-height: 250px; border-radius: var(--radius-lg); margin-bottom: 8px; cursor: pointer; }
 .circle-video { width: 180px; height: 180px; border-radius: 50%; overflow: hidden; margin-bottom: 8px; cursor: pointer; }
 .circle-player { width: 100%; height: 100%; object-fit: cover; }
 .voice-message { width: 180px; height: 36px; margin-bottom: 8px; }
@@ -392,7 +257,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .recording-dot { width: 12px; height: 12px; background: #ff4444; border-radius: 50%; animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .cancel-rec { margin-left: auto; color: var(--text-muted); font-size: 14px; }
-
 .chat-input { display: flex; align-items: center; gap: 8px; padding: 12px 16px; }
 .input-actions-left, .input-actions-right { display: flex; gap: 4px; }
 .action-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius-full); transition: all var(--transition); cursor: pointer; }
@@ -413,6 +277,29 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .stop-btn { width: 64px; height: 64px; background: #ff4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
 .stop-btn svg { width: 24px; height: 24px; }
 .cancel-btn { color: var(--text-muted); font-size: 16px; }
+.msg-menu { position: fixed; z-index: 500; min-width: 180px; padding: 6px; }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--text-secondary); border-radius: var(--radius); font-size: 14px; }
+.menu-item:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.menu-item.danger { color: #ff6666; }
+.menu-item.danger:hover { background: rgba(255,100,100,0.1); }
+.menu-item svg { width: 18px; height: 18px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+.modal { width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.modal-header h2 { font-size: 18px; font-weight: 600; }
+.close-btn { color: var(--text-muted); padding: 4px; }
+.close-btn svg { width: 20px; height: 20px; }
+.forward-list { padding: 8px; }
+.forward-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-lg); cursor: pointer; }
+.forward-item:hover { background: rgba(255,255,255,0.08); }
+.forward-item span { font-weight: 500; }
+.media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
+.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.1); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
+.viewer-close:hover { background: rgba(255,255,255,0.2); }
+.viewer-close svg { width: 24px; height: 24px; }
+.viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+.modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
 @media (max-width: 900px) { .messages-container { grid-template-columns: 1fr; } .chat-empty { display: none; } .dialogs-panel { display: none; } }
 @media (max-width: 768px) { .messages-page { padding-left: 20px; } }
 </style>

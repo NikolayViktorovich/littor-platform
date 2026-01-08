@@ -23,10 +23,20 @@ export async function initDb() {
       password TEXT NOT NULL,
       name TEXT NOT NULL,
       avatar TEXT,
+      cover TEXT,
       bio TEXT,
+      lastSeen TEXT,
       createdAt TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `)
+
+  // Migration for users
+  try {
+    const cols = db.exec("PRAGMA table_info(users)")
+    const colNames = cols[0]?.values?.map(c => c[1]) || []
+    if (!colNames.includes('cover')) db.run(`ALTER TABLE users ADD COLUMN cover TEXT`)
+    if (!colNames.includes('lastSeen')) db.run(`ALTER TABLE users ADD COLUMN lastSeen TEXT`)
+  } catch (e) {}
 
   db.run(`
     CREATE TABLE IF NOT EXISTS posts (
@@ -118,6 +128,15 @@ export async function initDb() {
     }
     if (!colNames.includes('mediaType')) {
       db.run(`ALTER TABLE messages ADD COLUMN mediaType TEXT`)
+    }
+    if (!colNames.includes('forwarded')) {
+      db.run(`ALTER TABLE messages ADD COLUMN forwarded INTEGER DEFAULT 0`)
+    }
+    if (!colNames.includes('deletedBySender')) {
+      db.run(`ALTER TABLE messages ADD COLUMN deletedBySender INTEGER DEFAULT 0`)
+    }
+    if (!colNames.includes('deletedByReceiver')) {
+      db.run(`ALTER TABLE messages ADD COLUMN deletedByReceiver INTEGER DEFAULT 0`)
     }
   } catch (e) {
     console.log('Migration check:', e.message)

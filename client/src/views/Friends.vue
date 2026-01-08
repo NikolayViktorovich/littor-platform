@@ -118,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import { cache } from '../stores/cache'
@@ -139,6 +139,7 @@ const searchResults = ref([])
 const searching = ref(false)
 const searchInput = ref(null)
 let searchTimeout = null
+let pollInterval = null
 
 const tabs = computed(() => [
   { key: 'friends', label: 'Друзья', count: friends.value.length },
@@ -209,8 +210,8 @@ watch(showSearch, (val) => {
   }
 })
 
-async function fetchData() {
-  if (!cache.friends.loaded) {
+async function fetchData(silent = false) {
+  if (!cache.friends.loaded && !silent) {
     loading.value = true
   }
   try {
@@ -228,7 +229,7 @@ async function fetchData() {
     cache.friends.outgoing = outgoingRes.data
     cache.friends.loaded = true
   } catch (err) {
-    notifications.error(err.message)
+    if (!silent) notifications.error(err.message)
   } finally {
     loading.value = false
   }
@@ -279,7 +280,15 @@ async function removeFriend(userId) {
   }
 }
 
-fetchData()
+onMounted(() => {
+  fetchData()
+  // Poll every 5 seconds for real-time updates
+  pollInterval = setInterval(() => fetchData(true), 5000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
+})
 </script>
 
 <style scoped>

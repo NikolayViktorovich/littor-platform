@@ -4,7 +4,6 @@
     <main class="main-content">
       <router-view />
     </main>
-    <Notifications />
     
     <Teleport to="body">
       <Transition name="modal">
@@ -19,7 +18,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import Sidebar from './components/Sidebar.vue'
-import Notifications from './components/Notifications.vue'
 import CreatePostModal from './components/CreatePostModal.vue'
 
 const authStore = useAuthStore()

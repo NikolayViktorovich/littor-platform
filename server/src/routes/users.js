@@ -29,7 +29,7 @@ router.get('/search', authMiddleware, (req, res) => {
 
 router.get('/:id', authMiddleware, (req, res) => {
   const user = db.prepare(`
-    SELECT id, name, avatar, bio,
+    SELECT id, name, avatar, bio, cover, lastSeen,
       (SELECT COUNT(*) FROM friendships WHERE (userId = ? OR friendId = ?) AND status = 'accepted') as friendsCount,
       (SELECT COUNT(*) FROM posts WHERE authorId = ?) as postsCount
     FROM users WHERE id = ?
@@ -57,7 +57,10 @@ router.get('/:id', authMiddleware, (req, res) => {
     }
   }
 
-  res.json({ ...user, friendStatus })
+  // Check if online (last seen within 5 minutes)
+  const isOnline = user.lastSeen && (Date.now() - new Date(user.lastSeen).getTime()) < 300000
+
+  res.json({ ...user, friendStatus, isOnline })
 })
 
 router.get('/:id/posts', authMiddleware, (req, res) => {
@@ -108,6 +111,43 @@ router.post('/avatar', authMiddleware, upload.single('avatar'), (req, res) => {
   db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(avatar, req.userId)
 
   res.json({ avatar })
+})
+
+router.post('/cover', authMiddleware, upload.single('cover'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Файл не загружен' })
+  }
+
+  const cover = `/uploads/${req.file.filename}`
+  db.prepare('UPDATE users SET cover = ? WHERE id = ?').run(cover, req.userId)
+
+  res.json({ cover })
+})
+
+router.post('/heartbeat', authMiddleware, (req, res) => {
+  db.prepare('UPDATE users SET lastSeen = ? WHERE id = ?')
+    .run(new Date().toISOString(), req.userId)
+  res.json({ success: true })
+})
+
+router.get('/:id/photos', authMiddleware, (req, res) => {
+  const photos = db.prepare(`
+    SELECT id, image, createdAt FROM posts 
+    WHERE authorId = ? AND image IS NOT NULL 
+    AND (image LIKE '%.jpg' OR image LIKE '%.jpeg' OR image LIKE '%.png' OR image LIKE '%.gif' OR image LIKE '%.webp')
+    ORDER BY createdAt DESC
+  `).all(req.params.id)
+  res.json(photos)
+})
+
+router.get('/:id/videos', authMiddleware, (req, res) => {
+  const videos = db.prepare(`
+    SELECT id, image as video, createdAt FROM posts 
+    WHERE authorId = ? AND image IS NOT NULL 
+    AND (image LIKE '%.mp4' OR image LIKE '%.webm' OR image LIKE '%.mov')
+    ORDER BY createdAt DESC
+  `).all(req.params.id)
+  res.json(videos)
 })
 
 export default router
