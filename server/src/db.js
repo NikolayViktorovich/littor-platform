@@ -99,13 +99,29 @@ export async function initDb() {
       id TEXT PRIMARY KEY,
       senderId TEXT NOT NULL,
       receiverId TEXT NOT NULL,
-      content TEXT NOT NULL,
+      content TEXT,
+      media TEXT,
+      mediaType TEXT,
       isRead INTEGER DEFAULT 0,
       createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (senderId) REFERENCES users(id),
       FOREIGN KEY (receiverId) REFERENCES users(id)
     )
   `)
+
+  // Migration: add media columns if not exists
+  try {
+    const cols = db.exec("PRAGMA table_info(messages)")
+    const colNames = cols[0]?.values?.map(c => c[1]) || []
+    if (!colNames.includes('media')) {
+      db.run(`ALTER TABLE messages ADD COLUMN media TEXT`)
+    }
+    if (!colNames.includes('mediaType')) {
+      db.run(`ALTER TABLE messages ADD COLUMN mediaType TEXT`)
+    }
+  } catch (e) {
+    console.log('Migration check:', e.message)
+  }
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(authorId)`)
   db.run(`CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(createdAt DESC)`)

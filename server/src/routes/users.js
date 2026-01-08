@@ -5,6 +5,28 @@ import { upload } from '../middleware/upload.js'
 
 const router = Router()
 
+router.get('/search', authMiddleware, (req, res) => {
+  const { q } = req.query
+  if (!q?.trim()) {
+    return res.json([])
+  }
+
+  const query = `%${q.trim().toLowerCase()}%`
+  const users = db.prepare(`
+    SELECT id, name, avatar, email
+    FROM users
+    WHERE LOWER(name) LIKE ? OR LOWER(email) LIKE ?
+    LIMIT 20
+  `).all(query, query)
+
+  res.json(users.map(u => ({
+    id: u.id,
+    name: u.name,
+    avatar: u.avatar,
+    username: u.email.split('@')[0]
+  })))
+})
+
 router.get('/:id', authMiddleware, (req, res) => {
   const user = db.prepare(`
     SELECT id, name, avatar, bio,

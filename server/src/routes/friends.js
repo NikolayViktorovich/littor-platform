@@ -60,16 +60,17 @@ router.post('/request/:id', authMiddleware, (req, res) => {
 })
 
 router.post('/accept/:id', authMiddleware, (req, res) => {
-  const result = db.prepare(`
-    UPDATE friendships SET status = 'accepted'
-    WHERE userId = ? AND friendId = ? AND status = 'pending'
-  `).run(req.params.id, req.userId)
+  try {
+    db.prepare(`
+      UPDATE friendships SET status = 'accepted'
+      WHERE userId = ? AND friendId = ? AND status = 'pending'
+    `).run(req.params.id, req.userId)
 
-  if (result.changes === 0) {
-    return res.status(404).json({ error: 'Заявка не найдена' })
+    res.json({ success: true })
+  } catch (err) {
+    console.error('Error accepting friend:', err)
+    res.status(500).json({ error: 'Ошибка сервера' })
   }
-
-  res.json({ success: true })
 })
 
 router.post('/decline/:id', authMiddleware, (req, res) => {
