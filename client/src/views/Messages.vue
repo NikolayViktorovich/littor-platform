@@ -122,13 +122,16 @@ onMounted(() => {
   min-height: 100vh;
   padding: 20px;
   padding-left: calc(var(--sidebar-width) + 20px);
+  display: flex;
+  justify-content: center;
 }
 
 .messages-container {
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 20px;
-  max-width: 1100px;
+  max-width: 1000px;
+  width: 100%;
   height: calc(100vh - 40px);
 }
 
