@@ -46,12 +46,21 @@ export async function sendVerificationEmail(to, code) {
       return true
     }
     
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: 'Littor <onboarding@resend.dev>',
       to,
       subject: 'Подтверждение email - Littor',
       html
     })
+    
+    // Логируем код для Gmail (часто блокируют onboarding@resend.dev)
+    if (to.includes('gmail.com')) {
+      console.log('\n⚠️ Gmail может заблокировать письмо!')
+      console.log('📧 VERIFICATION CODE for', to)
+      console.log('🔑 CODE:', code)
+      console.log('Проверьте папку Спам\n')
+    }
+    
     return true
   } catch (err) {
     console.error('Email send error:', err.message)
@@ -102,12 +111,21 @@ export async function sendPasswordResetEmail(to, code) {
       return true
     }
     
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: 'Littor <onboarding@resend.dev>',
       to,
       subject: 'Сброс пароля - Littor',
       html
     })
+    
+    // Логируем код для Gmail (часто блокируют onboarding@resend.dev)
+    if (to.includes('gmail.com')) {
+      console.log('\n⚠️ Gmail может заблокировать письмо!')
+      console.log('📧 PASSWORD RESET CODE for', to)
+      console.log('🔑 CODE:', code)
+      console.log('Проверьте папку Спам\n')
+    }
+    
     return true
   } catch (err) {
     console.error('Email send error:', err.message)

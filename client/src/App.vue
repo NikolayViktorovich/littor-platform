@@ -2,25 +2,6 @@
   <div class="app" :class="{ 'with-sidebar': authStore.isAuthenticated }">
     <Sidebar v-if="authStore.isAuthenticated" @create="showCreateModal = true" />
     
-    <!-- Mobile Header with back/forward buttons -->
-    <header v-if="authStore.isAuthenticated" class="mobile-header">
-      <button class="mobile-nav-btn" @click="goBack">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-      <div class="mobile-logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="9"/><path d="M12 8a4 4 0 104 4"/>
-        </svg>
-      </div>
-      <button class="mobile-nav-btn" @click="goForward">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      </button>
-    </header>
-    
     <main class="main-content">
       <router-view />
     </main>
@@ -47,14 +28,6 @@ const authStore = useAuthStore()
 const router = useRouter()
 const showCreateModal = ref(false)
 
-function goBack() {
-  window.history.back()
-}
-
-function goForward() {
-  window.history.forward()
-}
-
 function handlePostCreated() {
   showCreateModal.value = false
   if (router.currentRoute.value.name !== 'feed') {
@@ -76,56 +49,6 @@ onMounted(() => {
   min-height: 100vh;
 }
 
-/* Mobile Header */
-.mobile-header {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  background: rgba(14, 14, 14, 0.9);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  z-index: 100;
-  padding: 0 16px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.mobile-logo {
-  width: 32px;
-  height: 32px;
-  color: var(--text-primary);
-}
-
-.mobile-logo svg {
-  width: 100%;
-  height: 100%;
-}
-
-.mobile-nav-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  border-radius: 10px;
-  transition: all 0.15s;
-}
-
-.mobile-nav-btn:active {
-  transform: scale(0.9);
-  color: var(--text-primary);
-}
-
-.mobile-nav-btn svg {
-  width: 22px;
-  height: 22px;
-}
-
 /* Page transitions */
 .page-enter-active,
 .page-leave-active {
@@ -143,13 +66,8 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .mobile-header {
-    display: flex;
-  }
-  
   .app.with-sidebar .main-content {
     margin-left: 0;
-    padding-top: 56px;
     padding-bottom: 72px;
   }
 }

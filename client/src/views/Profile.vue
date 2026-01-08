@@ -137,16 +137,30 @@
       <Transition name="modal">
         <div v-if="showCoverEditor" class="modal-overlay" @click.self="cancelCover">
           <div class="cover-editor glass-modal">
-            <div class="modal-header"><h2>Редактировать обложку</h2>
+            <div class="modal-header">
+              <h2>Редактирование обложки</h2>
               <button @click="cancelCover" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
+            <div class="cover-editor-hint">Выбранная область будет видна в вашем профиле</div>
             <div class="cover-preview-wrap">
-              <div class="cover-preview"><img :src="coverPreview" :style="{ transform: `scale(${coverScale}) translate(${coverX}px, ${coverY}px)` }" @mousedown="startDrag" draggable="false"></div>
+              <div class="cover-preview-container" :class="{ 'preview-mode': showCoverPreviewMode }">
+                <img :src="coverPreview" :style="{ transform: `scale(${coverScale}) translate(${coverX}px, ${coverY}px)` }" @mousedown="startDrag" @touchstart="startTouchDrag" draggable="false">
+                <template v-if="!showCoverPreviewMode">
+                  <div class="cover-zone mobile-zone">
+                    <span>Эта область видна на мобильных устройствах</span>
+                  </div>
+                  <div class="cover-zone desktop-zone">
+                    <span>Эта область видна на компьютерах</span>
+                  </div>
+                </template>
+              </div>
             </div>
-            <div class="cover-controls"><span>Масштаб</span><input type="range" v-model="coverScale" min="1" max="3" step="0.1"></div>
-            <div class="modal-actions">
-              <button type="button" @click="cancelCover" class="btn btn-secondary">Отмена</button>
-              <button type="button" @click="saveCover" class="btn btn-primary">Сохранить</button>
+            <div class="cover-editor-actions">
+              <button type="button" @click="togglePreview" class="btn btn-secondary">{{ showCoverPreviewMode ? 'Редактировать' : 'Предпросмотр' }}</button>
+              <div class="cover-editor-right">
+                <button type="button" @click="cancelCover" class="btn btn-secondary">Отмена</button>
+                <button type="button" @click="saveCover" class="btn btn-primary">Установить обложку</button>
+              </div>
             </div>
           </div>
         </div>
@@ -195,6 +209,7 @@ const coverFile = ref(null)
 const coverScale = ref(1)
 const coverX = ref(0)
 const coverY = ref(0)
+const showCoverPreviewMode = ref(false)
 let isDragging = false, dragStartX = 0, dragStartY = 0, startX = 0, startY = 0
 
 const showMediaViewer = ref(false)
@@ -272,10 +287,18 @@ function startDrag(e) {
   isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; startX = coverX.value; startY = coverY.value
   document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', stopDrag)
 }
+function startTouchDrag(e) {
+  const touch = e.touches[0]
+  isDragging = true; dragStartX = touch.clientX; dragStartY = touch.clientY; startX = coverX.value; startY = coverY.value
+  document.addEventListener('touchmove', onTouchDrag); document.addEventListener('touchend', stopTouchDrag)
+}
 function onDrag(e) { if (!isDragging) return; coverX.value = startX + (e.clientX - dragStartX) / coverScale.value; coverY.value = startY + (e.clientY - dragStartY) / coverScale.value }
+function onTouchDrag(e) { if (!isDragging) return; const touch = e.touches[0]; coverX.value = startX + (touch.clientX - dragStartX) / coverScale.value; coverY.value = startY + (touch.clientY - dragStartY) / coverScale.value }
 function stopDrag() { isDragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag) }
+function stopTouchDrag() { isDragging = false; document.removeEventListener('touchmove', onTouchDrag); document.removeEventListener('touchend', stopTouchDrag) }
+function togglePreview() { showCoverPreviewMode.value = !showCoverPreviewMode.value }
 
-function cancelCover() { showCoverEditor.value = false; if (coverPreview.value) URL.revokeObjectURL(coverPreview.value); coverFile.value = null; coverPreview.value = null }
+function cancelCover() { showCoverEditor.value = false; showCoverPreviewMode.value = false; if (coverPreview.value) URL.revokeObjectURL(coverPreview.value); coverFile.value = null; coverPreview.value = null }
 
 async function saveCover() {
   if (!coverFile.value) return
@@ -370,13 +393,18 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
-.cover-editor { width: 100%; max-width: 600px; }
-.cover-preview-wrap { padding: 20px; }
-.cover-preview { width: 100%; height: 200px; overflow: hidden; border-radius: var(--radius-lg); cursor: move; }
-.cover-preview img { width: 100%; height: 100%; object-fit: cover; user-select: none; }
-.cover-controls { padding: 0 20px 20px; display: flex; align-items: center; gap: 12px; }
-.cover-controls span { color: var(--text-secondary); font-size: 14px; }
-.cover-controls input[type="range"] { flex: 1; }
+.cover-editor { width: 100%; max-width: 700px; }
+.cover-editor-hint { text-align: center; padding: 16px 24px 8px; color: var(--text-secondary); font-size: 14px; }
+.cover-preview-wrap { padding: 16px 24px; }
+.cover-preview-container { position: relative; width: 100%; height: 280px; overflow: hidden; background: #000; cursor: move; border-radius: var(--radius-lg); }
+.cover-preview-container.preview-mode { cursor: default; border-radius: var(--radius-2xl); height: 200px; }
+.cover-preview-container img { width: 100%; height: 100%; object-fit: cover; user-select: none; pointer-events: auto; }
+.cover-zone { position: absolute; border: 2px dashed rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.cover-zone span { background: rgba(128,128,128,0.85); color: white; font-size: 12px; padding: 6px 12px; border-radius: 4px; white-space: nowrap; }
+.mobile-zone { top: 20px; left: 50%; transform: translateX(-50%); width: 70%; height: 50px; border-radius: 8px; }
+.desktop-zone { top: 85px; left: 50%; transform: translateX(-50%); width: 85%; height: 160px; border-radius: 8px; }
+.cover-editor-actions { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
+.cover-editor-right { display: flex; gap: 10px; }
 .media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
 .viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
 .viewer-close:hover { background: rgba(255,255,255,0.1); }
@@ -428,6 +456,53 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
     width: 18px;
     height: 18px;
     opacity: 0.7;
+  }
+  
+  .cover-editor {
+    max-width: calc(100% - 32px);
+    margin: 16px;
+  }
+  
+  .cover-editor-hint {
+    font-size: 12px;
+    padding: 12px 16px 4px;
+  }
+  
+  .cover-preview-wrap {
+    padding: 12px 16px;
+  }
+  
+  .cover-preview-container {
+    height: 180px;
+  }
+  
+  .cover-zone span {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .mobile-zone {
+    top: 10px;
+    height: 30px;
+  }
+  
+  .desktop-zone {
+    top: 50px;
+    height: 110px;
+  }
+  
+  .cover-editor-actions {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  
+  .cover-editor-actions .btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .cover-editor-right {
+    gap: 8px;
   }
 }
 </style>

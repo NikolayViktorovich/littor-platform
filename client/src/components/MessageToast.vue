@@ -115,4 +115,8 @@ onUnmounted(() => {
 .toast-enter-from { opacity: 0; transform: translateX(100px); }
 .toast-leave-to { opacity: 0; transform: translateX(100px); }
 @keyframes slideIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+
+@media (max-width: 768px) {
+  .toast-container { display: none; }
+}
 </style>
