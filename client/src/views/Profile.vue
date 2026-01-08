@@ -120,7 +120,7 @@
         <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
           <div class="modal glass-modal">
             <div class="modal-header"><h2>Редактировать профиль</h2>
-              <button @click="showEditModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button @click="showEditModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             </div>
             <form @submit.prevent="saveProfile" class="modal-body">
               <div class="form-group"><label>Имя</label><input v-model="editForm.name" required></div>
@@ -139,7 +139,7 @@
           <div class="cover-editor glass-modal">
             <div class="modal-header">
               <h2>Редактирование обложки</h2>
-              <button @click="cancelCover" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button @click="cancelCover" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             </div>
             <div class="cover-editor-hint">Выбранная область будет видна в вашем профиле</div>
             <div class="cover-preview-wrap">
@@ -168,7 +168,7 @@
 
       <Transition name="modal">
         <div v-if="showMediaViewer" class="media-viewer-overlay" @click.self="closeMedia">
-          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
           <button v-if="mediaList.length > 1" class="viewer-nav prev" @click="prevMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
           <div class="viewer-content">
             <img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt="">

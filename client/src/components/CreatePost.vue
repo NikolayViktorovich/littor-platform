@@ -1,8 +1,7 @@
 <template>
   <button class="create-trigger glass" @click="showModal = true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="12" y1="5" x2="12" y2="19"/>
-      <line x1="5" y1="12" x2="19" y2="12"/>
+      <path d="M12 5v14M5 12h14"/>
     </svg>
     <span>Создать пост</span>
   </button>
@@ -15,8 +14,7 @@
             <h2>Новый пост</h2>
             <button @click="closeModal" class="close-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
+                <path d="M18 6L6 18M6 6l12 12"/>
               </svg>
             </button>
           </div>
@@ -26,8 +24,7 @@
               <div class="upload-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
+                  <path d="M17 8l-5-5-5 5M12 3v12"/>
                 </svg>
               </div>
               <p class="upload-title">Добавьте фото или видео</p>
@@ -42,16 +39,14 @@
                 <img :src="img.preview" alt="">
                 <button @click="removeImage(index)" class="remove-btn">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
+                    <path d="M18 6L6 18M6 6l12 12"/>
                   </svg>
                 </button>
               </div>
               <label class="add-more">
                 <input type="file" accept="image/*" multiple @change="handleImages" hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <path d="M12 5v14M5 12h14"/>
                 </svg>
               </label>
             </div>

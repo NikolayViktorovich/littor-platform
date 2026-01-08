@@ -1,53 +1,55 @@
 <template>
   <div class="messages-page">
     <div class="messages-container" :class="{ 'show-chat': selectedUserId && isMobile }">
-      <div class="dialogs-panel glass">
-        <div class="dialogs-header"><h1>Чаты</h1></div>
-        <div class="dialogs-list">
-          <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
-          <div v-else-if="!dialogs.length" class="empty-state"><p>Нет диалогов</p></div>
-          <div v-else v-for="dialog in dialogs" :key="dialog.user.id" @click="selectDialog(dialog.user.id)" class="dialog-item" :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0 }">
-            <div class="dialog-avatar-wrap">
-              <img :src="getAvatarUrl(dialog.user.avatar)" class="avatar" alt="" @error="handleAvatarError">
-              <span v-if="dialog.user.isOnline" class="online-indicator"></span>
-            </div>
-            <div class="dialog-content">
-              <div class="dialog-header">
-                <span class="dialog-name">{{ dialog.user.name }}</span>
-                <span class="dialog-time">{{ formatTime(dialog.lastMessage.createdAt) }}</span>
+      <Transition name="dialogs">
+        <div v-if="!selectedUserId || !isMobile" class="dialogs-panel glass">
+          <div class="dialogs-header"><h1>Чаты</h1></div>
+          <div class="dialogs-list">
+            <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
+            <div v-else-if="!dialogs.length" class="empty-state"><p>Нет диалогов</p></div>
+            <div v-else v-for="dialog in dialogs" :key="dialog.user.id" @click="selectDialog(dialog.user.id)" class="dialog-item" :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0 }">
+              <div class="dialog-avatar-wrap">
+                <img :src="getAvatarUrl(dialog.user.avatar)" class="avatar" alt="" @error="handleAvatarError">
+                <span v-if="dialog.user.isOnline" class="online-indicator"></span>
               </div>
-              <div class="dialog-bottom">
-                <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content || 'Медиа' }}</p>
-                <span v-if="dialog.unreadCount" class="unread-badge">{{ dialog.unreadCount }}</span>
-                <svg v-else-if="dialog.lastMessage.senderId === authStore.user?.id" class="read-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <div class="dialog-content">
+                <div class="dialog-header">
+                  <span class="dialog-name">{{ dialog.user.name }}</span>
+                  <span class="dialog-time">{{ formatTime(dialog.lastMessage.createdAt) }}</span>
+                </div>
+                <div class="dialog-bottom">
+                  <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content || 'Медиа' }}</p>
+                  <span v-if="dialog.unreadCount" class="unread-badge">{{ dialog.unreadCount }}</span>
+                  <svg v-else-if="dialog.lastMessage.senderId === authStore.user?.id" class="read-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </Transition>
 
-      <div v-if="!selectedUserId" class="chat-empty glass">
-        <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div v-if="!selectedUserId && !isMobile" class="chat-empty glass">
         <h3>Ваши сообщения</h3>
         <p>Выберите диалог, чтобы начать общение</p>
       </div>
 
-      <div v-else class="chat-panel glass">
-        <div class="chat-header">
-          <button v-if="isMobile" @click="goBack" class="back-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <router-link v-if="chatUser" :to="`/profile/${chatUser.id}`" class="chat-user">
-            <div class="chat-avatar-wrap">
-              <img :src="getAvatarUrl(chatUser.avatar)" class="avatar" alt="" @error="handleAvatarError">
-              <span v-if="chatUser.isOnline" class="online-indicator"></span>
-            </div>
-            <div class="user-info">
-              <span class="user-name">{{ chatUser.name }}</span>
-              <span class="user-status">{{ chatUser.isOnline ? 'в сети' : formatLastSeen(chatUser.lastSeen) }}</span>
-            </div>
-          </router-link>
-        </div>
+      <Transition name="chat-slide">
+        <div v-if="selectedUserId" class="chat-panel glass" :key="selectedUserId">
+          <div class="chat-header">
+            <button v-if="isMobile" @click="goBack" class="back-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <router-link v-if="chatUser" :to="`/profile/${chatUser.id}`" class="chat-user">
+              <div class="chat-avatar-wrap">
+                <img :src="getAvatarUrl(chatUser.avatar)" class="avatar" alt="" @error="handleAvatarError">
+                <span v-if="chatUser.isOnline" class="online-indicator"></span>
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ chatUser.name }}</span>
+                <span class="user-status">{{ chatUser.isOnline ? 'в сети' : formatLastSeen(chatUser.lastSeen) }}</span>
+              </div>
+            </router-link>
+          </div>
 
         <div class="chat-messages" ref="messagesContainer">
           <div v-if="chatLoading" class="loading-state"><div class="spinner"></div></div>
@@ -59,10 +61,13 @@
               <div class="message-content">
                 <!-- Circle video message -->
                 <div v-if="msg.mediaType === 'circle'" class="circle-message">
-                  <div class="circle-video-wrap" @click="toggleCircle($event, msg.id)">
-                    <video :src="msg.media" :id="'circle-' + msg.id" class="circle-player" loop playsinline @loadedmetadata="onCircleLoaded($event, msg.id)" @timeupdate="onCircleTimeUpdate($event, msg.id)"></video>
+                  <div class="circle-video-wrap" :class="{ playing: playingCircles[msg.id] }" @click="toggleCircle($event, msg.id)">
+                    <svg v-if="playingCircles[msg.id]" class="circle-playback-ring" viewBox="0 0 200 200">
+                      <circle class="circle-playback-bar" cx="100" cy="100" r="96" fill="none" stroke="white" stroke-width="4" :stroke-dasharray="603" :stroke-dashoffset="603 - (circleProgress[msg.id] || 0) * 603" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+                    </svg>
+                    <video :src="msg.media" :id="'circle-' + msg.id" class="circle-player" playsinline @loadedmetadata="onCircleLoaded($event, msg.id)" @timeupdate="onCircleTimeUpdate($event, msg.id)" @ended="onCircleEnded(msg.id)"></video>
                     <div class="circle-overlay-icon" v-if="!playingCircles[msg.id]">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z"/></svg>
                     </div>
                     <button class="circle-mute" @click.stop="toggleMute(msg.id)">
                       <svg v-if="mutedCircles[msg.id]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
@@ -107,7 +112,7 @@
           <img v-if="mediaType === 'image'" :src="mediaPreview" alt="">
           <video v-else-if="mediaType === 'video' || mediaType === 'circle'" :src="mediaPreview" :class="{ circle: mediaType === 'circle' }"></video>
           <div v-else-if="mediaType === 'voice'" class="voice-preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><span>Голосовое</span></div>
-          <button @click="clearMedia" class="clear-media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button @click="clearMedia" class="clear-media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div v-if="isRecording" class="voice-recording-bar">
           <div class="voice-rec-left">
@@ -128,16 +133,20 @@
             <EmojiPicker @select="insertEmoji" />
           </div>
           <div class="input-actions-right">
-            <button v-if="!newMessage.trim() && !mediaPreview" type="button" class="action-btn voice-btn" @click="onVoiceBtnClick" @mousedown="onVoiceMouseDown" @mousemove="onVoiceMouseMove" @mouseup="onVoiceMouseUp" @mouseleave="onVoiceMouseUp" @touchstart.prevent="onVoiceBtnDown" @touchend.prevent="onVoiceBtnUp" @touchmove.prevent="onVoiceBtnTouchMove" ref="voiceBtnRef">
-              <svg v-if="voiceBtnMode === 'voice'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            <button type="submit" class="action-btn voice-btn" @click.prevent="onRightBtnClick" @mousedown="onVoiceMouseDown" @mousemove="onVoiceMouseMove" @mouseup="onVoiceMouseUp" @mouseleave="onVoiceMouseUp" @touchstart.prevent="onVoiceBtnDown" @touchend.prevent="onVoiceBtnUp" @touchmove.prevent="onVoiceBtnTouchMove" ref="voiceBtnRef">
+              <Transition name="icon-flip" mode="out-in">
+                <svg v-if="newMessage.trim() || mediaPreview" key="send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                <svg v-else-if="voiceBtnMode === 'voice'" key="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
+                <svg v-else key="circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              </Transition>
             </button>
-            <button v-else type="submit" class="send-btn" :disabled="!canSend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></button>
           </div>
         </form>
       </div>
+      </Transition>
 
-      <div v-if="showCircleOverlay" class="circle-overlay">
+      <Transition name="circle-overlay">
+        <div v-if="showCircleOverlay" class="circle-overlay">
         <div class="circle-rec-container">
           <div class="circle-rec-video-wrap">
             <svg class="circle-progress-ring" viewBox="0 0 200 200">
@@ -171,18 +180,49 @@
           </button>
         </div>
       </div>
+      </Transition>
 
       <Teleport to="body">
-        <div v-if="showMsgMenu" class="msg-menu glass-modal" :style="{ top: msgMenuY + 'px', left: msgMenuX + 'px' }" @click.stop>
-          <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/></svg>Переслать</button>
-          <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item" @click="deleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>Удалить для всех</button>
-          <button class="menu-item danger" @click="deleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>Удалить для себя</button>
-        </div>
+        <Transition name="menu">
+          <div v-if="showMsgMenu" class="msg-menu glass-modal" :style="{ top: msgMenuY + 'px', left: msgMenuX + 'px' }" @click.stop>
+            <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7"/><path d="M20 12H4"/></svg>Переслать</button>
+            <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2z"/><path d="M9 9v8"/><path d="M15 9v8"/><path d="M3 5h18"/><path d="M9 5V3h6v2"/></svg>Удалить для всех</button>
+            <button class="menu-item muted" @click="confirmDeleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2z"/><path d="M3 5h18"/><path d="M9 5V3h6v2"/></svg>Удалить для себя</button>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
+          <div v-if="showDeleteForAllModal" class="modal-overlay" @click.self="showDeleteForAllModal = false">
+            <div class="delete-modal glass-modal">
+              <h3>Удалить для всех?</h3>
+              <p>Сообщение будет удалено у вас и у собеседника</p>
+              <label class="custom-checkbox"><input type="checkbox" v-model="rememberDeleteForAll"><span class="checkmark"></span><span class="label-text">Запомнить выбор</span></label>
+              <div class="delete-actions">
+                <button class="delete-btn cancel" @click="showDeleteForAllModal = false">Отмена</button>
+                <button class="delete-btn danger" @click="deleteForAll">Удалить</button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
+          <div v-if="showDeleteForMeModal" class="modal-overlay" @click.self="showDeleteForMeModal = false">
+            <div class="delete-modal glass-modal">
+              <h3>Удалить для себя?</h3>
+              <p>Сообщение будет удалено только у вас</p>
+              <label class="custom-checkbox"><input type="checkbox" v-model="rememberDeleteForMe"><span class="checkmark"></span><span class="label-text">Запомнить выбор</span></label>
+              <div class="delete-actions">
+                <button class="delete-btn cancel" @click="showDeleteForMeModal = false">Отмена</button>
+                <button class="delete-btn" @click="deleteForMe">Удалить</button>
+              </div>
+            </div>
+          </div>
+        </Transition>
 
         <Transition name="modal">
           <div v-if="showForwardModal" class="modal-overlay" @click.self="showForwardModal = false">
             <div class="modal glass-modal">
-              <div class="modal-header"><h2>Переслать сообщение</h2><button @click="showForwardModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+              <div class="modal-header"><h2>Переслать сообщение</h2><button @click="showForwardModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
               <div class="forward-list">
                 <div v-for="d in dialogs" :key="d.user.id" class="forward-item" @click="doForward(d.user.id)"><img :src="getAvatarUrl(d.user.avatar)" class="avatar" alt=""><span>{{ d.user.name }}</span></div>
               </div>
@@ -192,7 +232,7 @@
 
         <Transition name="modal">
           <div v-if="showMediaViewerModal" class="media-viewer-overlay" @click.self="showMediaViewerModal = false">
-            <button class="viewer-close" @click="showMediaViewerModal = false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            <button class="viewer-close" @click="showMediaViewerModal = false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             <div class="viewer-content"><img v-if="viewerType === 'image'" :src="viewerSrc" alt=""><video v-else :src="viewerSrc" controls autoplay></video></div>
           </div>
         </Transition>
@@ -257,8 +297,13 @@ const voiceTotalDurations = ref({})
 const voiceProgress = ref({})
 const circleDurations = ref({})
 const circleCurrentTime = ref({})
+const circleProgress = ref({})
 const selectedMsg = ref(null)
 const showForwardModal = ref(false)
+const showDeleteForAllModal = ref(false)
+const showDeleteForMeModal = ref(false)
+const rememberDeleteForAll = ref(false)
+const rememberDeleteForMe = ref(false)
 const showMediaViewerModal = ref(false)
 const viewerSrc = ref('')
 const viewerType = ref('image')
@@ -343,9 +388,21 @@ function onCircleLoaded(e, msgId) {
 function onCircleTimeUpdate(e, msgId) {
   const video = e.target
   const current = video.currentTime
+  const duration = video.duration
   const mins = Math.floor(current / 60)
   const secs = Math.floor(current % 60)
   circleCurrentTime.value[msgId] = `${mins}:${secs.toString().padStart(2, '0')}`
+  circleProgress.value[msgId] = duration > 0 ? current / duration : 0
+}
+
+function onCircleEnded(msgId) {
+  playingCircles.value[msgId] = false
+  circleProgress.value[msgId] = 0
+  const video = document.getElementById('circle-' + msgId)
+  if (video) video.currentTime = 0
+  if (circleDurations.value[msgId]) {
+    circleCurrentTime.value[msgId] = circleDurations.value[msgId]
+  }
 }
 
 function toggleVoice(e, msgId) {
@@ -485,6 +542,14 @@ function onVoiceBtnClick() {
   }
 }
 
+function onRightBtnClick() {
+  if (newMessage.value.trim() || mediaFile.value) {
+    sendMessage()
+  } else {
+    onVoiceBtnClick()
+  }
+}
+
 function onVoiceMouseDown(e) {
   mouseDownOnVoice.value = true
   mouseDragStartY.value = e.clientY
@@ -596,8 +661,34 @@ function openMsgMenu(e, msg) { selectedMsg.value = msg; msgMenuX.value = Math.mi
 function closeMsgMenu() { showMsgMenu.value = false; selectedMsg.value = null }
 function forwardMessage() { showMsgMenu.value = false; showForwardModal.value = true }
 async function doForward(toUserId) { if (!selectedMsg.value) return; try { await api.post('/messages/forward', { messageId: selectedMsg.value.id, toUserId }); showForwardModal.value = false; selectedMsg.value = null } catch (err) { notifications.error(err.message) } }
-async function deleteForAll() { if (!selectedMsg.value) return; try { await api.delete(`/messages/${selectedMsg.value.id}?forAll=true`); messages.value = messages.value.filter(m => m.id !== selectedMsg.value.id); closeMsgMenu() } catch (err) { notifications.error(err.message) } }
-async function deleteForMe() { if (!selectedMsg.value) return; try { await api.delete(`/messages/${selectedMsg.value.id}`); messages.value = messages.value.filter(m => m.id !== selectedMsg.value.id); closeMsgMenu() } catch (err) { notifications.error(err.message) } }
+function confirmDeleteForAll() { 
+  showMsgMenu.value = false
+  if (rememberDeleteForAll.value) { deleteForAll(); return }
+  showDeleteForAllModal.value = true 
+}
+function confirmDeleteForMe() { 
+  showMsgMenu.value = false
+  if (rememberDeleteForMe.value) { deleteForMe(); return }
+  showDeleteForMeModal.value = true 
+}
+async function deleteForAll() { 
+  if (!selectedMsg.value) return
+  showDeleteForAllModal.value = false
+  try { 
+    await api.delete(`/messages/${selectedMsg.value.id}?forAll=true`)
+    messages.value = messages.value.filter(m => m.id !== selectedMsg.value.id)
+    selectedMsg.value = null
+  } catch (err) { notifications.error(err.message) } 
+}
+async function deleteForMe() { 
+  if (!selectedMsg.value) return
+  showDeleteForMeModal.value = false
+  try { 
+    await api.delete(`/messages/${selectedMsg.value.id}`)
+    messages.value = messages.value.filter(m => m.id !== selectedMsg.value.id)
+    selectedMsg.value = null
+  } catch (err) { notifications.error(err.message) } 
+}
 function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = type; showMediaViewerModal.value = true }
 
 function handleClickOutside(e) { if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu() }
@@ -617,8 +708,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .loading-state, .empty-state { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text-secondary); }
 .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.dialog-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-lg); transition: all var(--transition); cursor: pointer; }
+.dialog-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-lg); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
 .dialog-item:hover, .dialog-item.active { background: rgba(255,255,255,0.04); }
+.dialog-item:active { transform: scale(0.98); }
 .dialog-item.unread { background: rgba(255,255,255,0.03); }
 .dialog-avatar-wrap, .chat-avatar-wrap { position: relative; flex-shrink: 0; }
 .online-indicator { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; background: #3b82f6; border: 3px solid var(--bg-primary); border-radius: 50%; }
@@ -638,15 +730,17 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .chat-empty p { color: var(--text-secondary); }
 .chat-panel { display: flex; flex-direction: column; }
 .chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); flex-shrink: 0; }
+.back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); flex-shrink: 0; transition: all 0.2s ease; }
 .back-btn:hover { background: rgba(255,255,255,0.04); }
+.back-btn:active { transform: scale(0.9); }
 .back-btn svg { width: 20px; height: 20px; }
 .chat-user { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
 .user-info { display: flex; flex-direction: column; }
 .user-name { font-weight: 600; font-size: 16px; }
 .user-status { font-size: 13px; color: var(--text-muted); }
 .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; background: url('/chat-pattern.svg') repeat; background-size: 400px 400px; }
-.message { display: flex; gap: 8px; max-width: 70%; }
+.message { display: flex; gap: 8px; max-width: 70%; animation: messageIn 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes messageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .message.own { align-self: flex-end; flex-direction: row-reverse; }
 .msg-avatar { flex-shrink: 0; align-self: flex-end; }
 .msg-avatar .avatar-sm { width: 28px; height: 28px; }
@@ -668,10 +762,15 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 
 .circle-message { display: flex; flex-direction: column; align-items: flex-end; }
 .message:not(.own) .circle-message { align-items: flex-start; }
-.circle-video-wrap { position: relative; width: 240px; height: 240px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); }
-.circle-video-wrap .circle-player { width: 100%; height: 100%; object-fit: cover; }
-.circle-overlay-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
-.circle-overlay-icon svg { width: 48px; height: 48px; color: white; }
+.circle-video-wrap { position: relative; width: 240px; height: 240px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: #000; }
+.circle-video-wrap.playing { transform: scale(1.4); border-color: transparent; z-index: 10; }
+.message.own .circle-video-wrap.playing { transform: scale(1.4) translateX(-15%); }
+.message:not(.own) .circle-video-wrap.playing { transform: scale(1.4) translateX(15%); }
+.circle-video-wrap .circle-player { width: 100%; height: 100%; object-fit: cover; background: #000; }
+.circle-playback-ring { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); z-index: 5; pointer-events: none; }
+.circle-playback-bar { transition: stroke-dashoffset 0.25s linear; }
+.circle-overlay-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); transition: opacity 0.2s ease; }
+.circle-overlay-icon svg { width: 64px; height: 64px; color: white; }
 .circle-mute { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 36px; height: 36px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .circle-mute svg { width: 18px; height: 18px; color: white; }
 .circle-info { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 6px; padding: 0 4px; }
@@ -713,10 +812,17 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 
 .voice-rec-left { display: flex; align-items: center; gap: 10px; }
 .voice-rec-dot { width: 10px; height: 10px; background: #ff4466; border-radius: 50%; animation: pulse 1s infinite; }
-.voice-rec-time { font-size: 15px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.voice-rec-cancel { flex: 1; text-align: center; color: var(--text-secondary); font-size: 15px; }
-.voice-rec-send { width: 44px; height: 44px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+.voice-rec-time { font-size: 15px; color: var(--text-primary); font-variant-numeric: tabular-nums; transition: all 0.1s ease; }
+.voice-rec-cancel { flex: 1; text-align: center; color: var(--text-secondary); font-size: 15px; transition: color 0.2s ease; }
+.voice-rec-cancel:hover { color: var(--text-primary); }
+.voice-rec-cancel:active { transform: scale(0.95); }
+.voice-rec-send { width: 44px; height: 44px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; transition: all 0.2s ease; }
+.voice-rec-send:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
+.voice-rec-send:active { transform: scale(0.95); }
 .voice-rec-send svg { width: 20px; height: 20px; }
+
+.voice-recording-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 .circle-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
 .circle-rec-container { position: relative; display: flex; align-items: center; justify-content: center; }
@@ -724,18 +830,25 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .circle-progress-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .circle-progress-bar { transition: stroke-dashoffset 0.3s linear; }
 .circle-preview-video { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 280px; border-radius: 50%; object-fit: cover; }
-.circle-rec-pause { position: absolute; right: -70px; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; background: rgba(60,60,60,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+.circle-rec-pause { position: absolute; right: -70px; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; background: rgba(60,60,60,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.2s ease; }
+.circle-rec-pause:hover { background: rgba(80,80,80,1); transform: translateY(-50%) scale(1.05); }
+.circle-rec-pause:active { transform: translateY(-50%) scale(0.95); }
 .circle-rec-pause svg { width: 20px; height: 20px; }
 .circle-rec-controls { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; max-width: 400px; margin-top: 40px; padding: 0 10px; }
 .circle-rec-left { display: flex; gap: 12px; }
-.circle-rec-btn { width: 44px; height: 44px; background: rgba(60,60,60,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+.circle-rec-btn { width: 44px; height: 44px; background: rgba(60,60,60,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.2s ease; }
+.circle-rec-btn:hover { background: rgba(80,80,80,0.8); transform: scale(1.05); }
+.circle-rec-btn:active { transform: scale(0.95); }
 .circle-rec-btn.active { background: rgba(255,100,100,0.3); color: #ff6666; }
 .circle-rec-btn svg { width: 22px; height: 22px; }
 .circle-rec-bottom { display: flex; align-items: center; gap: 10px; }
 .circle-rec-dot { width: 10px; height: 10px; background: #ff4466; border-radius: 50%; animation: pulse 1s infinite; }
 .circle-rec-time { font-size: 15px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.circle-rec-cancel { color: var(--text-secondary); font-size: 15px; margin-left: 16px; }
-.circle-rec-send { width: 56px; height: 56px; background: rgba(60,60,60,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+.circle-rec-cancel { color: var(--text-secondary); font-size: 15px; margin-left: 16px; transition: color 0.2s ease; }
+.circle-rec-cancel:hover { color: var(--text-primary); }
+.circle-rec-send { width: 56px; height: 56px; background: rgba(60,60,60,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.2s ease; }
+.circle-rec-send:hover { background: rgba(80,80,80,1); transform: scale(1.05); }
+.circle-rec-send:active { transform: scale(0.95); }
 .circle-rec-send svg { width: 26px; height: 26px; }
 
 .chat-input { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
@@ -748,22 +861,49 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .input-wrap input { width: 100%; border-radius: 22px; padding: 12px 50px 12px 18px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); font-size: 16px; color: white; }
 .input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
 .input-wrap :deep(.emoji-wrap) { position: absolute; right: 12px; }
-.send-btn { width: 44px; height: 44px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-.send-btn:hover:not(:disabled) { transform: scale(1.05); }
+.send-btn { width: 44px; height: 44px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.send-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); transform: scale(1.05); }
 .send-btn:disabled { opacity: 0.5; }
+.send-btn svg { width: 20px; height: 20px; }
 .send-btn svg { width: 20px; height: 20px; }
 .voice-btn { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
 .voice-btn:hover { background: rgba(255,255,255,0.12); color: white; }
 .msg-menu { position: fixed; z-index: 500; min-width: 180px; padding: 6px; }
-.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--text-secondary); border-radius: var(--radius); font-size: 14px; }
+.menu-enter-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.menu-leave-active { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+.menu-enter-from { opacity: 0; transform: scale(0.9); }
+.menu-leave-to { opacity: 0; transform: scale(0.9); }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; color: var(--text-secondary); border-radius: var(--radius); font-size: 14px; transition: all 0.15s ease; }
 .menu-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+.menu-item:active { transform: scale(0.98); }
 .menu-item.danger { color: #ff6666; }
 .menu-item.danger:hover { background: rgba(255,100,100,0.1); }
+.menu-item.muted { color: rgba(255,255,255,0.4); }
+.menu-item.muted:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); }
 .menu-item svg { width: 18px; height: 18px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal { width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .modal-header h2 { font-size: 18px; font-weight: 600; }
+.delete-modal { width: 100%; max-width: 400px; padding: 20px 24px; text-align: left; }
+.delete-modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+.delete-modal p { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4; }
+.custom-checkbox { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer; user-select: none; }
+.custom-checkbox input { display: none; }
+.checkmark { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; flex-shrink: 0; }
+.custom-checkbox input:checked + .checkmark { background: white; border-color: white; }
+.checkmark::after { content: ''; width: 6px; height: 10px; border: solid #1a1a1a; border-width: 0 2px 2px 0; transform: rotate(45deg) scale(0); transition: transform 0.15s ease; margin-top: -2px; }
+.custom-checkbox input:checked + .checkmark::after { transform: rotate(45deg) scale(1); }
+.label-text { font-size: 14px; color: var(--text-secondary); }
+.delete-actions { display: flex; gap: 16px; justify-content: flex-end; }
+.delete-btn { padding: 8px 0; font-size: 15px; font-weight: 500; transition: all 0.2s ease; background: none; }
+.delete-btn.cancel { color: var(--text-muted); }
+.delete-btn.cancel:hover { color: var(--text-primary); }
+.delete-btn.danger { color: #ff6666; }
+.delete-btn.danger:hover { color: #ff5555; }
+.delete-btn:not(.cancel):not(.danger) { color: var(--text-secondary); }
+.delete-btn:not(.cancel):not(.danger):hover { color: var(--text-primary); }
+.delete-btn:active { transform: scale(0.95); }
 .close-btn { color: var(--text-muted); padding: 4px; }
 .close-btn svg { width: 20px; height: 20px; }
 .forward-list { padding: 8px; }
@@ -775,15 +915,39 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .viewer-close:hover { background: rgba(255,255,255,0.2); }
 .viewer-close svg { width: 24px; height: 24px; }
 .viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
-.modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
+.modal-enter-active, .modal-leave-active { transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
+
+.chat-slide-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.chat-slide-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.chat-slide-enter-from { opacity: 0; transform: translateX(30px); }
+.chat-slide-leave-to { opacity: 0; transform: translateX(30px); }
+
+.dialogs-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.dialogs-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.dialogs-enter-from { opacity: 0; transform: translateX(-30px); }
+.dialogs-leave-to { opacity: 0; transform: translateX(-30px); }
+
+.circle-overlay-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.circle-overlay-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.circle-overlay-enter-from { opacity: 0; transform: scale(0.95); }
+.circle-overlay-leave-to { opacity: 0; transform: scale(0.95); }
+
+.btn-morph-enter-active, .btn-morph-leave-active { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+.btn-morph-enter-from { opacity: 0; transform: scale(0.8); }
+.btn-morph-leave-to { opacity: 0; transform: scale(0.8); }
+
+.icon-flip-enter-active, .icon-flip-leave-active { transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1); }
+.icon-flip-enter-from { opacity: 0; transform: scale(0.6); }
+.icon-flip-leave-to { opacity: 0; transform: scale(0.6); }
+
+.btn-swap-enter-active, .btn-swap-leave-active { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+.btn-swap-enter-from { opacity: 0; transform: scale(0.8); }
+.btn-swap-leave-to { opacity: 0; transform: scale(0.8); }
 
 @media (max-width: 900px) {
   .messages-container { grid-template-columns: 1fr; }
   .messages-container .chat-empty { display: none; }
-  .messages-container .chat-panel { display: none; }
-  .messages-container.show-chat .dialogs-panel { display: none; }
-  .messages-container.show-chat .chat-panel { display: flex; }
 }
 @media (max-width: 768px) { 
   .messages-page { padding: 0; padding-bottom: 0; }
@@ -1004,9 +1168,17 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     height: 200px;
   }
   
-  .circle-overlay-icon svg {
-    width: 40px;
-    height: 40px;
+  .message.own .circle-video-wrap.playing { transform: scale(1.4) translateX(-20%); }
+  .message:not(.own) .circle-video-wrap.playing { transform: scale(1.4) translateX(20%); }
+  
+  .play-circle {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .play-circle svg {
+    width: 20px;
+    height: 20px;
   }
   
   .circle-mute {

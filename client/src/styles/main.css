@@ -1,11 +1,6 @@
-/* iOS 26 Liquid Glass Design System */
-
 :root {
-  /* Colors */
   --bg-primary: #0e0e0e;
   --bg-secondary: #0a0a0a;
-  
-  /* Liquid Glass effects - darker version */
   --glass-bg: rgba(255, 255, 255, 0.02);
   --glass-bg-hover: rgba(255, 255, 255, 0.04);
   --glass-bg-active: rgba(255, 255, 255, 0.06);
@@ -22,40 +17,27 @@
   --glass-blur: blur(40px) saturate(180%);
   --glass-blur-heavy: blur(60px) saturate(200%);
   --glass-blur-modal: blur(80px) saturate(150%);
-  
-  /* Text */
   --text-primary: rgba(255, 255, 255, 0.95);
   --text-secondary: rgba(255, 255, 255, 0.6);
   --text-muted: rgba(255, 255, 255, 0.35);
-  
-  /* Accent - white/neutral */
   --accent: rgba(255, 255, 255, 0.9);
   --accent-hover: rgba(255, 255, 255, 1);
   --accent-glow: rgba(255, 255, 255, 0.15);
-  
-  /* Status */
   --success: #22c55e;
   --danger: #ef4444;
   --warning: #f59e0b;
-  
-  /* Borders & Radius */
   --radius-sm: 10px;
   --radius: 14px;
   --radius-lg: 18px;
   --radius-xl: 24px;
   --radius-2xl: 32px;
   --radius-full: 9999px;
-  
-  /* Spacing */
   --sidebar-width: 72px;
-  
-  /* Transitions */
   --transition-fast: 0.08s ease-out;
   --transition: 0.12s ease-out;
   --transition-slow: 0.18s ease-out;
 }
 
-/* Reset & Base */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -78,7 +60,6 @@ body {
   overflow-y: scroll;
 }
 
-/* Animated gradient background */
 body::before {
   content: '';
   position: fixed;
@@ -137,7 +118,19 @@ img {
   height: auto;
 }
 
-/* Liquid Glass Card - darker */
+svg {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+svg[stroke-width="1.5"] {
+  stroke-width: 2.1;
+}
+
+svg[stroke-width="2"] {
+  stroke-width: 2.5;
+}
+
 .glass {
   background: linear-gradient(
     135deg,
@@ -156,7 +149,6 @@ img {
   transform: translateZ(0);
 }
 
-/* Liquid shine effect - subtle */
 .glass::before {
   content: '';
   position: absolute;
@@ -186,7 +178,6 @@ img {
   box-shadow: var(--glass-shadow);
 }
 
-/* Frosted glass for modals - darker */
 .glass-modal {
   background: rgba(10, 10, 10, 0.97);
   backdrop-filter: var(--glass-blur-modal);
@@ -198,7 +189,6 @@ img {
   transform: translateZ(0);
 }
 
-/* Liquid Glass Tabs - darker */
 .liquid-tabs {
   display: inline-flex;
   background: linear-gradient(
@@ -256,7 +246,6 @@ img {
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -338,7 +327,6 @@ img {
   height: 20px;
 }
 
-/* Avatar */
 .avatar {
   width: 44px;
   height: 44px;
@@ -366,7 +354,6 @@ img {
   border-width: 4px;
 }
 
-/* Badge */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -381,14 +368,12 @@ img {
   border-radius: var(--radius-full);
 }
 
-/* Container */
 .container {
   max-width: 600px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -407,13 +392,11 @@ img {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Selection */
 ::selection {
   background: var(--accent);
   color: white;
 }
 
-/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -438,7 +421,6 @@ img {
   animation: slideUp 0.2s ease-out;
 }
 
-/* Loading skeleton */
 .skeleton {
   background: linear-gradient(90deg, 
     rgba(255, 255, 255, 0.05) 25%, 
@@ -455,7 +437,6 @@ img {
   100% { background-position: -200% 0; }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   :root {
     --sidebar-width: 0px;

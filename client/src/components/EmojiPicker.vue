@@ -4,8 +4,8 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <circle cx="12" cy="12" r="10"/>
         <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-        <line x1="9" y1="9" x2="9.01" y2="9"/>
-        <line x1="15" y1="9" x2="15.01" y2="9"/>
+        <circle cx="9" cy="9" r="0.5" fill="currentColor"/>
+        <circle cx="15" cy="9" r="0.5" fill="currentColor"/>
       </svg>
     </button>
     <Transition name="picker">
@@ -90,6 +90,9 @@ const categories = {
   color: rgba(255, 255, 255, 0.4);
   padding: 4px;
   transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .emoji-btn:hover {
@@ -99,6 +102,7 @@ const categories = {
 .emoji-btn svg {
   width: 20px;
   height: 20px;
+  display: block;
 }
 
 .emoji-picker {

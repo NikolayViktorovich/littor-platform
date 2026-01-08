@@ -43,12 +43,12 @@
         </router-link>
 
         <router-link to="/friends" class="nav-item" :class="{ active: $route.name === 'friends', pressed: pressedItem === 'friends' }" @click="handlePress('friends')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span v-if="counts.friends" class="nav-badge">{{ counts.friends }}</span>
         </router-link>
 
         <button class="nav-item create-btn" :class="{ pressed: pressedItem === 'create' }" @click="handleCreate">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
         </button>
 
         <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat', pressed: pressedItem === 'messages' }" @click="handlePress('messages')">
@@ -57,7 +57,7 @@
         </router-link>
 
         <router-link :to="`/profile/${authStore.user?.id}`" class="nav-item" :class="{ active: $route.name === 'profile', pressed: pressedItem === 'profile' }" @click="handlePress('profile')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </router-link>
       </nav>
 
@@ -195,11 +195,11 @@ onUnmounted(() => {
 .notifications-wrap { position: relative; margin-bottom: 8px; }
 .bell-btn.has-notif svg { color: var(--text-primary); }
 .notifications-dropdown { position: absolute; top: 0; left: 72px; width: 300px; max-height: 400px; overflow: hidden; display: flex; flex-direction: column; }
-.notif-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 600; font-size: 15px; }
+.notif-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; font-weight: 600; font-size: 15px; }
 .clear-all { color: var(--text-muted); font-size: 13px; font-weight: 400; }
 .clear-all:hover { color: var(--text-secondary); }
 .notif-list { flex: 1; overflow-y: auto; padding: 8px; }
-.notif-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); }
+.notif-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
 .notif-item { display: flex; gap: 12px; padding: 12px; border-radius: var(--radius-lg); cursor: pointer; transition: background var(--transition); }
 .notif-item:hover { background: rgba(255,255,255,0.04); }
 .notif-content { flex: 1; min-width: 0; }
@@ -208,7 +208,7 @@ onUnmounted(() => {
 
 .nav-divider { width: 32px; height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0; }
 
-.nav { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.nav { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin-top: -40px; }
 .nav-item { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius-lg); transition: all 0.15s ease; position: relative; }
 .nav-item:hover { color: var(--text-primary); }
 .nav-item.active { color: var(--text-primary); }
@@ -248,7 +248,8 @@ onUnmounted(() => {
     flex-direction: row;
     justify-content: space-around;
     padding: 0 8px;
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    align-items: flex-end;
   }
   
   .sidebar-top,

@@ -27,11 +27,6 @@
       </TransitionGroup>
       
       <div v-if="!loading && !posts.length" class="empty-state glass">
-        <div class="empty-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-        </div>
         <h3>Пока нет записей</h3>
         <p>Напишите что-нибудь первым!</p>
       </div>
@@ -44,7 +39,7 @@
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="showMediaViewer" class="media-viewer-overlay" @click.self="closeMedia">
-          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
           <div class="viewer-content"><img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt=""><video v-else :src="mediaViewerSrc" controls autoplay></video></div>
         </div>
       </Transition>

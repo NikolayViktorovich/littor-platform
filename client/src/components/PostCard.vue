@@ -22,9 +22,7 @@
           <div v-if="showMenu" class="post-dropdown glass-modal" v-click-outside="closeMenu">
             <button class="dropdown-item" v-if="isOwner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 4v6l-2 4v2h10v-2l-2-4V4"/>
-                <line x1="12" y1="16" x2="12" y2="21"/>
-                <line x1="8" y1="4" x2="16" y2="4"/>
+                <path d="M9 4v6l-2 4v2h10v-2l-2-4V4M12 16v5M8 4h8"/>
               </svg>
               Закрепить
             </button>
@@ -98,8 +96,7 @@
 
       <button @click="handleShare" class="action-btn" :class="{ pressed: sharePressed }">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
         </svg>
       </button>
     </div>
@@ -175,8 +172,7 @@
             </button>
             <button v-else type="button" class="inside-btn cancel-inside" @click="cancelReply" key="cancel-inside">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
+                <path d="M18 6L6 18M6 6l12 12"/>
               </svg>
             </button>
           </div>
@@ -356,6 +352,7 @@ async function addComment() {
       }
       replyingTo.value = null
       replyingToParentId.value = null
+      isReplyMode.value = false
     } else {
       comments.value.push(res.data)
     }
