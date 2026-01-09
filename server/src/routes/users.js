@@ -31,7 +31,7 @@ router.get('/:id', authMiddleware, (req, res) => {
   const user = db.prepare(`
     SELECT id, name, avatar, bio, cover, lastSeen,
       (SELECT COUNT(*) FROM friendships WHERE (userId = ? OR friendId = ?) AND status = 'accepted') as friendsCount,
-      (SELECT COUNT(*) FROM posts WHERE authorId = ?) as postsCount
+      (SELECT COUNT(*) FROM posts WHERE authorId = ? AND (isArchived = 0 OR isArchived IS NULL)) as postsCount
     FROM users WHERE id = ?
   `).get(req.params.id, req.params.id, req.params.id, req.params.id)
 
@@ -39,8 +39,26 @@ router.get('/:id', authMiddleware, (req, res) => {
     return res.status(404).json({ error: 'Пользователь не найден' })
   }
 
+  // Check if this user blocked me
+  const blockedByUser = db.prepare('SELECT 1 FROM blocks WHERE blockerId = ? AND blockedId = ?')
+    .get(req.params.id, req.userId)
+  
+  if (blockedByUser) {
+    return res.json({ 
+      id: user.id, 
+      name: user.name, 
+      avatar: user.avatar,
+      isBlocked: true,
+      blockedByUser: true
+    })
+  }
+
+  // Check if I blocked this user
+  const iBlockedUser = db.prepare('SELECT 1 FROM blocks WHERE blockerId = ? AND blockedId = ?')
+    .get(req.userId, req.params.id)
+
   let friendStatus = 'none'
-  if (req.userId !== req.params.id) {
+  if (req.userId !== req.params.id && !iBlockedUser && !blockedByUser) {
     const friendship = db.prepare(`
       SELECT * FROM friendships 
       WHERE (userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)
@@ -60,7 +78,7 @@ router.get('/:id', authMiddleware, (req, res) => {
   // Check if online (last seen within 5 minutes)
   const isOnline = user.lastSeen && (Date.now() - new Date(user.lastSeen).getTime()) < 300000
 
-  res.json({ ...user, friendStatus, isOnline })
+  res.json({ ...user, friendStatus, isOnline, iBlockedUser: !!iBlockedUser })
 })
 
 router.get('/:id/posts', authMiddleware, (req, res) => {
@@ -170,6 +188,50 @@ router.get('/:id/friends', authMiddleware, (req, res) => {
   }))
   
   res.json(result)
+})
+
+// Block user
+router.post('/:id/block', authMiddleware, (req, res) => {
+  const blockedId = req.params.id
+  
+  if (blockedId === req.userId) {
+    return res.status(400).json({ error: 'Нельзя заблокировать себя' })
+  }
+  
+  // Check if user exists
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(blockedId)
+  if (!user) {
+    return res.status(404).json({ error: 'Пользователь не найден' })
+  }
+  
+  // Check if already blocked
+  const existing = db.prepare('SELECT 1 FROM blocks WHERE blockerId = ? AND blockedId = ?')
+    .get(req.userId, blockedId)
+  
+  if (existing) {
+    return res.json({ success: true })
+  }
+  
+  // Add block
+  db.prepare('INSERT INTO blocks (blockerId, blockedId) VALUES (?, ?)')
+    .run(req.userId, blockedId)
+  
+  // Remove friendship if exists
+  db.prepare(`DELETE FROM friendships WHERE 
+    (userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)`)
+    .run(req.userId, blockedId, blockedId, req.userId)
+  
+  res.json({ success: true })
+})
+
+// Unblock user
+router.delete('/:id/block', authMiddleware, (req, res) => {
+  const blockedId = req.params.id
+  
+  db.prepare('DELETE FROM blocks WHERE blockerId = ? AND blockedId = ?')
+    .run(req.userId, blockedId)
+  
+  res.json({ success: true })
 })
 
 export default router

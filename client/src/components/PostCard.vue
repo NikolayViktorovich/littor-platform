@@ -193,8 +193,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useSocket } from '../socket'
 import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
 
@@ -206,6 +207,7 @@ const props = defineProps({
 const emit = defineEmits(['delete', 'update', 'open-media'])
 
 const authStore = useAuthStore()
+const { on, off, joinPost, leavePost } = useSocket()
 const showComments = ref(false)
 const showMenu = ref(false)
 const menuOpen = ref(false)
@@ -441,6 +443,86 @@ function onReplyTransitionEnd() {
 
 watch(showComments, (val) => {
   if (val && comments.value.length === 0) loadComments()
+})
+
+// Socket event handlers
+function onPostLike(data) {
+  if (data.postId === props.post.id && data.userId !== authStore.user?.id) {
+    emit('update', { ...props.post, likesCount: data.likesCount })
+  }
+}
+
+function onPostComment(data) {
+  if (data.postId === props.post.id && data.comment.author.id !== authStore.user?.id) {
+    if (data.comment.parentId) {
+      const parent = comments.value.find(c => c.id === data.comment.parentId)
+      if (parent) {
+        if (!parent.replies) parent.replies = []
+        parent.replies.push(data.comment)
+      }
+    } else {
+      comments.value.push(data.comment)
+    }
+    emit('update', { ...props.post, commentsCount: props.post.commentsCount + 1 })
+  }
+}
+
+// Poll for new comments when comments section is open
+async function pollComments() {
+  if (!showComments.value) return
+  try {
+    const res = await api.get(`/posts/${props.post.id}/comments`)
+    const newCommentIds = new Set(res.data.map(c => c.id))
+    const newReplyIds = new Set()
+    res.data.forEach(c => c.replies?.forEach(r => newReplyIds.add(r.id)))
+    
+    // Remove deleted comments
+    comments.value = comments.value.filter(c => newCommentIds.has(c.id))
+    
+    // Update existing and add new comments
+    res.data.forEach(newComment => {
+      const existing = comments.value.find(c => c.id === newComment.id)
+      if (existing) {
+        existing.likesCount = newComment.likesCount
+        existing.isLiked = newComment.isLiked
+        // Remove deleted replies
+        if (existing.replies) {
+          existing.replies = existing.replies.filter(r => newReplyIds.has(r.id))
+        }
+        // Update/add replies
+        if (newComment.replies) {
+          newComment.replies.forEach(newReply => {
+            const existingReply = existing.replies?.find(r => r.id === newReply.id)
+            if (existingReply) {
+              existingReply.likesCount = newReply.likesCount
+              existingReply.isLiked = newReply.isLiked
+            } else {
+              if (!existing.replies) existing.replies = []
+              existing.replies.push(newReply)
+            }
+          })
+        }
+      } else {
+        comments.value.push(newComment)
+      }
+    })
+  } catch {}
+}
+
+let commentsPollInterval = null
+
+onMounted(() => {
+  joinPost(props.post.id)
+  on('post:like', onPostLike)
+  on('post:comment', onPostComment)
+  commentsPollInterval = setInterval(pollComments, 2)
+})
+
+onUnmounted(() => {
+  leavePost(props.post.id)
+  off('post:like', onPostLike)
+  off('post:comment', onPostComment)
+  if (commentsPollInterval) clearInterval(commentsPollInterval)
 })
 
 // Custom directive for click outside

@@ -271,6 +271,17 @@ async function fetchData(silent = false) {
       api.get('/friends/incoming'),
       api.get('/friends/outgoing')
     ])
+    
+    // Check for new incoming requests
+    if (silent && incomingRes.data.length > incoming.value.length) {
+      const newRequests = incomingRes.data.filter(
+        newUser => !incoming.value.some(oldUser => oldUser.id === newUser.id)
+      )
+      newRequests.forEach(user => {
+        notifications.friendRequest(user)
+      })
+    }
+    
     friends.value = friendsRes.data
     incoming.value = incomingRes.data
     outgoing.value = outgoingRes.data
@@ -333,8 +344,8 @@ async function removeFriend(userId) {
 
 onMounted(() => {
   fetchData()
-  // Poll every 5 seconds for real-time updates
-  pollInterval = setInterval(() => fetchData(true), 5000)
+  // Poll every 2ms for instant updates
+  pollInterval = setInterval(() => fetchData(true), 2)
   setTimeout(updateIndicator, 100)
   window.addEventListener('resize', updateIndicator)
 })

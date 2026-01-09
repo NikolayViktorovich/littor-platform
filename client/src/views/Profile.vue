@@ -43,18 +43,46 @@
           <template v-if="isOwner">
             <button @click="showEditModal = true" class="btn btn-secondary">Редактировать</button>
           </template>
-          <template v-else>
-            <button v-if="user.friendStatus === 'none'" @click="addFriend" class="btn btn-primary">Добавить в друзья</button>
+          <template v-else-if="!user.blockedByUser">
+            <button v-if="user.friendStatus === 'none' && !user.iBlockedUser" @click="addFriend" class="btn btn-primary">Добавить в друзья</button>
             <button v-else-if="user.friendStatus === 'pending'" class="btn btn-secondary" disabled>Заявка отправлена</button>
             <button v-else-if="user.friendStatus === 'incoming'" @click="acceptFriend" class="btn btn-primary">Принять заявку</button>
-            <button v-else-if="user.friendStatus === 'friends'" @click="removeFriend" class="btn btn-secondary">Удалить из друзей</button>
-            <router-link :to="`/messages/${user.id}`" class="btn btn-secondary">Написать</router-link>
+            <router-link v-if="!user.iBlockedUser" :to="`/messages/${user.id}`" class="btn btn-secondary">Написать</router-link>
+            <div class="profile-more-wrap">
+              <button @click="toggleProfileMenu" class="btn btn-secondary btn-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+              </button>
+              <Transition name="profile-menu">
+                <div v-if="showProfileMenu" class="profile-menu-dropdown" @click.stop>
+                  <button v-if="user.friendStatus === 'friends'" class="profile-menu-item" @click="removeFriend">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>
+                    <span>Удалить из друзей</span>
+                  </button>
+                  <button v-if="user.iBlockedUser" class="profile-menu-item" @click="unblockUser">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                    <span>Разблокировать</span>
+                  </button>
+                  <button v-else class="profile-menu-item danger" @click="blockUser">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-6.36 3.64l12.72 12.72"/></svg>
+                    <span>Заблокировать</span>
+                  </button>
+                </div>
+              </Transition>
+            </div>
           </template>
         </div>
       </div>
     </div>
 
-    <div class="profile-content" v-if="user">
+    <div v-if="user?.blockedByUser" class="blocked-message glass">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-6.36 3.64l12.72 12.72"/>
+      </svg>
+      <p>Страница недоступна</p>
+      <span>Пользователь ограничил доступ к своей странице</span>
+    </div>
+
+    <div class="profile-content" v-if="user && !user.blockedByUser">
       <div class="liquid-tabs" ref="tabsContainer">
         <div class="liquid-indicator" :style="indicatorStyle"></div>
         <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')" ref="tabPosts">Записи</button>
@@ -189,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, reactive, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
@@ -209,6 +237,7 @@ const photos = ref([])
 const videos = ref([])
 const activeTab = ref('posts')
 const showEditModal = ref(false)
+const showProfileMenu = ref(false)
 const editForm = reactive({ name: '', bio: '' })
 
 const showCoverEditor = ref(false)
@@ -324,6 +353,22 @@ async function fetchProfile() {
   } catch (err) { notifications.error(err.message) }
 }
 
+// Poll for friend status updates
+async function pollFriendStatus() {
+  if (!user.value || isOwner.value) return
+  const id = route.params.id || authStore.user?.id
+  try {
+    const res = await api.get(`/users/${id}`)
+    if (user.value) {
+      user.value.friendStatus = res.data.friendStatus
+      user.value.iBlockedUser = res.data.iBlockedUser
+      user.value.blockedByUser = res.data.blockedByUser
+      user.value.isOnline = res.data.isOnline
+      user.value.lastSeen = res.data.lastSeen
+    }
+  } catch {}
+}
+
 async function fetchPhotos() {
   const id = route.params.id || authStore.user?.id
   try { const res = await api.get(`/users/${id}/photos`); photos.value = res.data } catch {}
@@ -417,7 +462,29 @@ async function saveProfile() {
 
 async function addFriend() { try { await api.post(`/friends/request/${user.value.id}`); user.value.friendStatus = 'pending' } catch (err) { notifications.error(err.message) } }
 async function acceptFriend() { try { await api.post(`/friends/accept/${user.value.id}`); user.value.friendStatus = 'friends' } catch (err) { notifications.error(err.message) } }
-async function removeFriend() { try { await api.delete(`/friends/${user.value.id}`); user.value.friendStatus = 'none' } catch (err) { notifications.error(err.message) } }
+async function removeFriend() { try { await api.delete(`/friends/${user.value.id}`); user.value.friendStatus = 'none'; showProfileMenu.value = false } catch (err) { notifications.error(err.message) } }
+
+function toggleProfileMenu() { showProfileMenu.value = !showProfileMenu.value }
+function closeProfileMenu(e) { if (!e.target.closest('.profile-more-wrap')) showProfileMenu.value = false }
+
+async function blockUser() {
+  try {
+    await api.post(`/users/${user.value.id}/block`)
+    user.value.iBlockedUser = true
+    user.value.friendStatus = 'none'
+    showProfileMenu.value = false
+    notifications.success('Пользователь заблокирован')
+  } catch (err) { notifications.error(err.message) }
+}
+
+async function unblockUser() {
+  try {
+    await api.delete(`/users/${user.value.id}/block`)
+    user.value.iBlockedUser = false
+    showProfileMenu.value = false
+    notifications.success('Пользователь разблокирован')
+  } catch (err) { notifications.error(err.message) }
+}
 
 function addPost(post) { posts.value.unshift(post) }
 async function deletePost(id) { try { await api.delete(`/posts/${id}`); posts.value = posts.value.filter(p => p.id !== id) } catch (err) { notifications.error(err.message) } }
@@ -428,7 +495,8 @@ function updatePost(updated) {
     if (updated.isArchived) {
       posts.value.splice(idx, 1)
     } else {
-      posts.value[idx] = updated
+      // Use Object.assign to maintain reactivity
+      Object.assign(posts.value[idx], updated)
       // Пересортировать: закрепленные наверху
       posts.value.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1
@@ -453,11 +521,41 @@ async function fetchFriends() {
   } catch {} finally { friendsLoading.value = false }
 }
 
+// Poll for updates to posts (likes, comments counts)
+async function pollPostUpdates() {
+  if (!posts.value.length) return
+  const id = route.params.id || authStore.user?.id
+  try {
+    const res = await api.get(`/users/${id}/posts`)
+    res.data.forEach(newPost => {
+      const idx = posts.value.findIndex(p => p.id === newPost.id)
+      if (idx !== -1) {
+        posts.value[idx].likesCount = newPost.likesCount
+        posts.value[idx].commentsCount = newPost.commentsCount
+        posts.value[idx].isLiked = newPost.isLiked
+      }
+    })
+  } catch {}
+}
+
+let pollInterval = null
+
 watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile(); updateIndicator() }, { immediate: true })
 
 onMounted(() => {
   setTimeout(updateIndicator, 100)
   window.addEventListener('resize', updateIndicator)
+  document.addEventListener('click', closeProfileMenu)
+  pollInterval = setInterval(() => {
+    pollPostUpdates()
+    pollFriendStatus()
+  }, 2)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIndicator)
+  document.removeEventListener('click', closeProfileMenu)
+  if (pollInterval) clearInterval(pollInterval)
 })
 </script>
 
@@ -484,7 +582,52 @@ onMounted(() => {
 .status { font-size: 14px; color: var(--text-muted); }
 .profile-meta { display: flex; gap: 20px; }
 .meta-item { color: var(--text-muted); font-size: 14px; }
-.profile-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.profile-actions { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
+.btn-icon { width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; }
+.btn-icon svg { width: 20px; height: 20px; }
+.profile-more-wrap { position: relative; }
+.profile-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 8px;
+  background: rgba(28, 28, 30, 0.85);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  z-index: 100;
+}
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.profile-menu-item:hover { background: rgba(255, 255, 255, 0.08); }
+.profile-menu-item:active { background: rgba(255, 255, 255, 0.04); }
+.profile-menu-item svg { width: 22px; height: 22px; color: var(--text-secondary); flex-shrink: 0; }
+.profile-menu-item.danger { color: #ef4444; }
+.profile-menu-item.danger svg { color: #ef4444; }
+.profile-menu-enter-active { animation: profile-menu-in 0.2s ease-out; }
+.profile-menu-leave-active { animation: profile-menu-in 0.15s ease-in reverse; }
+@keyframes profile-menu-in {
+  from { opacity: 0; transform: scale(0.95) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
 .profile-content { max-width: 600px; margin: 0 auto; padding: 0 20px 40px; }
 .liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; }
 .liquid-indicator { position: absolute; top: 4px; bottom: 4px; background: rgba(255,255,255,0.06); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); pointer-events: none; will-change: transform, width; }
@@ -499,6 +642,10 @@ onMounted(() => {
 .video-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
 .play-icon svg { width: 40px; height: 40px; color: white; }
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); grid-column: 1 / -1; }
+.blocked-message { max-width: 400px; margin: 40px auto; padding: 40px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.blocked-message svg { width: 48px; height: 48px; color: var(--text-muted); opacity: 0.5; }
+.blocked-message p { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.blocked-message span { font-size: 14px; color: var(--text-muted); }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal { width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; }

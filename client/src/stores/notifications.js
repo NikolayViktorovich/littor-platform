@@ -5,8 +5,14 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const items = ref([])
   let id = 0
 
-  function add(message, type = 'info') {
-    const notification = { id: ++id, message, type }
+  function add(message, type = 'info', options = {}) {
+    const notification = { 
+      id: ++id, 
+      message, 
+      type,
+      avatar: options.avatar || null,
+      name: options.name || null
+    }
     items.value.push(notification)
     setTimeout(() => remove(notification.id), 4000)
   }
@@ -15,13 +21,20 @@ export const useNotificationsStore = defineStore('notifications', () => {
     items.value = items.value.filter(n => n.id !== notificationId)
   }
 
-  function success(message) {
-    add(message, 'success')
+  function success(message, options = {}) {
+    add(message, 'success', options)
   }
 
-  function error(message) {
-    add(message, 'error')
+  function error(message, options = {}) {
+    add(message, 'error', options)
   }
 
-  return { items, add, remove, success, error }
+  function friendRequest(user) {
+    add(`${user.name} хочет добавить вас в друзья`, 'friend', { 
+      avatar: user.avatar, 
+      name: user.name 
+    })
+  }
+
+  return { items, add, remove, success, error, friendRequest }
 })

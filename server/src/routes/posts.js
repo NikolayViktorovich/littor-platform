@@ -96,7 +96,7 @@ router.post('/', authMiddleware, upload.single('image'), (req, res) => {
 
   const user = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId)
 
-  res.json({
+  const post = {
     id,
     content: content?.trim() || null,
     image,
@@ -105,7 +105,20 @@ router.post('/', authMiddleware, upload.single('image'), (req, res) => {
     commentsCount: 0,
     isLiked: false,
     author: user
+  }
+
+  // Notify friends about new post
+  const io = req.app.get('io')
+  const friends = db.prepare(`
+    SELECT CASE WHEN userId = ? THEN friendId ELSE userId END as friendId
+    FROM friendships WHERE (userId = ? OR friendId = ?) AND status = 'accepted'
+  `).all(req.userId, req.userId, req.userId)
+  
+  friends.forEach(f => {
+    io.to(`user:${f.friendId}`).emit('post:new', post)
   })
+
+  res.json(post)
 })
 
 router.delete('/:id', authMiddleware, (req, res) => {
@@ -198,6 +211,15 @@ router.post('/:id/like', authMiddleware, (req, res) => {
   const likesCount = db.prepare('SELECT COUNT(*) as count FROM likes WHERE postId = ?')
     .get(req.params.id).count
 
+  // Emit to all users viewing this post
+  const io = req.app.get('io')
+  io.to(`post:${req.params.id}`).emit('post:like', {
+    postId: req.params.id,
+    liked: !existing,
+    likesCount,
+    userId: req.userId
+  })
+
   res.json({ liked: !existing, likesCount })
 })
 
@@ -265,15 +287,25 @@ router.post('/:id/comments', authMiddleware, (req, res) => {
 
     const user = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId)
 
-    res.json({
+    const comment = {
       id,
       content: content.trim(),
       createdAt,
       likesCount: 0,
       isLiked: false,
       author: user,
+      parentId: parentId || null,
       replies: []
+    }
+
+    // Emit to all users viewing this post
+    const io = req.app.get('io')
+    io.to(`post:${req.params.id}`).emit('post:comment', {
+      postId: req.params.id,
+      comment
     })
+
+    res.json(comment)
   } catch (err) {
     console.error('Error adding comment:', err)
     res.status(500).json({ error: 'Ошибка добавления комментария' })

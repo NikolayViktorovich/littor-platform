@@ -109,6 +109,16 @@ router.post('/forward', authMiddleware, (req, res) => {
   try {
     const { messageId, toUserId } = req.body
     
+    // Check if blocked
+    const blocked = db.prepare(`
+      SELECT 1 FROM blocks 
+      WHERE (blockerId = ? AND blockedId = ?) OR (blockerId = ? AND blockedId = ?)
+    `).get(req.userId, toUserId, toUserId, req.userId)
+    
+    if (blocked) {
+      return res.status(403).json({ error: 'Невозможно переслать сообщение' })
+    }
+    
     const original = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId)
     if (!original) {
       return res.status(404).json({ error: 'Сообщение не найдено' })
@@ -168,6 +178,16 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
       return res.status(400).json({ error: 'Сообщение не может быть пустым' })
     }
 
+    // Check if blocked
+    const blocked = db.prepare(`
+      SELECT 1 FROM blocks 
+      WHERE (blockerId = ? AND blockedId = ?) OR (blockerId = ? AND blockedId = ?)
+    `).get(req.userId, req.params.id, req.params.id, req.userId)
+    
+    if (blocked) {
+      return res.status(403).json({ error: 'Невозможно отправить сообщение' })
+    }
+
     const id = uuid()
     const createdAt = new Date().toISOString()
     const messageContent = content?.trim() || null
@@ -175,7 +195,7 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
     db.prepare('INSERT INTO messages (id, senderId, receiverId, content, media, mediaType, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(id, req.userId, req.params.id, messageContent, media, mediaType || null, createdAt)
 
-    res.json({
+    const message = {
       id,
       senderId: req.userId,
       receiverId: req.params.id,
@@ -184,7 +204,13 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
       mediaType: mediaType || null,
       isRead: 0,
       createdAt
-    })
+    }
+
+    // Emit to receiver via socket
+    const io = req.app.get('io')
+    io.to(`user:${req.params.id}`).emit('message:new', message)
+
+    res.json(message)
   } catch (err) {
     console.error('Error sending message:', err)
     res.status(500).json({ error: 'Ошибка отправки сообщения' })
@@ -194,6 +220,13 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
 router.post('/:id/read', authMiddleware, (req, res) => {
   db.prepare('UPDATE messages SET isRead = 1 WHERE senderId = ? AND receiverId = ?')
     .run(req.params.id, req.userId)
+
+  // Notify sender that messages were read
+  const io = req.app.get('io')
+  io.to(`user:${req.params.id}`).emit('message:read', { 
+    by: req.userId,
+    chatWith: req.params.id 
+  })
 
   res.json({ success: true })
 })

@@ -139,7 +139,16 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
           </button>
         </div>
-        <form @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
+        <div v-if="chatUser?.blockedByUser" class="chat-blocked blocked-by-user">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-6.36 3.64l12.72 12.72"/>
+          </svg>
+          <span>Вы не можете писать этому пользователю</span>
+        </div>
+        <div v-else-if="chatUser?.iBlockedUser" class="chat-blocked">
+          <button @click="unblockUser" class="unblock-btn">Разблокировать</button>
+        </div>
+        <form v-else @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
           <div class="input-actions-left">
             <label class="action-btn"><input type="file" accept="image/*,video/*" @change="handleMediaSelect" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></label>
           </div>
@@ -263,12 +272,14 @@ import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import { currentChatUserId } from '../stores/chat'
 import { cache } from '../stores/cache'
+import { useSocket } from '../socket'
 import EmojiPicker from '../components/EmojiPicker.vue'
 import api from '../api'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
+const { on, off } = useSocket()
 
 const dialogs = ref([])
 const loading = ref(true)
@@ -759,6 +770,15 @@ async function pollMessages() {
 }
 async function sendMessage() { if (!canSend.value || !selectedUserId.value) return; try { const formData = new FormData(); if (newMessage.value.trim()) formData.append('content', newMessage.value.trim()); if (mediaFile.value) { formData.append('media', mediaFile.value); formData.append('mediaType', mediaType.value) }; const res = await api.post(`/messages/${selectedUserId.value}`, formData); messages.value.push(res.data); newMessage.value = ''; clearMedia(); scrollToBottom(); fetchDialogs() } catch (err) { notifications.error(err.message) } }
 
+async function unblockUser() {
+  if (!chatUser.value) return
+  try {
+    await api.delete(`/users/${chatUser.value.id}/block`)
+    chatUser.value.iBlockedUser = false
+    notifications.success('Пользователь разблокирован')
+  } catch (err) { notifications.error(err.message) }
+}
+
 function openMsgMenu(e, msg) { selectedMsg.value = msg; msgMenuX.value = Math.min(e.clientX, window.innerWidth - 200); msgMenuY.value = Math.min(e.clientY, window.innerHeight - 150); showMsgMenu.value = true }
 function closeMsgMenu() { showMsgMenu.value = false; selectedMsg.value = null }
 function forwardMessage() { showMsgMenu.value = false; showForwardModal.value = true }
@@ -795,8 +815,58 @@ function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = 
 
 function handleClickOutside(e) { if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu() }
 
-onMounted(() => { fetchDialogs(); pollInterval = setInterval(() => { pollMessages(); fetchDialogs() }, 3000); if (route.params.id) selectDialog(route.params.id); document.addEventListener('click', handleClickOutside); window.addEventListener('resize', handleResize) })
-onUnmounted(() => { clearInterval(pollInterval); if (stream) stream.getTracks().forEach(t => t.stop()); document.removeEventListener('click', handleClickOutside); window.removeEventListener('resize', handleResize); currentChatUserId.value = null; clearTimeout(floatingDateHideTimeout) })
+// Socket event handlers
+function onNewMessage(msg) {
+  // If we're in the chat with this sender, add message
+  if (selectedUserId.value === msg.senderId) {
+    messages.value.push(msg)
+    scrollToBottom()
+    // Mark as read immediately
+    api.post(`/messages/${msg.senderId}/read`)
+  }
+  // Update dialogs
+  fetchDialogs()
+}
+
+function onMessageRead(data) {
+  // If we're in the chat with the person who read our messages
+  if (selectedUserId.value === data.by) {
+    messages.value.forEach(m => {
+      if (m.senderId === authStore.user?.id) {
+        m.isRead = 1
+      }
+    })
+  }
+}
+
+onMounted(() => { 
+  fetchDialogs()
+  // Keep polling as fallback for reliability
+  pollInterval = setInterval(() => { 
+    pollMessages()
+    fetchDialogs() 
+  }, 2)
+  if (route.params.id) selectDialog(route.params.id)
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener('resize', handleResize)
+  
+  // Socket listeners
+  on('message:new', onNewMessage)
+  on('message:read', onMessageRead)
+})
+
+onUnmounted(() => { 
+  clearInterval(pollInterval)
+  if (stream) stream.getTracks().forEach(t => t.stop())
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('resize', handleResize)
+  currentChatUserId.value = null
+  clearTimeout(floatingDateHideTimeout)
+  
+  // Remove socket listeners
+  off('message:new', onNewMessage)
+  off('message:read', onMessageRead)
+})
 watch(() => route.params.id, id => { if (id) selectDialog(id) })
 </script>
 
@@ -968,6 +1038,37 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .circle-rec-send:hover { background: rgba(80,80,80,1); transform: scale(1.05); }
 .circle-rec-send:active { transform: scale(0.95); }
 .circle-rec-send svg { width: 26px; height: 26px; }
+
+.chat-blocked { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; color: var(--text-muted); font-size: 14px; text-align: center; }
+.chat-blocked.blocked-by-user { flex-direction: row; justify-content: flex-start; text-align: left; gap: 10px; }
+.chat-blocked svg { width: 24px; height: 24px; opacity: 0.4; flex-shrink: 0; }
+.chat-blocked span { opacity: 0.7; }
+.unblock-btn { 
+  margin-top: 4px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.unblock-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: scale(1.02);
+}
+.unblock-btn:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .chat-input { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
 .voice-recording-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }

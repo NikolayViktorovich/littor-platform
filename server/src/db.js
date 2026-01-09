@@ -176,6 +176,17 @@ export async function initDb() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_messages_users ON messages(senderId, receiverId)`)
   db.run(`CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(createdAt)`)
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS blocks (
+      blockerId TEXT NOT NULL,
+      blockedId TEXT NOT NULL,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (blockerId, blockedId),
+      FOREIGN KEY (blockerId) REFERENCES users(id),
+      FOREIGN KEY (blockedId) REFERENCES users(id)
+    )
+  `)
+
   saveDb()
   console.log('Database initialized')
 }

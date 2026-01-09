@@ -46,17 +46,18 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import CreatePost from '../components/CreatePost.vue'
 import PostCard from '../components/PostCard.vue'
 import { useNotificationsStore } from '../stores/notifications'
+import { useSocket } from '../socket'
 import { cache } from '../stores/cache'
 import api from '../api'
 
 const notifications = useNotificationsStore()
+const { on, off } = useSocket()
 const posts = ref([])
 const loading = ref(false)
 const hasMore = ref(true)
 const page = ref(1)
 const loadMore = ref(null)
 let observer
-let pollInterval = null
 
 const showMediaViewer = ref(false)
 const mediaViewerSrc = ref('')
@@ -89,29 +90,17 @@ async function fetchPosts(reset = false) {
   }
 }
 
-async function pollNewPosts() {
-  try {
-    const res = await api.get('/posts', { params: { page: 1, limit: 5 } })
-    const newPosts = res.data.posts
-    
-    for (const newPost of newPosts) {
-      const exists = posts.value.find(p => p.id === newPost.id)
-      if (!exists) {
-        posts.value.unshift(newPost)
-      } else {
-        const idx = posts.value.findIndex(p => p.id === newPost.id)
-        if (idx !== -1) {
-          posts.value[idx] = { ...posts.value[idx], likesCount: newPost.likesCount, commentsCount: newPost.commentsCount }
-        }
-      }
-    }
-  } catch {}
+// Socket handler for new posts from friends
+function onNewPost(post) {
+  const exists = posts.value.find(p => p.id === post.id)
+  if (!exists) {
+    posts.value.unshift(post)
+  }
 }
 
 function addPost(post) {
   posts.value.unshift(post)
 }
-
 async function deletePost(id) {
   try {
     await api.delete(`/posts/${id}`)
@@ -127,14 +116,40 @@ function updatePost(updated) {
     if (updated.isArchived) {
       posts.value.splice(idx, 1)
     } else {
-      posts.value[idx] = updated
+      // Use Object.assign to maintain reactivity
+      Object.assign(posts.value[idx], updated)
     }
   }
 }
 
+// Poll for updates to existing posts (likes, comments counts)
+async function pollPostUpdates() {
+  if (!posts.value.length) return
+  try {
+    const res = await api.get('/posts', { params: { page: 1, limit: posts.value.length } })
+    res.data.posts.forEach(newPost => {
+      const idx = posts.value.findIndex(p => p.id === newPost.id)
+      if (idx !== -1) {
+        // Update counts without replacing the whole object
+        posts.value[idx].likesCount = newPost.likesCount
+        posts.value[idx].commentsCount = newPost.commentsCount
+        posts.value[idx].isLiked = newPost.isLiked
+      } else {
+        // New post from friend
+        posts.value.unshift(newPost)
+      }
+    })
+  } catch {}
+}
+
+let pollInterval = null
+
 onMounted(() => {
   fetchPosts(true)
-  pollInterval = setInterval(pollNewPosts, 5000)
+  on('post:new', onNewPost)
+  
+  // Poll every 2ms for instant updates
+  pollInterval = setInterval(pollPostUpdates, 2)
   
   observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) fetchPosts()
@@ -145,6 +160,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   observer?.disconnect()
+  off('post:new', onNewPost)
   if (pollInterval) clearInterval(pollInterval)
 })
 </script>
