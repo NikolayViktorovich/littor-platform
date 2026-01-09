@@ -116,11 +116,13 @@ router.post('/forward', authMiddleware, (req, res) => {
 
     const id = uuid()
     const createdAt = new Date().toISOString()
+    // Если сообщение уже было переслано, сохраняем оригинального отправителя
+    const forwardedFromId = original.forwardedFromId || original.senderId
 
     db.prepare(`
-      INSERT INTO messages (id, senderId, receiverId, content, media, mediaType, forwarded, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-    `).run(id, req.userId, toUserId, original.content, original.media, original.mediaType, createdAt)
+      INSERT INTO messages (id, senderId, receiverId, content, media, mediaType, forwarded, forwardedFromId, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+    `).run(id, req.userId, toUserId, original.content, original.media, original.mediaType, forwardedFromId, createdAt)
 
     res.json({ success: true })
   } catch (err) {
@@ -131,13 +133,30 @@ router.post('/forward', authMiddleware, (req, res) => {
 
 router.get('/:id', authMiddleware, (req, res) => {
   const messages = db.prepare(`
-    SELECT * FROM messages
-    WHERE ((senderId = ? AND receiverId = ? AND (deletedBySender IS NULL OR deletedBySender = 0)) 
-       OR (senderId = ? AND receiverId = ? AND (deletedByReceiver IS NULL OR deletedByReceiver = 0)))
-    ORDER BY createdAt ASC
+    SELECT m.*, 
+           u.id as forwardedFromUserId, 
+           u.name as forwardedFromName, 
+           u.avatar as forwardedFromAvatar
+    FROM messages m
+    LEFT JOIN users u ON m.forwardedFromId = u.id
+    WHERE ((m.senderId = ? AND m.receiverId = ? AND (m.deletedBySender IS NULL OR m.deletedBySender = 0)) 
+       OR (m.senderId = ? AND m.receiverId = ? AND (m.deletedByReceiver IS NULL OR m.deletedByReceiver = 0)))
+    ORDER BY m.createdAt ASC
   `).all(req.userId, req.params.id, req.params.id, req.userId)
 
-  res.json(messages)
+  const result = messages.map(msg => ({
+    ...msg,
+    forwardedFrom: msg.forwardedFromUserId ? {
+      id: msg.forwardedFromUserId,
+      name: msg.forwardedFromName,
+      avatar: msg.forwardedFromAvatar
+    } : null,
+    forwardedFromUserId: undefined,
+    forwardedFromName: undefined,
+    forwardedFromAvatar: undefined
+  }))
+
+  res.json(result)
 })
 
 router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {

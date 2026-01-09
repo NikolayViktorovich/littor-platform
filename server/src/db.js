@@ -152,6 +152,9 @@ export async function initDb() {
     if (!colNames.includes('deletedByReceiver')) {
       db.run(`ALTER TABLE messages ADD COLUMN deletedByReceiver INTEGER DEFAULT 0`)
     }
+    if (!colNames.includes('forwardedFromId')) {
+      db.run(`ALTER TABLE messages ADD COLUMN forwardedFromId TEXT`)
+    }
   } catch (e) {
     console.log('Migration check:', e.message)
   }

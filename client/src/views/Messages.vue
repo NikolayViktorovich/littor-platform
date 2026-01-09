@@ -51,60 +51,75 @@
             </router-link>
           </div>
 
-        <div class="chat-messages" ref="messagesContainer">
+        <div class="chat-messages" ref="messagesContainer" @scroll="onChatScroll">
+          <Transition name="floating-date">
+            <div v-if="showFloatingDate" class="floating-date">
+              <span>{{ floatingDateText }}</span>
+            </div>
+          </Transition>
           <div v-if="chatLoading" class="loading-state"><div class="spinner"></div></div>
           <template v-else>
-            <div v-for="msg in messages" :key="msg.id" class="message" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice' }" @contextmenu.prevent="openMsgMenu($event, msg)">
-              <router-link v-if="msg.senderId !== authStore.user?.id" :to="`/profile/${chatUser?.id}`" class="msg-avatar">
-                <img :src="getAvatarUrl(chatUser?.avatar)" class="avatar avatar-sm" alt="" @error="handleAvatarError">
-              </router-link>
-              <div class="message-content">
-                <!-- Circle video message -->
-                <div v-if="msg.mediaType === 'circle'" class="circle-message">
-                  <div class="circle-video-wrap" :class="{ playing: playingCircles[msg.id] }" @click="toggleCircle($event, msg.id)">
-                    <svg v-if="playingCircles[msg.id]" class="circle-playback-ring" viewBox="0 0 200 200">
-                      <circle class="circle-playback-bar" cx="100" cy="100" r="96" fill="none" stroke="white" stroke-width="4" :stroke-dasharray="603" :stroke-dashoffset="603 - (circleProgress[msg.id] || 0) * 603" stroke-linecap="round" transform="rotate(-90 100 100)"/>
-                    </svg>
-                    <video :src="msg.media" :id="'circle-' + msg.id" class="circle-player" playsinline @loadedmetadata="onCircleLoaded($event, msg.id)" @timeupdate="onCircleTimeUpdate($event, msg.id)" @ended="onCircleEnded(msg.id)"></video>
-                    <div class="circle-overlay-icon" v-if="!playingCircles[msg.id]">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z"/></svg>
+            <template v-for="(msg, index) in messages" :key="msg.id">
+              <div v-if="shouldShowDateSeparator(index)" class="date-separator">
+                <span>{{ formatDateSeparator(msg.createdAt) }}</span>
+              </div>
+              <div class="message" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice' }" @contextmenu.prevent="openMsgMenu($event, msg)">
+                <router-link v-if="msg.senderId !== authStore.user?.id" :to="`/profile/${chatUser?.id}`" class="msg-avatar">
+                  <img :src="getAvatarUrl(chatUser?.avatar)" class="avatar avatar-sm" alt="" @error="handleAvatarError">
+                </router-link>
+                <div class="message-content">
+                  <!-- Circle video message -->
+                  <div v-if="msg.mediaType === 'circle'" class="circle-message">
+                    <div class="circle-video-wrap" :class="{ playing: playingCircles[msg.id] }" @click="toggleCircle($event, msg.id)">
+                      <svg v-if="playingCircles[msg.id]" class="circle-playback-ring" viewBox="0 0 200 200">
+                        <circle class="circle-playback-bar" cx="100" cy="100" r="96" fill="none" stroke="white" stroke-width="4" :stroke-dasharray="603" :stroke-dashoffset="603 - (circleProgress[msg.id] || 0) * 603" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+                      </svg>
+                      <video :src="msg.media" :id="'circle-' + msg.id" class="circle-player" playsinline @loadedmetadata="onCircleLoaded($event, msg.id)" @timeupdate="onCircleTimeUpdate($event, msg.id)" @ended="onCircleEnded(msg.id)"></video>
+                      <div class="circle-overlay-icon" v-if="!playingCircles[msg.id]">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z"/></svg>
+                      </div>
+                      <button class="circle-mute" @click.stop="toggleMute(msg.id)">
+                        <svg v-if="mutedCircles[msg.id]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                      </button>
                     </div>
-                    <button class="circle-mute" @click.stop="toggleMute(msg.id)">
-                      <svg v-if="mutedCircles[msg.id]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-                      <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    <div class="circle-info">
+                      <span class="circle-timer">{{ getCircleCurrentTime(msg.id) }}</span>
+                      <span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span>
+                    </div>
+                  </div>
+                  <!-- Voice message -->
+                  <div v-else-if="msg.mediaType === 'voice'" class="voice-message-wrap">
+                    <button class="voice-play-btn" @click="toggleVoice($event, msg.id)">
+                      <svg v-if="!playingVoices[msg.id]" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+                      <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
                     </button>
-                  </div>
-                  <div class="circle-info">
-                    <span class="circle-timer">{{ getCircleCurrentTime(msg.id) }}</span>
-                    <span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span>
-                  </div>
-                </div>
-                <!-- Voice message -->
-                <div v-else-if="msg.mediaType === 'voice'" class="voice-message-wrap">
-                  <button class="voice-play-btn" @click="toggleVoice($event, msg.id)">
-                    <svg v-if="!playingVoices[msg.id]" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    <svg v-else viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                  </button>
-                  <div class="voice-wave-wrap">
-                    <div class="voice-waveform">
-                      <span v-for="i in 30" :key="i" class="wave-bar" :class="{ active: isWaveBarActive(msg.id, i, 30) }" :style="{ height: getWaveHeight(i) + 'px' }"></span>
+                    <div class="voice-wave-wrap">
+                      <div class="voice-waveform">
+                        <span v-for="i in 30" :key="i" class="wave-bar" :class="{ active: isWaveBarActive(msg.id, i, 30) }" :style="{ height: getWaveHeight(i) + 'px' }"></span>
+                      </div>
+                      <div class="voice-bottom">
+                        <span class="voice-duration">{{ getVoiceDuration(msg.id) }}</span>
+                        <span class="voice-msg-time">{{ formatMsgTime(msg.createdAt) }}</span>
+                      </div>
                     </div>
-                    <div class="voice-bottom">
-                      <span class="voice-duration">{{ getVoiceDuration(msg.id) }}</span>
-                      <span class="voice-msg-time">{{ formatMsgTime(msg.createdAt) }}</span>
-                    </div>
+                    <audio :src="msg.media" :id="'voice-' + msg.id" @ended="onVoiceEnded(msg.id)" @loadedmetadata="onVoiceLoaded($event, msg.id)" @timeupdate="onVoiceTimeUpdate($event, msg.id)" hidden></audio>
                   </div>
-                  <audio :src="msg.media" :id="'voice-' + msg.id" @ended="onVoiceEnded(msg.id)" @loadedmetadata="onVoiceLoaded($event, msg.id)" @timeupdate="onVoiceTimeUpdate($event, msg.id)" hidden></audio>
-                </div>
-                <!-- Regular message bubble -->
-                <div v-else class="message-bubble">
-                  <span v-if="msg.forwarded" class="forwarded-label">Переслано</span>
-                  <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="" @click="openMediaViewer(msg.media, 'image')">
-                  <video v-else-if="msg.mediaType === 'video'" :src="msg.media" class="message-media" controls></video>
-                  <span class="message-text-wrap"><p v-if="msg.content">{{ msg.content }}</p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span></span>
+                  <!-- Regular message bubble -->
+                  <div v-else class="message-bubble">
+                    <div v-if="msg.forwarded && msg.forwardedFrom" class="forwarded-header">
+                      <span class="forwarded-text">Переслано от</span>
+                      <img :src="getAvatarUrl(msg.forwardedFrom.avatar)" class="forwarded-avatar" alt="">
+                      <span class="forwarded-name">{{ msg.forwardedFrom.name }}</span>
+                    </div>
+                    <span v-else-if="msg.forwarded" class="forwarded-label">Переслано</span>
+                    <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="" @click="openMediaViewer(msg.media, 'image')">
+                    <video v-else-if="msg.mediaType === 'video'" :src="msg.media" class="message-media" controls></video>
+                    <span class="message-text-wrap"><p v-if="msg.content">{{ msg.content }}</p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span></span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
           </template>
         </div>
 
@@ -310,6 +325,12 @@ const viewerType = ref('image')
 
 const scrollPositions = {}
 
+const showFloatingDate = ref(false)
+const floatingDateText = ref('')
+let floatingDateHideTimeout = null
+let lastScrollTime = 0
+let isProgrammaticScroll = false
+
 const canSend = computed(() => newMessage.value.trim() || mediaFile.value)
 const isMobile = ref(window.innerWidth <= 900)
 
@@ -322,7 +343,9 @@ function saveScrollPosition() {
 function restoreScrollPosition(userId) {
   nextTick(() => {
     if (messagesContainer.value) {
+      isProgrammaticScroll = true
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      setTimeout(() => { isProgrammaticScroll = false }, 100)
     }
   })
 }
@@ -344,10 +367,85 @@ function formatTime(d) {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: '2-digit', year: '2-digit' }).replace(/\//g, '.')
 }
 function formatMsgTime(d) { return new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
+function formatDateSeparator(d) {
+  const date = new Date(d)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
+  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  
+  if (msgDate.getTime() === today.getTime()) return 'Сегодня'
+  if (msgDate.getTime() === yesterday.getTime()) return 'Вчера'
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+}
+function shouldShowDateSeparator(index) {
+  if (index === 0) return true
+  const current = new Date(messages.value[index].createdAt)
+  const prev = new Date(messages.value[index - 1].createdAt)
+  return current.toDateString() !== prev.toDateString()
+}
 function formatRecTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}` }
 function formatRecTimeMs(s) { const mins = Math.floor(s/60); const secs = s % 60; return `${mins}:${secs.toString().padStart(2,'0')},00` }
 function formatLastSeen(lastSeen) { if (!lastSeen) return 'был(а) давно'; const d = new Date(lastSeen), now = new Date(), diff = (now - d) / 1000; if (diff < 60) return 'был(а) только что'; if (diff < 3600) return `был(а) ${Math.floor(diff / 60)} мин назад`; if (diff < 86400) return `был(а) ${Math.floor(diff / 3600)} ч назад`; return `был(а) ${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` }
-function scrollToBottom() { nextTick(() => { if (messagesContainer.value) messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight }) }
+function scrollToBottom() { 
+  nextTick(() => { 
+    if (messagesContainer.value) {
+      isProgrammaticScroll = true
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      setTimeout(() => { isProgrammaticScroll = false }, 100)
+    }
+  }) 
+}
+
+function onChatScroll() {
+  if (!messagesContainer.value || !messages.value.length) return
+  
+  // Игнорируем программные скроллы
+  if (isProgrammaticScroll) return
+  
+  const container = messagesContainer.value
+  
+  // Не показываем если скролл в самом низу
+  const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50
+  if (isAtBottom) {
+    showFloatingDate.value = false
+    return
+  }
+  
+  // Находим сообщение ближе к верху видимой области
+  const containerRect = container.getBoundingClientRect()
+  const targetY = containerRect.top + 60
+  
+  const messageEls = container.querySelectorAll('.message')
+  let visibleDate = null
+  
+  for (let i = 0; i < messageEls.length; i++) {
+    const el = messageEls[i]
+    const rect = el.getBoundingClientRect()
+    
+    if (rect.bottom >= targetY) {
+      if (messages.value[i]) {
+        visibleDate = formatDateSeparator(messages.value[i].createdAt)
+      }
+      break
+    }
+  }
+  
+  if (visibleDate) {
+    floatingDateText.value = visibleDate
+    showFloatingDate.value = true
+  }
+  
+  // Сбрасываем таймер скрытия при каждом скролле
+  clearTimeout(floatingDateHideTimeout)
+  lastScrollTime = Date.now()
+  
+  // Скрываем через 1.5 секунды после остановки скролла
+  floatingDateHideTimeout = setTimeout(() => {
+    showFloatingDate.value = false
+  }, 1500)
+}
+
 function toggleVideo(e) { const v = e.target.querySelector('video') || e.target; v.paused ? v.play() : v.pause() }
 
 function toggleCircle(e, msgId) {
@@ -648,7 +746,11 @@ async function pollMessages() {
       messages.value = res.data
       
       if (wasAtBottom) {
-        nextTick(() => { if (container) container.scrollTop = container.scrollHeight })
+        isProgrammaticScroll = true
+        nextTick(() => { 
+          if (container) container.scrollTop = container.scrollHeight
+          setTimeout(() => { isProgrammaticScroll = false }, 100)
+        })
       }
       
       await api.post(`/messages/${selectedUserId.value}/read`) 
@@ -694,7 +796,7 @@ function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = 
 function handleClickOutside(e) { if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu() }
 
 onMounted(() => { fetchDialogs(); pollInterval = setInterval(() => { pollMessages(); fetchDialogs() }, 3000); if (route.params.id) selectDialog(route.params.id); document.addEventListener('click', handleClickOutside); window.addEventListener('resize', handleResize) })
-onUnmounted(() => { clearInterval(pollInterval); if (stream) stream.getTracks().forEach(t => t.stop()); document.removeEventListener('click', handleClickOutside); window.removeEventListener('resize', handleResize); currentChatUserId.value = null })
+onUnmounted(() => { clearInterval(pollInterval); if (stream) stream.getTracks().forEach(t => t.stop()); document.removeEventListener('click', handleClickOutside); window.removeEventListener('resize', handleResize); currentChatUserId.value = null; clearTimeout(floatingDateHideTimeout) })
 watch(() => route.params.id, id => { if (id) selectDialog(id) })
 </script>
 
@@ -751,6 +853,17 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message:not(.own) .message-bubble { background: #262626; border-bottom-left-radius: 4px; }
 .message.own .message-bubble { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom-right-radius: 4px; }
 .forwarded-label { display: block; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px; font-style: italic; }
+.forwarded-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+.forwarded-text { font-size: 12px; color: rgba(255,255,255,0.5); }
+.forwarded-avatar { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
+.forwarded-name { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500; }
+.date-separator { display: flex; justify-content: center; padding: 16px 0; }
+.date-separator span { font-size: 13px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 12px; }
+.floating-date { position: sticky; top: 12px; z-index: 10; display: flex; justify-content: center; pointer-events: none; margin-bottom: -40px; }
+.floating-date span { font-size: 13px; color: var(--text-muted); background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 4px 12px; border-radius: 12px; }
+.floating-date-enter-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.floating-date-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.floating-date-enter-from, .floating-date-leave-to { opacity: 0; }
 .message-text-wrap { display: inline; }
 .message-bubble p { display: inline; word-break: break-word; line-height: 1.4; font-size: 15px; }
 .message-time { display: inline; font-size: 11px; color: rgba(255,255,255,0.5); margin-left: 8px; vertical-align: bottom; }
@@ -782,7 +895,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .voice-play-btn { width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: transform 0.15s; }
 .voice-play-btn:hover { transform: scale(1.05); }
 .voice-play-btn:active { transform: scale(0.95); }
-.voice-play-btn svg { width: 20px; height: 20px; color: #1a1a1a; margin-left: 2px; }
+.voice-play-btn svg { width: 24px; height: 24px; color: #1a1a1a; }
+.voice-play-btn .play-icon { margin-left: -2px; }
+.voice-play-btn .pause-icon { margin: 0; }
 .voice-wave-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .voice-waveform { display: flex; align-items: center; gap: 2px; height: 28px; }
 .wave-bar { width: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; transition: background 0.15s; }
@@ -1209,8 +1324,8 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .voice-play-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
   }
   
   .voice-waveform {
