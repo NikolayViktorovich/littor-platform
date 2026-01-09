@@ -12,12 +12,14 @@ router.get('/dialogs', authMiddleware, (req, res) => {
       u.id, u.name, u.avatar, u.lastSeen,
       m.id as messageId, m.content, m.senderId, m.createdAt, m.mediaType,
       (SELECT COUNT(*) FROM messages 
-       WHERE senderId = u.id AND receiverId = ? AND isRead = 0) as unreadCount,
+       WHERE senderId = u.id AND receiverId = ? AND isRead = 0 
+       AND (deletedByReceiver IS NULL OR deletedByReceiver = 0)) as unreadCount,
       ds.isPinned, ds.isMuted
     FROM users u
     JOIN messages m ON m.id = (
       SELECT id FROM messages 
-      WHERE (senderId = u.id AND receiverId = ?) OR (senderId = ? AND receiverId = u.id)
+      WHERE ((senderId = u.id AND receiverId = ? AND (deletedByReceiver IS NULL OR deletedByReceiver = 0)) 
+         OR (senderId = ? AND receiverId = u.id AND (deletedBySender IS NULL OR deletedBySender = 0)))
       ORDER BY createdAt DESC LIMIT 1
     )
     LEFT JOIN dialog_settings ds ON ds.oderId = (

@@ -276,47 +276,19 @@ function updateIndicator(animate = false) {
       const targetX = tabRect.left - containerRect.left
       const targetWidth = tabRect.width
       
-      if (animate && indicatorStyle.value.width) {
-        const currentX = parseFloat(indicatorStyle.value.left) || targetX
-        const currentWidth = parseFloat(indicatorStyle.value.width) || targetWidth
-        const direction = targetX > currentX ? 1 : -1
-        const distance = Math.abs(targetX - currentX)
-        
-        isAnimating.value = true
-        
-        // Phase 1: Stretch towards target
-        const stretchWidth = currentWidth + distance * 0.6
-        indicatorStyle.value = {
-          left: `${direction > 0 ? currentX : targetX}px`,
-          width: `${stretchWidth}px`,
-          transition: 'all 0.15s cubic-bezier(0.4, 0, 1, 1)'
-        }
-        
-        // Phase 2: Snap to target with overshoot
-        setTimeout(() => {
-          indicatorStyle.value = {
-            left: `${targetX}px`,
-            width: `${targetWidth}px`,
-            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
-          }
-          setTimeout(() => { isAnimating.value = false }, 400)
-        }, 150)
-      } else {
-        indicatorStyle.value = {
-          left: `${targetX}px`,
-          width: `${targetWidth}px`,
-          transition: 'none'
-        }
+      indicatorStyle.value = {
+        left: `${targetX}px`,
+        width: `${targetWidth}px`,
+        transition: animate ? 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
       }
     }
   })
 }
 
 function setTab(tab) {
-  if (tab === activeTab.value || isAnimating.value) return
-  const animate = true
+  if (tab === activeTab.value) return
   activeTab.value = tab
-  updateIndicator(animate)
+  updateIndicator(true)
   if (tab === 'photos' && !photos.value.length) fetchPhotos()
   if (tab === 'videos' && !videos.value.length) fetchVideos()
   if (tab === 'friends' && !friendsList.value.length) fetchFriends()
@@ -540,16 +512,17 @@ async function pollPostUpdates() {
 
 let pollInterval = null
 
-watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile(); updateIndicator() }, { immediate: true })
+watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile() }, { immediate: true })
 
 onMounted(() => {
-  setTimeout(updateIndicator, 100)
-  window.addEventListener('resize', updateIndicator)
+  // Set indicator position immediately without animation
+  setTimeout(() => updateIndicator(false), 50)
+  window.addEventListener('resize', () => updateIndicator(false))
   document.addEventListener('click', closeProfileMenu)
   pollInterval = setInterval(() => {
     pollPostUpdates()
     pollFriendStatus()
-  }, 2)
+  }, 500)
 })
 
 onUnmounted(() => {
@@ -630,7 +603,8 @@ onUnmounted(() => {
 }
 .profile-content { max-width: 600px; margin: 0 auto; padding: 0 20px 40px; }
 .liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; }
-.liquid-indicator { position: absolute; top: 4px; bottom: 4px; background: rgba(255,255,255,0.06); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); pointer-events: none; will-change: transform, width; }
+.liquid-indicator { position: absolute; top: 4px; bottom: 4px; background: rgba(255,255,255,0.06); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); pointer-events: none; will-change: left, width; opacity: 0; }
+.liquid-indicator[style*="width"] { opacity: 1; }
 .liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: color 0.3s ease; position: relative; z-index: 1; }
 .liquid-tab:hover { color: var(--text-secondary); }
 .liquid-tab.active { color: var(--text-primary); }

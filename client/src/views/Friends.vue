@@ -143,7 +143,6 @@ const tabs = computed(() => [
 const tabsContainer = ref(null)
 const tabRefs = ref({})
 const indicatorStyle = ref({})
-const isAnimating = ref(false)
 
 function updateIndicator(animate = false) {
   nextTick(() => {
@@ -156,44 +155,17 @@ function updateIndicator(animate = false) {
       const targetX = tabRect.left - containerRect.left
       const targetWidth = tabRect.width
       
-      if (animate && indicatorStyle.value.width) {
-        const currentX = parseFloat(indicatorStyle.value.left) || targetX
-        const currentWidth = parseFloat(indicatorStyle.value.width) || targetWidth
-        const direction = targetX > currentX ? 1 : -1
-        const distance = Math.abs(targetX - currentX)
-        
-        isAnimating.value = true
-        
-        // Phase 1: Stretch towards target
-        const stretchWidth = currentWidth + distance * 0.6
-        indicatorStyle.value = {
-          left: `${direction > 0 ? currentX : targetX}px`,
-          width: `${stretchWidth}px`,
-          transition: 'all 0.15s cubic-bezier(0.4, 0, 1, 1)'
-        }
-        
-        // Phase 2: Snap to target with overshoot
-        setTimeout(() => {
-          indicatorStyle.value = {
-            left: `${targetX}px`,
-            width: `${targetWidth}px`,
-            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
-          }
-          setTimeout(() => { isAnimating.value = false }, 400)
-        }, 150)
-      } else {
-        indicatorStyle.value = {
-          left: `${targetX}px`,
-          width: `${targetWidth}px`,
-          transition: 'none'
-        }
+      indicatorStyle.value = {
+        left: `${targetX}px`,
+        width: `${targetWidth}px`,
+        transition: animate ? 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
       }
     }
   })
 }
 
 function setActiveTab(tab) {
-  if (tab === activeTab.value || isAnimating.value) return
+  if (tab === activeTab.value) return
   activeTab.value = tab
   updateIndicator(true)
 }
@@ -344,15 +316,15 @@ async function removeFriend(userId) {
 
 onMounted(() => {
   fetchData()
-  // Poll every 2ms for instant updates
-  pollInterval = setInterval(() => fetchData(true), 2)
-  setTimeout(updateIndicator, 100)
-  window.addEventListener('resize', updateIndicator)
+  // Poll for updates
+  pollInterval = setInterval(() => fetchData(true), 500)
+  setTimeout(() => updateIndicator(false), 50)
+  window.addEventListener('resize', () => updateIndicator(false))
 })
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
-  window.removeEventListener('resize', updateIndicator)
+  window.removeEventListener('resize', () => updateIndicator(false))
 })
 </script>
 
@@ -549,7 +521,12 @@ onUnmounted(() => {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-full);
   pointer-events: none;
-  will-change: transform, width;
+  will-change: left, width;
+  opacity: 0;
+}
+
+.liquid-indicator[style*="width"] {
+  opacity: 1;
 }
 
 .liquid-tab {
