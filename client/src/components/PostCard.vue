@@ -2,8 +2,7 @@
   <article class="post glass" :class="{ 'menu-open': menuOpen, 'pinned': post.isPinned && !hidePin }">
     <div v-if="post.isPinned && !hidePin" class="pinned-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 4.5L19.5 9l-8 8L7 21l4-4.5 8-8L15 4.5z"/>
-        <path d="M9 15l-6 6"/>
+        <path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/>
       </svg>
       Закреплено
     </div>
@@ -28,8 +27,8 @@
         <Transition name="menu" @after-leave="menuOpen = false">
           <div v-if="showMenu" class="post-dropdown glass-modal" v-click-outside="closeMenu">
             <button @click="handlePin" class="dropdown-item" v-if="isOwner && !hidePin">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 4v6l-2 4v2h10v-2l-2-4V4M12 16v5M8 4h8"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/>
               </svg>
               {{ post.isPinned ? 'Открепить' : 'Закрепить' }}
             </button>
