@@ -56,15 +56,13 @@
           </div>
         </Transition>
         
-        <div class="liquid-tabs" ref="tabsContainer">
-          <div class="liquid-indicator" :style="indicatorStyle"></div>
+        <div class="liquid-tabs">
           <button 
             v-for="tab in tabs" 
             :key="tab.key"
-            @click="setActiveTab(tab.key)"
+            @click="activeTab = tab.key"
             class="liquid-tab"
             :class="{ active: activeTab === tab.key }"
-            :ref="el => tabRefs[tab.key] = el"
           >
             {{ tab.label }}
             <span v-if="tab.count" class="tab-badge">{{ tab.count }}</span>
@@ -139,36 +137,6 @@ const tabs = computed(() => [
   { key: 'incoming', label: 'Входящие', count: incoming.value.length },
   { key: 'outgoing', label: 'Исходящие', count: outgoing.value.length }
 ])
-
-const tabsContainer = ref(null)
-const tabRefs = ref({})
-const indicatorStyle = ref({})
-
-function updateIndicator(animate = false) {
-  nextTick(() => {
-    const activeTabEl = tabRefs.value[activeTab.value]
-    const container = tabsContainer.value
-    
-    if (activeTabEl && container) {
-      const containerRect = container.getBoundingClientRect()
-      const tabRect = activeTabEl.getBoundingClientRect()
-      const targetX = tabRect.left - containerRect.left
-      const targetWidth = tabRect.width
-      
-      indicatorStyle.value = {
-        left: `${targetX}px`,
-        width: `${targetWidth}px`,
-        transition: animate ? 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
-      }
-    }
-  })
-}
-
-function setActiveTab(tab) {
-  if (tab === activeTab.value) return
-  activeTab.value = tab
-  updateIndicator(true)
-}
 
 const list = computed(() => {
   if (activeTab.value === 'friends') return friends.value
@@ -316,15 +284,11 @@ async function removeFriend(userId) {
 
 onMounted(() => {
   fetchData()
-  // Poll for updates
   pollInterval = setInterval(() => fetchData(true), 500)
-  setTimeout(() => updateIndicator(false), 50)
-  window.addEventListener('resize', () => updateIndicator(false))
 })
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
-  window.removeEventListener('resize', () => updateIndicator(false))
 })
 </script>
 
@@ -511,22 +475,12 @@ onUnmounted(() => {
   padding: 4px;
 }
 
-.liquid-indicator {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.08);
+.liquid-tabs {
+  display: flex;
+  position: relative;
+  background: rgba(255,255,255,0.03);
   border-radius: var(--radius-full);
-  pointer-events: none;
-  will-change: left, width;
-  opacity: 0;
-}
-
-.liquid-indicator[style*="width"] {
-  opacity: 1;
+  padding: 4px;
 }
 
 .liquid-tab {
@@ -534,11 +488,12 @@ onUnmounted(() => {
   color: var(--text-muted);
   font-size: 15px;
   border-radius: var(--radius-full);
-  transition: color 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
 .liquid-tab:hover {
@@ -546,7 +501,9 @@ onUnmounted(() => {
 }
 
 .liquid-tab.active {
-  color: var(--text-primary);
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .tab-badge {
@@ -687,6 +644,26 @@ onUnmounted(() => {
   .search-dropdown {
     width: 280px;
     right: -60px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .tab:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .friend-card:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.06);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .friend-actions .btn:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.15);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
 }
 </style>

@@ -1602,4 +1602,29 @@ const vClickOutside = {
 .comments-leave-to {
   opacity: 0;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .action-btn:active {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.1);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .post-menu-btn:active {
+    transform: scale(0.85);
+    background: rgba(255, 255, 255, 0.1);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .comment:active {
+    transform: scale(0.99);
+    background: rgba(255, 255, 255, 0.04);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .post-author:active {
+    transform: scale(0.98);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+}
 </style>

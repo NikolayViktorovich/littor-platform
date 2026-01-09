@@ -1,17 +1,17 @@
 :root {
-  --bg-primary: #0e0e0e;
-  --bg-secondary: #0a0a0a;
-  --glass-bg: rgba(255, 255, 255, 0.02);
-  --glass-bg-hover: rgba(255, 255, 255, 0.04);
-  --glass-bg-active: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-border-light: rgba(255, 255, 255, 0.08);
+  --bg-primary: #0a0a0c;
+  --bg-secondary: #12121a;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-hover: rgba(255, 255, 255, 0.06);
+  --glass-bg-active: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-light: rgba(255, 255, 255, 0.12);
   --glass-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
     inset 0 -1px 0 rgba(255, 255, 255, 0.02);
   --glass-shadow-lg: 
-    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 20px 60px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     inset 0 -1px 0 rgba(255, 255, 255, 0.02);
   --glass-blur: blur(40px) saturate(180%);
@@ -20,9 +20,11 @@
   --text-primary: rgba(255, 255, 255, 0.95);
   --text-secondary: rgba(255, 255, 255, 0.6);
   --text-muted: rgba(255, 255, 255, 0.35);
-  --accent: rgba(255, 255, 255, 0.9);
-  --accent-hover: rgba(255, 255, 255, 1);
-  --accent-glow: rgba(255, 255, 255, 0.15);
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-glow: rgba(99, 102, 241, 0.25);
+  --accent-secondary: #a855f7;
+  --gradient-accent: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   --success: #22c55e;
   --danger: #ef4444;
   --warning: #f59e0b;
@@ -68,7 +70,9 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background: transparent;
+  background: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.1), transparent);
   pointer-events: none;
   z-index: -1;
 }
@@ -89,8 +93,8 @@ button {
 input, textarea {
   font-family: inherit;
   font-size: 15px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
   padding: 12px 16px;
   color: var(--text-primary);
@@ -100,6 +104,7 @@ input, textarea {
 
 input:focus, textarea:focus {
   outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 input::placeholder, textarea::placeholder {
@@ -132,13 +137,13 @@ svg[stroke-width="2"] {
 .glass {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.01) 50%,
-    rgba(255, 255, 255, 0.02) 100%
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(255, 255, 255, 0.03) 100%
   );
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-shadow);
   position: relative;
@@ -156,7 +161,7 @@ svg[stroke-width="2"] {
   height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(255, 255, 255, 0.15) 50%, 
+    rgba(255, 255, 255, 0.2) 50%, 
     transparent 100%
   );
   pointer-events: none;
@@ -165,22 +170,22 @@ svg[stroke-width="2"] {
 .card {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.01) 50%,
-    rgba(255, 255, 255, 0.02) 100%
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(255, 255, 255, 0.03) 100%
   );
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-shadow);
 }
 
 .glass-modal {
-  background: rgba(10, 10, 10, 0.97);
+  background: rgba(15, 15, 20, 0.95);
   backdrop-filter: var(--glass-blur-modal);
   -webkit-backdrop-filter: var(--glass-blur-modal);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-shadow-lg);
   will-change: transform, opacity;
@@ -189,14 +194,10 @@ svg[stroke-width="2"] {
 
 .liquid-tabs {
   display: inline-flex;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.02) 0%,
-    rgba(255, 255, 255, 0.01) 100%
-  );
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-full);
   padding: 4px;
   position: relative;
@@ -211,7 +212,7 @@ svg[stroke-width="2"] {
   height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.15) 50%, 
     transparent 100%
   );
   border-radius: var(--radius-full);
@@ -234,6 +235,7 @@ svg[stroke-width="2"] {
 
 .liquid-tab.active {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .btn {
@@ -252,16 +254,14 @@ svg[stroke-width="2"] {
 }
 
 .btn-primary {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .btn-primary:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
 
 .btn-primary:active {
@@ -275,14 +275,14 @@ svg[stroke-width="2"] {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .btn-ghost {
@@ -291,7 +291,7 @@ svg[stroke-width="2"] {
 }
 
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
@@ -323,7 +323,7 @@ svg[stroke-width="2"] {
   border-radius: var(--radius-full);
   object-fit: cover;
   background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
 }
 
@@ -351,7 +351,7 @@ svg[stroke-width="2"] {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background: var(--accent);
+  background: #ff3b5c;
   color: white;
   font-size: 11px;
   font-weight: 600;
@@ -374,12 +374,12 @@ svg[stroke-width="2"] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 ::selection {
@@ -434,5 +434,55 @@ svg[stroke-width="2"] {
   
   .container {
     padding: 0 16px;
+  }
+}
+
+button,
+a,
+.tap-target,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  .btn:active,
+  .btn-secondary:active,
+  .btn-ghost:active,
+  .btn-icon:active,
+  .tap-target:active,
+  [role="button"]:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.1);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .btn-primary:active {
+    transform: scale(0.95);
+  }
+  
+  .avatar:active {
+    transform: scale(0.92);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .card:active,
+  .glass:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.08);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .liquid-tab:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  input:active,
+  textarea:active {
+    transform: scale(0.99);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
 }

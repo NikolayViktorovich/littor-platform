@@ -83,13 +83,12 @@
     </div>
 
     <div class="profile-content" v-if="user && !user.blockedByUser">
-      <div class="liquid-tabs" ref="tabsContainer">
-        <div class="liquid-indicator" :style="indicatorStyle"></div>
-        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')" ref="tabPosts">Записи</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')" ref="tabPhotos">Фото</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')" ref="tabVideos">Видео</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')" ref="tabFriends">Друзья</button>
-        <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')" ref="tabArchive">Архив</button>
+      <div class="liquid-tabs">
+        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')">Записи</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')">Фото</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')">Видео</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')">Друзья</button>
+        <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')">Архив</button>
       </div>
 
       <div v-if="activeTab === 'posts'" class="profile-posts">
@@ -255,40 +254,9 @@ const mediaViewerType = ref('image')
 const mediaIndex = ref(0)
 const mediaList = ref([])
 
-const tabsContainer = ref(null)
-const tabPosts = ref(null)
-const tabPhotos = ref(null)
-const tabVideos = ref(null)
-const tabFriends = ref(null)
-const tabArchive = ref(null)
-const indicatorStyle = ref({})
-const isAnimating = ref(false)
-
-function updateIndicator(animate = false) {
-  nextTick(() => {
-    const tabRefs = { posts: tabPosts, photos: tabPhotos, videos: tabVideos, friends: tabFriends, archive: tabArchive }
-    const activeTabRef = tabRefs[activeTab.value]?.value
-    const container = tabsContainer.value
-    
-    if (activeTabRef && container) {
-      const containerRect = container.getBoundingClientRect()
-      const tabRect = activeTabRef.getBoundingClientRect()
-      const targetX = tabRect.left - containerRect.left
-      const targetWidth = tabRect.width
-      
-      indicatorStyle.value = {
-        left: `${targetX}px`,
-        width: `${targetWidth}px`,
-        transition: animate ? 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
-      }
-    }
-  })
-}
-
 function setTab(tab) {
   if (tab === activeTab.value) return
   activeTab.value = tab
-  updateIndicator(true)
   if (tab === 'photos' && !photos.value.length) fetchPhotos()
   if (tab === 'videos' && !videos.value.length) fetchVideos()
   if (tab === 'friends' && !friendsList.value.length) fetchFriends()
@@ -515,9 +483,6 @@ let pollInterval = null
 watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile() }, { immediate: true })
 
 onMounted(() => {
-  // Set indicator position immediately without animation
-  setTimeout(() => updateIndicator(false), 50)
-  window.addEventListener('resize', () => updateIndicator(false))
   document.addEventListener('click', closeProfileMenu)
   pollInterval = setInterval(() => {
     pollPostUpdates()
@@ -526,7 +491,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateIndicator)
   document.removeEventListener('click', closeProfileMenu)
   if (pollInterval) clearInterval(pollInterval)
 })
@@ -603,10 +567,9 @@ onUnmounted(() => {
 }
 .profile-content { max-width: 600px; margin: 0 auto; padding: 0 20px 40px; }
 .liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; }
-.liquid-indicator { position: absolute; top: 4px; bottom: 4px; background: rgba(255,255,255,0.06); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); pointer-events: none; will-change: left, width; opacity: 0; }
-.liquid-indicator[style*="width"] { opacity: 1; }
-.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: color 0.3s ease; position: relative; z-index: 1; }
+.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all 0.2s ease; position: relative; flex: 1; text-align: center; }
 .liquid-tab:hover { color: var(--text-secondary); }
+.liquid-tab.active { color: #fff; background: rgba(255,255,255,0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
 .liquid-tab.active { color: var(--text-primary); }
 .profile-posts { display: flex; flex-direction: column; gap: 16px; }
 .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -764,6 +727,32 @@ onUnmounted(() => {
   
   .cover-editor-right {
     gap: 8px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .tab:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .profile-actions .btn:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.15);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .photo-item:active,
+  .video-item:active {
+    transform: scale(0.96);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .friend-item:active {
+    transform: scale(0.97);
+    background: rgba(255, 255, 255, 0.06);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
 }
 </style>

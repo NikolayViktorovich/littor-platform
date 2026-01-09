@@ -2424,4 +2424,45 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .msg-files-list .file-message-wrap {
   margin: 0;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .dialog-item:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.08);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .voice-play-btn:active,
+  .audio-play-btn:active {
+    transform: scale(0.9);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .chat-back:active,
+  .chat-action:active,
+  .attach-btn:active,
+  .send-btn:active,
+  .emoji-btn:active {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .message-bubble:active {
+    transform: scale(0.98);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .attach-option:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .file-message-wrap:active,
+  .audio-message-wrap:active {
+    transform: scale(0.97);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+}
 </style>

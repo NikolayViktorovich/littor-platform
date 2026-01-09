@@ -302,4 +302,12 @@ onUnmounted(() => {
 .viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
+
+@media (hover: none) and (pointer: coarse) {
+  .tab:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+}
 </style>

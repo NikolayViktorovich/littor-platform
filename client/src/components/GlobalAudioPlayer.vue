@@ -332,4 +332,32 @@ onUnmounted(() => window.removeEventListener('resize', handleResize))
 .player-resize-leave-to { opacity: 0; transform: scale(0.95); }
 
 .icon-play { margin-left: -1px; }
+
+@media (hover: none) and (pointer: coarse) {
+  .bar-play:active,
+  .bar-close:active {
+    transform: scale(0.85);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .modal-play:active {
+    transform: scale(0.9);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .modal-ctrl:active {
+    transform: scale(0.85);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .mobile-bar:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.08);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+}
 </style>

@@ -277,5 +277,10 @@ onUnmounted(() => {
     top: 8px;
     right: 8px;
   }
+  
+  .nav-item:active {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.08);
+  }
 }
 </style>

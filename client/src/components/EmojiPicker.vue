@@ -199,4 +199,18 @@ const categories = {
     transform: translateY(8px) scale(0.95);
   }
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .emoji-btn:active {
+    transform: scale(0.85);
+    background: rgba(255, 255, 255, 0.15);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .category-btn:active {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+}
 </style>
