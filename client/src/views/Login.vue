@@ -958,7 +958,6 @@ async function submit() {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .help-header h2 {

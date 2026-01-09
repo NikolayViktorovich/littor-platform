@@ -162,7 +162,6 @@ async function submit() {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h2 {
@@ -299,8 +298,8 @@ async function submit() {
 
 .text-input textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
   resize: none;
   font-size: 15px;
@@ -310,7 +309,8 @@ async function submit() {
 
 .text-input textarea:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .text-input :deep(.emoji-wrap) {
@@ -323,7 +323,6 @@ async function submit() {
   display: flex;
   justify-content: flex-end;
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .spinner {

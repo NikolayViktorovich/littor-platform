@@ -998,7 +998,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .menu-item svg { width: 18px; height: 18px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal { width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
 .modal-header h2 { font-size: 18px; font-weight: 600; }
 .delete-modal { width: 100%; max-width: 400px; padding: 20px 24px; text-align: left; }
 .delete-modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }

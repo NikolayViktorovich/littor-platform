@@ -199,7 +199,6 @@ async function submit() {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 .modal-header h2 {
   font-size: 16px;
@@ -318,20 +317,22 @@ async function submit() {
 }
 .text-input textarea {
   width: 100%;
-  background: transparent;
-  border: none;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
   resize: none;
   font-size: 15px;
-  padding-right: 40px;
+  padding: 12px 40px 12px 14px;
 }
 .text-input textarea:focus {
   outline: none;
-  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.15);
 }
 .text-input :deep(.emoji-wrap) {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  right: 8px;
+  bottom: 8px;
 }
 
 .modal-footer {
@@ -339,7 +340,6 @@ async function submit() {
   justify-content: flex-end;
   align-items: center;
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .spinner {
   width: 16px;

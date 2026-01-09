@@ -384,7 +384,7 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); grid-column: 1 / -1; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal { width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; }
 .modal-header h2 { font-size: 18px; font-weight: 600; }
 .close-btn { color: var(--text-muted); padding: 4px; border-radius: var(--radius); }
 .close-btn:hover { background: rgba(255, 255, 255, 0.04); color: var(--text-primary); }
