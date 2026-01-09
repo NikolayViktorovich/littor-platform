@@ -55,11 +55,12 @@
     </div>
 
     <div class="profile-content" v-if="user">
-      <div class="liquid-tabs">
-        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="activeTab = 'posts'">Записи</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="switchTab('photos')">Фото</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="switchTab('videos')">Видео</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="switchTab('friends')">Друзья</button>
+      <div class="liquid-tabs" ref="tabsContainer">
+        <div class="liquid-indicator" :style="indicatorStyle"></div>
+        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')" ref="tabPosts">Записи</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')" ref="tabPhotos">Фото</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')" ref="tabVideos">Видео</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')" ref="tabFriends">Друзья</button>
       </div>
 
       <div v-if="activeTab === 'posts'" class="profile-posts">
@@ -182,7 +183,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive } from 'vue'
+import { ref, computed, watch, reactive, nextTick, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
@@ -217,6 +218,72 @@ const mediaViewerSrc = ref('')
 const mediaViewerType = ref('image')
 const mediaIndex = ref(0)
 const mediaList = ref([])
+
+const tabsContainer = ref(null)
+const tabPosts = ref(null)
+const tabPhotos = ref(null)
+const tabVideos = ref(null)
+const tabFriends = ref(null)
+const indicatorStyle = ref({})
+const isAnimating = ref(false)
+
+function updateIndicator(animate = false) {
+  nextTick(() => {
+    const tabRefs = { posts: tabPosts, photos: tabPhotos, videos: tabVideos, friends: tabFriends }
+    const activeTabRef = tabRefs[activeTab.value]?.value
+    const container = tabsContainer.value
+    
+    if (activeTabRef && container) {
+      const containerRect = container.getBoundingClientRect()
+      const tabRect = activeTabRef.getBoundingClientRect()
+      const targetX = tabRect.left - containerRect.left
+      const targetWidth = tabRect.width
+      
+      if (animate && indicatorStyle.value.width) {
+        const currentX = parseFloat(indicatorStyle.value.left) || targetX
+        const currentWidth = parseFloat(indicatorStyle.value.width) || targetWidth
+        const direction = targetX > currentX ? 1 : -1
+        const distance = Math.abs(targetX - currentX)
+        
+        isAnimating.value = true
+        
+        // Phase 1: Stretch towards target
+        const stretchWidth = currentWidth + distance * 0.6
+        indicatorStyle.value = {
+          left: `${direction > 0 ? currentX : targetX}px`,
+          width: `${stretchWidth}px`,
+          transition: 'all 0.15s cubic-bezier(0.4, 0, 1, 1)'
+        }
+        
+        // Phase 2: Snap to target with overshoot
+        setTimeout(() => {
+          indicatorStyle.value = {
+            left: `${targetX}px`,
+            width: `${targetWidth}px`,
+            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }
+          setTimeout(() => { isAnimating.value = false }, 400)
+        }, 150)
+      } else {
+        indicatorStyle.value = {
+          left: `${targetX}px`,
+          width: `${targetWidth}px`,
+          transition: 'none'
+        }
+      }
+    }
+  })
+}
+
+function setTab(tab) {
+  if (tab === activeTab.value || isAnimating.value) return
+  const animate = true
+  activeTab.value = tab
+  updateIndicator(animate)
+  if (tab === 'photos' && !photos.value.length) fetchPhotos()
+  if (tab === 'videos' && !videos.value.length) fetchVideos()
+  if (tab === 'friends' && !friendsList.value.length) fetchFriends()
+}
 
 const friendsList = ref([])
 const friendsLoading = ref(false)
@@ -256,13 +323,6 @@ async function fetchPhotos() {
 async function fetchVideos() {
   const id = route.params.id || authStore.user?.id
   try { const res = await api.get(`/users/${id}/videos`); videos.value = res.data } catch {}
-}
-
-function switchTab(tab) {
-  activeTab.value = tab
-  if (tab === 'photos' && !photos.value.length) fetchPhotos()
-  if (tab === 'videos' && !videos.value.length) fetchVideos()
-  if (tab === 'friends' && !friendsList.value.length) fetchFriends()
 }
 
 async function uploadAvatar(e) {
@@ -342,7 +402,12 @@ async function fetchFriends() {
   } catch {} finally { friendsLoading.value = false }
 }
 
-watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile() }, { immediate: true })
+watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile(); updateIndicator() }, { immediate: true })
+
+onMounted(() => {
+  setTimeout(updateIndicator, 100)
+  window.addEventListener('resize', updateIndicator)
+})
 </script>
 
 <style scoped>
@@ -370,10 +435,11 @@ watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = [
 .meta-item { color: var(--text-muted); font-size: 14px; }
 .profile-actions { display: flex; gap: 10px; flex-shrink: 0; }
 .profile-content { max-width: 600px; margin: 0 auto; padding: 0 20px 40px; }
-.liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; }
-.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all var(--transition); }
+.liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; }
+.liquid-indicator { position: absolute; top: 4px; bottom: 4px; background: rgba(255,255,255,0.06); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); pointer-events: none; will-change: transform, width; }
+.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: color 0.3s ease; position: relative; z-index: 1; }
 .liquid-tab:hover { color: var(--text-secondary); }
-.liquid-tab.active { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+.liquid-tab.active { color: var(--text-primary); }
 .profile-posts { display: flex; flex-direction: column; gap: 16px; }
 .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .media-item { aspect-ratio: 1; overflow: hidden; border-radius: var(--radius); cursor: pointer; position: relative; }

@@ -56,13 +56,15 @@
           </div>
         </Transition>
         
-        <div class="liquid-tabs">
+        <div class="liquid-tabs" ref="tabsContainer">
+          <div class="liquid-indicator" :style="indicatorStyle"></div>
           <button 
             v-for="tab in tabs" 
             :key="tab.key"
-            @click="activeTab = tab.key"
+            @click="setActiveTab(tab.key)"
             class="liquid-tab"
             :class="{ active: activeTab === tab.key }"
+            :ref="el => tabRefs[tab.key] = el"
           >
             {{ tab.label }}
             <span v-if="tab.count" class="tab-badge">{{ tab.count }}</span>
@@ -137,6 +139,64 @@ const tabs = computed(() => [
   { key: 'incoming', label: 'Входящие', count: incoming.value.length },
   { key: 'outgoing', label: 'Исходящие', count: outgoing.value.length }
 ])
+
+const tabsContainer = ref(null)
+const tabRefs = ref({})
+const indicatorStyle = ref({})
+const isAnimating = ref(false)
+
+function updateIndicator(animate = false) {
+  nextTick(() => {
+    const activeTabEl = tabRefs.value[activeTab.value]
+    const container = tabsContainer.value
+    
+    if (activeTabEl && container) {
+      const containerRect = container.getBoundingClientRect()
+      const tabRect = activeTabEl.getBoundingClientRect()
+      const targetX = tabRect.left - containerRect.left
+      const targetWidth = tabRect.width
+      
+      if (animate && indicatorStyle.value.width) {
+        const currentX = parseFloat(indicatorStyle.value.left) || targetX
+        const currentWidth = parseFloat(indicatorStyle.value.width) || targetWidth
+        const direction = targetX > currentX ? 1 : -1
+        const distance = Math.abs(targetX - currentX)
+        
+        isAnimating.value = true
+        
+        // Phase 1: Stretch towards target
+        const stretchWidth = currentWidth + distance * 0.6
+        indicatorStyle.value = {
+          left: `${direction > 0 ? currentX : targetX}px`,
+          width: `${stretchWidth}px`,
+          transition: 'all 0.15s cubic-bezier(0.4, 0, 1, 1)'
+        }
+        
+        // Phase 2: Snap to target with overshoot
+        setTimeout(() => {
+          indicatorStyle.value = {
+            left: `${targetX}px`,
+            width: `${targetWidth}px`,
+            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }
+          setTimeout(() => { isAnimating.value = false }, 400)
+        }, 150)
+      } else {
+        indicatorStyle.value = {
+          left: `${targetX}px`,
+          width: `${targetWidth}px`,
+          transition: 'none'
+        }
+      }
+    }
+  })
+}
+
+function setActiveTab(tab) {
+  if (tab === activeTab.value || isAnimating.value) return
+  activeTab.value = tab
+  updateIndicator(true)
+}
 
 const list = computed(() => {
   if (activeTab.value === 'friends') return friends.value
@@ -275,10 +335,13 @@ onMounted(() => {
   fetchData()
   // Poll every 5 seconds for real-time updates
   pollInterval = setInterval(() => fetchData(true), 5000)
+  setTimeout(updateIndicator, 100)
+  window.addEventListener('resize', updateIndicator)
 })
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
+  window.removeEventListener('resize', updateIndicator)
 })
 </script>
 
@@ -459,6 +522,43 @@ onUnmounted(() => {
 
 .liquid-tabs {
   display: inline-flex;
+  position: relative;
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius-full);
+  padding: 4px;
+}
+
+.liquid-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  will-change: transform, width;
+}
+
+.liquid-tab {
+  padding: 10px 20px;
+  color: var(--text-muted);
+  font-size: 15px;
+  border-radius: var(--radius-full);
+  transition: color 0.3s ease;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+}
+
+.liquid-tab:hover {
+  color: var(--text-secondary);
+}
+
+.liquid-tab.active {
+  color: var(--text-primary);
 }
 
 .tab-badge {
