@@ -6,11 +6,18 @@ import { upload } from '../middleware/upload.js'
 
 const router = Router()
 
+function getMediaType(mimetype) {
+  if (mimetype.startsWith('image/')) return 'image'
+  if (mimetype.startsWith('video/')) return 'video'
+  if (mimetype.startsWith('audio/')) return 'audio'
+  return 'file'
+}
+
 router.get('/dialogs', authMiddleware, (req, res) => {
   const dialogs = db.prepare(`
     SELECT 
       u.id, u.name, u.avatar, u.lastSeen,
-      m.id as messageId, m.content, m.senderId, m.createdAt, m.mediaType,
+      m.id as messageId, m.content, m.senderId, m.createdAt, m.mediaType, m.musicTitle,
       (SELECT COUNT(*) FROM messages 
        WHERE senderId = u.id AND receiverId = ? AND isRead = 0 
        AND (deletedByReceiver IS NULL OR deletedByReceiver = 0)) as unreadCount,
@@ -32,9 +39,9 @@ router.get('/dialogs', authMiddleware, (req, res) => {
   const result = dialogs.map(d => {
     let content = d.content
     if (d.mediaType === 'system') {
-      content = getMediaPreview(d.mediaType, d.content)
+      content = getMediaPreview(d.mediaType, d.content, d.musicTitle)
     } else if (!content) {
-      content = getMediaPreview(d.mediaType, d.content)
+      content = getMediaPreview(d.mediaType, d.content, d.musicTitle)
     }
     
     return {
@@ -59,8 +66,9 @@ router.get('/dialogs', authMiddleware, (req, res) => {
   res.json(result)
 })
 
-function getMediaPreview(mediaType, content) {
-  if (!mediaType) return ''
+function getMediaPreview(mediaType, content, musicTitle) {
+  if (!mediaType && !musicTitle) return ''
+  if (musicTitle) return `🎵 ${musicTitle}`
   if (mediaType === 'system') {
     if (content && content.startsWith('pinned_message:')) return '📌 Сообщение закреплено'
     if (content === 'unpinned_message') return '📌 Сообщение откреплено'
@@ -337,12 +345,40 @@ router.post('/:id/pin', authMiddleware, (req, res) => {
   }
 })
 
-router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
+router.post('/:id', authMiddleware, upload.array('media', 10), (req, res) => {
   try {
-    const { content, mediaType, replyToId } = req.body
-    const media = req.file ? `/uploads/${req.file.filename}` : null
+    const { content, mediaType, replyToId, musicTrackId, musicTitle, musicArtist, musicArtwork, filesMeta } = req.body
+    const files = req.files || []
+    
+    let parsedFilesMeta = []
+    if (filesMeta) {
+      try { parsedFilesMeta = JSON.parse(filesMeta) } catch {}
+    }
+    
+    let media = null
+    let finalMediaType = mediaType || null
+    let fileName = null
+    let fileSize = null
+    
+    if (files.length > 0) {
+      if (files.length === 1) {
+        media = `/uploads/${files[0].filename}`
+        finalMediaType = mediaType || getMediaType(files[0].mimetype)
+        fileName = parsedFilesMeta[0]?.name || files[0].originalname
+        fileSize = parsedFilesMeta[0]?.size || files[0].size
+      } else {
+        const mediaArray = files.map((f, i) => ({
+          url: `/uploads/${f.filename}`,
+          type: getMediaType(f.mimetype),
+          name: parsedFilesMeta[i]?.name || f.originalname,
+          size: parsedFilesMeta[i]?.size || f.size
+        }))
+        media = JSON.stringify(mediaArray)
+        finalMediaType = 'multiple'
+      }
+    }
 
-    if (!content?.trim() && !media) {
+    if (!content?.trim() && !media && !musicTrackId) {
       return res.status(400).json({ error: 'Сообщение не может быть пустым' })
     }
 
@@ -359,8 +395,8 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
     const createdAt = new Date().toISOString()
     const messageContent = content?.trim() || null
 
-    db.prepare('INSERT INTO messages (id, senderId, receiverId, content, media, mediaType, replyToId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(id, req.userId, req.params.id, messageContent, media, mediaType || null, replyToId || null, createdAt)
+    db.prepare(`INSERT INTO messages (id, senderId, receiverId, content, media, mediaType, fileName, fileSize, replyToId, musicTrackId, musicTitle, musicArtist, musicArtwork, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(id, req.userId, req.params.id, messageContent, media, finalMediaType, fileName, fileSize, replyToId || null, musicTrackId || null, musicTitle || null, musicArtist || null, musicArtwork || null, createdAt)
 
     let replyTo = null
     if (replyToId) {
@@ -384,9 +420,15 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
       receiverId: req.params.id,
       content: messageContent,
       media,
-      mediaType: mediaType || null,
+      mediaType: finalMediaType,
+      fileName,
+      fileSize,
       replyToId: replyToId || null,
       replyTo,
+      musicTrackId: musicTrackId || null,
+      musicTitle: musicTitle || null,
+      musicArtist: musicArtist || null,
+      musicArtwork: musicArtwork || null,
       isRead: 0,
       createdAt
     }

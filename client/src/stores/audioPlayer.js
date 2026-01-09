@@ -56,6 +56,12 @@ export const useAudioPlayerStore = defineStore('audioPlayer', () => {
     isMinimized.value = false
   }
 
+  function resume() {
+    if (audioEl.value && currentTrack.value) {
+      audioEl.value.play()
+    }
+  }
+
   function pause() {
     if (audioEl.value) {
       audioEl.value.pause()
@@ -123,6 +129,7 @@ export const useAudioPlayerStore = defineStore('audioPlayer', () => {
     formattedCurrentTime,
     formattedDuration,
     play,
+    resume,
     pause,
     toggle,
     seek,

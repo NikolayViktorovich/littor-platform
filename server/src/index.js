@@ -10,6 +10,7 @@ import usersRoutes from './routes/users.js'
 import postsRoutes from './routes/posts.js'
 import friendsRoutes from './routes/friends.js'
 import messagesRoutes from './routes/messages.js'
+import musicRoutes from './routes/music.js'
 
 const app = express()
 const httpServer = createServer(app)
@@ -71,6 +72,7 @@ app.use('/api/users', usersRoutes)
 app.use('/api/posts', postsRoutes)
 app.use('/api/friends', friendsRoutes)
 app.use('/api/messages', messagesRoutes)
+app.use('/api/music', musicRoutes)
 
 app.use((err, req, res, next) => {
   console.error(err)

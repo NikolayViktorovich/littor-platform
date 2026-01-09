@@ -70,6 +70,7 @@ export async function initDb() {
     if (!colNames.includes('isPinned')) db.run(`ALTER TABLE posts ADD COLUMN isPinned INTEGER DEFAULT 0`)
     if (!colNames.includes('isArchived')) db.run(`ALTER TABLE posts ADD COLUMN isArchived INTEGER DEFAULT 0`)
     if (!colNames.includes('commentsDisabled')) db.run(`ALTER TABLE posts ADD COLUMN commentsDisabled INTEGER DEFAULT 0`)
+    if (!colNames.includes('media')) db.run(`ALTER TABLE posts ADD COLUMN media TEXT`)
   } catch (e) {}
 
   db.run(`
@@ -164,6 +165,24 @@ export async function initDb() {
     if (!colNames.includes('replyToId')) {
       db.run(`ALTER TABLE messages ADD COLUMN replyToId TEXT`)
     }
+    if (!colNames.includes('fileName')) {
+      db.run(`ALTER TABLE messages ADD COLUMN fileName TEXT`)
+    }
+    if (!colNames.includes('fileSize')) {
+      db.run(`ALTER TABLE messages ADD COLUMN fileSize INTEGER`)
+    }
+    if (!colNames.includes('musicTrackId')) {
+      db.run(`ALTER TABLE messages ADD COLUMN musicTrackId TEXT`)
+    }
+    if (!colNames.includes('musicTitle')) {
+      db.run(`ALTER TABLE messages ADD COLUMN musicTitle TEXT`)
+    }
+    if (!colNames.includes('musicArtist')) {
+      db.run(`ALTER TABLE messages ADD COLUMN musicArtist TEXT`)
+    }
+    if (!colNames.includes('musicArtwork')) {
+      db.run(`ALTER TABLE messages ADD COLUMN musicArtwork TEXT`)
+    }
   } catch (e) {
   }
 
@@ -203,6 +222,52 @@ export async function initDb() {
       FOREIGN KEY (blockedId) REFERENCES users(id)
     )
   `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_tracks (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      trackId TEXT NOT NULL,
+      title TEXT NOT NULL,
+      artist TEXT NOT NULL,
+      artwork TEXT,
+      duration INTEGER,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id)
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS listening_history (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      trackId TEXT NOT NULL,
+      title TEXT NOT NULL,
+      artist TEXT NOT NULL,
+      artwork TEXT,
+      duration INTEGER,
+      playedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id)
+    )
+  `)
+
+  try {
+    const cols = db.exec("PRAGMA table_info(posts)")
+    const colNames = cols[0]?.values?.map(c => c[1]) || []
+    if (!colNames.includes('musicTrackId')) db.run(`ALTER TABLE posts ADD COLUMN musicTrackId TEXT`)
+    if (!colNames.includes('musicTitle')) db.run(`ALTER TABLE posts ADD COLUMN musicTitle TEXT`)
+    if (!colNames.includes('musicArtist')) db.run(`ALTER TABLE posts ADD COLUMN musicArtist TEXT`)
+    if (!colNames.includes('musicArtwork')) db.run(`ALTER TABLE posts ADD COLUMN musicArtwork TEXT`)
+  } catch (e) {}
+
+  try {
+    const cols = db.exec("PRAGMA table_info(messages)")
+    const colNames = cols[0]?.values?.map(c => c[1]) || []
+    if (!colNames.includes('musicTrackId')) db.run(`ALTER TABLE messages ADD COLUMN musicTrackId TEXT`)
+    if (!colNames.includes('musicTitle')) db.run(`ALTER TABLE messages ADD COLUMN musicTitle TEXT`)
+    if (!colNames.includes('musicArtist')) db.run(`ALTER TABLE messages ADD COLUMN musicArtist TEXT`)
+    if (!colNames.includes('musicArtwork')) db.run(`ALTER TABLE messages ADD COLUMN musicArtwork TEXT`)
+  } catch (e) {}
 
   saveDb()
   console.log('Database initialized')

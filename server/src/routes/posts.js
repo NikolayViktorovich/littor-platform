@@ -6,6 +6,44 @@ import { upload } from '../middleware/upload.js'
 
 const router = Router()
 
+function parseMedia(mediaJson) {
+  if (!mediaJson) return []
+  try {
+    const items = JSON.parse(mediaJson)
+    return items.map(item => ({
+      url: item.url,
+      mediaType: item.type,
+      fileName: item.name,
+      fileSize: item.size
+    }))
+  } catch {
+    return []
+  }
+}
+
+function mapPost(p) {
+  const media = parseMedia(p.media)
+  return {
+    id: p.id,
+    content: p.content,
+    image: p.image,
+    media,
+    mediaType: media.length > 0 ? media[0].mediaType : null,
+    musicTrackId: p.musicTrackId,
+    musicTitle: p.musicTitle,
+    musicArtist: p.musicArtist,
+    musicArtwork: p.musicArtwork,
+    createdAt: p.createdAt,
+    likesCount: p.likesCount,
+    commentsCount: p.commentsCount,
+    isLiked: !!p.isLiked,
+    isPinned: !!p.isPinned,
+    isArchived: !!p.isArchived,
+    commentsDisabled: !!p.commentsDisabled,
+    author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
+  }
+}
+
 router.get('/archived', authMiddleware, (req, res) => {
   const page = parseInt(req.query.page) || 1
   const limit = parseInt(req.query.limit) || 10
@@ -24,19 +62,7 @@ router.get('/archived', authMiddleware, (req, res) => {
   `).all(req.userId, req.userId, limit + 1, offset)
 
   const hasMore = posts.length > limit
-  const result = posts.slice(0, limit).map(p => ({
-    id: p.id,
-    content: p.content,
-    image: p.image,
-    createdAt: p.createdAt,
-    likesCount: p.likesCount,
-    commentsCount: p.commentsCount,
-    isLiked: !!p.isLiked,
-    isPinned: !!p.isPinned,
-    isArchived: !!p.isArchived,
-    commentsDisabled: !!p.commentsDisabled,
-    author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
-  }))
+  const result = posts.slice(0, limit).map(mapPost)
 
   res.json({ posts: result, hasMore })
 })
@@ -64,34 +90,38 @@ router.get('/', authMiddleware, (req, res) => {
   `).all(req.userId, req.userId, req.userId, req.userId, req.userId, limit + 1, offset)
 
   const hasMore = posts.length > limit
-  const result = posts.slice(0, limit).map(p => ({
-    id: p.id,
-    content: p.content,
-    image: p.image,
-    createdAt: p.createdAt,
-    likesCount: p.likesCount,
-    commentsCount: p.commentsCount,
-    isLiked: !!p.isLiked,
-    isPinned: !!p.isPinned,
-    isArchived: !!p.isArchived,
-    commentsDisabled: !!p.commentsDisabled,
-    author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
-  }))
+  const result = posts.slice(0, limit).map(mapPost)
 
   res.json({ posts: result, hasMore })
 })
 
-router.post('/', authMiddleware, upload.single('image'), (req, res) => {
-  const { content } = req.body
-  const image = req.file ? `/uploads/${req.file.filename}` : null
+router.post('/', authMiddleware, upload.array('media', 10), (req, res) => {
+  const { content, musicTrackId, musicTitle, musicArtist, musicArtwork, filesMeta } = req.body
+  const files = req.files || []
+  
+  let parsedFilesMeta = []
+  if (filesMeta) {
+    try { parsedFilesMeta = JSON.parse(filesMeta) } catch {}
+  }
+  
+  const mediaArray = files.map((f, i) => ({
+    url: `/uploads/${f.filename}`,
+    mediaType: getMediaType(f.mimetype),
+    fileName: parsedFilesMeta[i]?.name || f.originalname,
+    fileSize: parsedFilesMeta[i]?.size || f.size
+  }))
+  const mediaJson = mediaArray.length > 0 ? JSON.stringify(mediaArray.map(m => ({ url: m.url, type: m.mediaType, name: m.fileName, size: m.fileSize }))) : null
+  const image = files.length > 0 ? `/uploads/${files[0].filename}` : null
 
-  if (!content?.trim() && !image) {
+  if (!content?.trim() && !mediaJson && !musicTrackId) {
     return res.status(400).json({ error: 'Пост не может быть пустым' })
   }
 
   const id = uuid()
-  db.prepare('INSERT INTO posts (id, authorId, content, image) VALUES (?, ?, ?, ?)')
-    .run(id, req.userId, content?.trim() || null, image)
+  db.prepare(`
+    INSERT INTO posts (id, authorId, content, image, media, musicTrackId, musicTitle, musicArtist, musicArtwork)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, req.userId, content?.trim() || null, image, mediaJson, musicTrackId || null, musicTitle || null, musicArtist || null, musicArtwork || null)
 
   const user = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId)
 
@@ -99,6 +129,12 @@ router.post('/', authMiddleware, upload.single('image'), (req, res) => {
     id,
     content: content?.trim() || null,
     image,
+    media: mediaArray,
+    mediaType: mediaArray.length > 0 ? mediaArray[0].mediaType : null,
+    musicTrackId: musicTrackId || null,
+    musicTitle: musicTitle || null,
+    musicArtist: musicArtist || null,
+    musicArtwork: musicArtwork || null,
     createdAt: new Date().toISOString(),
     likesCount: 0,
     commentsCount: 0,
@@ -118,6 +154,14 @@ router.post('/', authMiddleware, upload.single('image'), (req, res) => {
 
   res.json(post)
 })
+
+function getMediaType(mimetype) {
+  if (mimetype.startsWith('image/gif')) return 'gif'
+  if (mimetype.startsWith('image/')) return 'image'
+  if (mimetype.startsWith('video/')) return 'video'
+  if (mimetype.startsWith('audio/')) return 'audio'
+  return 'file'
+}
 
 router.delete('/:id', authMiddleware, (req, res) => {
   const post = db.prepare('SELECT authorId FROM posts WHERE id = ?').get(req.params.id)

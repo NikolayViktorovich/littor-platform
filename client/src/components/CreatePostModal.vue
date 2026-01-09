@@ -122,7 +122,17 @@ async function submit() {
   try {
     const formData = new FormData()
     formData.append('content', content.value)
-    if (images.value.length) formData.append('image', images.value[0].file)
+    images.value.forEach(item => {
+      formData.append('media', item.file)
+    })
+    if (images.value.length > 0) {
+      const filesMeta = images.value.map(item => ({
+        name: item.file.name,
+        size: item.file.size,
+        type: item.type || 'image'
+      }))
+      formData.append('filesMeta', JSON.stringify(filesMeta))
+    }
     const res = await api.post('/posts', formData)
     emit('created', res.data)
     notifications.success('Запись опубликована')

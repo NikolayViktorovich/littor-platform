@@ -22,7 +22,8 @@
           <div class="modal-handle"></div>
           
           <div class="modal-artwork">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+            <img v-if="audioStore.currentTrack.artwork" :src="audioStore.currentTrack.artwork" alt="">
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
           </div>
           
           <div class="modal-info">
@@ -83,7 +84,10 @@
             </div>
           </div>
           <div class="full-content">
-            <div class="full-artwork"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></div>
+            <div class="full-artwork">
+              <img v-if="audioStore.currentTrack.artwork" :src="audioStore.currentTrack.artwork" alt="">
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+            </div>
             <div class="full-info">
               <div class="full-name">{{ audioStore.currentTrack.name }}</div>
               <div class="full-artist">{{ audioStore.currentTrack.source }}</div>
@@ -243,7 +247,8 @@ onUnmounted(() => window.removeEventListener('resize', handleResize))
   will-change: transform;
 }
 .modal-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 24px; }
-.modal-artwork { width: 80px; height: 80px; background: rgba(255,255,255,0.08); border-radius: 16px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+.modal-artwork { width: 80px; height: 80px; background: rgba(255,255,255,0.08); border-radius: 16px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.modal-artwork img { width: 100%; height: 100%; object-fit: cover; }
 .modal-artwork svg { width: 40px; height: 40px; color: rgba(255,255,255,0.5); }
 .modal-info { text-align: center; margin-bottom: 24px; }
 .modal-name { font-size: 18px; font-weight: 600; color: white; margin-bottom: 4px; }
@@ -279,7 +284,8 @@ onUnmounted(() => window.removeEventListener('resize', handleResize))
 .full-btn:hover { color: white; background: rgba(255,255,255,0.1); }
 .full-btn svg { width: 18px; height: 18px; }
 .full-content { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-.full-artwork { width: 56px; height: 56px; background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.full-artwork { width: 56px; height: 56px; background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.full-artwork img { width: 100%; height: 100%; object-fit: cover; }
 .full-artwork svg { width: 28px; height: 28px; color: rgba(255,255,255,0.4); }
 .full-info { flex: 1; min-width: 0; }
 .full-name { font-size: 15px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }

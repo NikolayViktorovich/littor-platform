@@ -205,6 +205,21 @@
                         </div>
                       </template>
                     </div>
+                    <!-- Music track -->
+                    <div v-if="msg.musicTrackId" class="msg-music-track" @click="playMsgMusic(msg)">
+                      <div class="msg-music-track-artwork">
+                        <img v-if="msg.musicArtwork" :src="msg.musicArtwork" alt="">
+                        <div v-else class="msg-music-track-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+                        <div class="msg-music-track-play" :class="{ playing: isMsgMusicPlaying(msg) }">
+                          <svg v-if="isMsgMusicPlaying(msg)" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                          <svg v-else class="play-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        </div>
+                      </div>
+                      <div class="msg-music-track-info">
+                        <span class="msg-music-track-title">{{ msg.musicTitle }}</span>
+                        <span class="msg-music-track-artist">{{ msg.musicArtist }}</span>
+                      </div>
+                    </div>
                     <span class="message-text-wrap"><p v-if="msg.content">{{ msg.content }}</p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span></span>
                   </div>
                 </div>
@@ -261,6 +276,19 @@
           </div>
           <button v-if="mediaFiles.length > 1" @click="clearMedia" class="msg-clear-all">Очистить всё</button>
         </div>
+        <div v-if="selectedMusic && !chatUser?.blockedByUser && !chatUser?.iBlockedUser" class="msg-music-preview">
+          <div class="msg-music-artwork">
+            <img v-if="selectedMusic.artwork" :src="selectedMusic.artwork" alt="">
+            <div v-else class="msg-music-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+          </div>
+          <div class="msg-music-info">
+            <span class="msg-music-title">{{ selectedMusic.title }}</span>
+            <span class="msg-music-artist">{{ selectedMusic.artist }}</span>
+          </div>
+          <button @click="selectedMusic = null" class="msg-music-remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
         <form v-if="!chatUser?.blockedByUser && !chatUser?.iBlockedUser" @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
           <div class="input-actions-left">
             <div class="attach-wrap">
@@ -294,6 +322,10 @@
                     <div class="attach-icon file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg></div>
                     <span>Файл</span>
                   </label>
+                  <button class="attach-dropdown-item" @click="showMusicPicker = true; showAttachMenu = false">
+                    <div class="attach-icon music"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></div>
+                    <span>Музыка</span>
+                  </button>
                 </div>
               </Transition>
             </div>
@@ -451,6 +483,10 @@
             <div class="viewer-content"><img v-if="viewerType === 'image'" :src="viewerSrc" alt=""><video v-else :src="viewerSrc" controls autoplay></video></div>
           </div>
         </Transition>
+
+        <Transition name="modal">
+          <MusicPicker v-if="showMusicPicker" @close="showMusicPicker = false" @select="onMusicSelect" />
+        </Transition>
       </Teleport>
     </div>
   </div>
@@ -466,6 +502,7 @@ import { currentChatUserId } from '../stores/chat'
 import { cache } from '../stores/cache'
 import { useSocket } from '../socket'
 import EmojiPicker from '../components/EmojiPicker.vue'
+import MusicPicker from '../components/MusicPicker.vue'
 import api from '../api'
 
 const route = useRoute()
@@ -547,6 +584,8 @@ const selectMode = ref(false)
 const selectedMessages = ref([])
 const pinnedMessage = ref(null)
 const bulkForwardMode = ref(false)
+const showMusicPicker = ref(false)
+const selectedMusic = ref(null)
 
 const scrollPositions = {}
 
@@ -556,7 +595,7 @@ let floatingDateHideTimeout = null
 let lastScrollTime = 0
 let isProgrammaticScroll = false
 
-const canSend = computed(() => newMessage.value.trim() || mediaFiles.value.length > 0)
+const canSend = computed(() => newMessage.value.trim() || mediaFiles.value.length > 0 || selectedMusic.value)
 const isMobile = ref(window.innerWidth <= 900)
 
 function saveScrollPosition() {
@@ -946,6 +985,18 @@ function getMediaType(file) {
   return 'file'
 }
 
+function parseMessageMedia(msg) {
+  if (msg.mediaType === 'multiple' && msg.media) {
+    try {
+      const items = JSON.parse(msg.media)
+      return { ...msg, mediaItems: items.map((item, i) => ({ ...item, id: msg.id + '-' + i, mediaType: item.type, fileName: item.name, fileSize: item.size })) }
+    } catch {
+      return msg
+    }
+  }
+  return msg
+}
+
 function getVisualMedia(msg) {
   const items = msg.mediaItems || []
   const visualTypes = ['image', 'video', 'gif']
@@ -1217,7 +1268,7 @@ async function selectDialog(userId) {
   try { 
     const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)])
     chatUser.value = userRes.data
-    messages.value = msgRes.data
+    messages.value = msgRes.data.map(parseMessageMedia)
     restoreScrollPosition(userId)
     await api.post(`/messages/${userId}/read`)
     fetchPinnedMessage()
@@ -1234,7 +1285,7 @@ async function pollMessages() {
       const container = messagesContainer.value
       const wasAtBottom = container && (container.scrollHeight - container.scrollTop - container.clientHeight < 100)
       
-      messages.value = res.data
+      messages.value = res.data.map(parseMessageMedia)
       
       if (wasAtBottom) {
         isProgrammaticScroll = true
@@ -1268,6 +1319,15 @@ async function sendMessage() {
       formData.append('media', item.file)
     })
     
+    if (mediaFiles.value.length > 0) {
+      const filesMeta = mediaFiles.value.map(item => ({
+        name: item.file.name,
+        size: item.file.size,
+        type: item.type
+      }))
+      formData.append('filesMeta', JSON.stringify(filesMeta))
+    }
+    
     if (mediaFiles.value.length === 1 && (mediaFiles.value[0].type === 'voice' || mediaFiles.value[0].type === 'circle')) {
       formData.append('mediaType', mediaFiles.value[0].type)
     }
@@ -1276,17 +1336,66 @@ async function sendMessage() {
       formData.append('replyToId', replyingTo.value.id)
     }
     
+    if (selectedMusic.value) {
+      formData.append('musicTrackId', selectedMusic.value.id)
+      formData.append('musicTitle', selectedMusic.value.title)
+      formData.append('musicArtist', selectedMusic.value.artist)
+      if (selectedMusic.value.artwork) formData.append('musicArtwork', selectedMusic.value.artwork)
+    }
+    
     const res = await api.post(`/messages/${selectedUserId.value}`, formData)
-    messages.value.push(res.data)
+    messages.value.push(parseMessageMedia(res.data))
     
     newMessage.value = ''
     clearMedia()
+    selectedMusic.value = null
     replyingTo.value = null
     scrollToBottom()
     fetchDialogs()
   } catch (err) { 
     notifications.error(err.message) 
   } 
+}
+
+function onMusicSelect(track) {
+  selectedMusic.value = track
+}
+
+function isMsgMusicPlaying(msg) {
+  return audioPlayerStore.currentTrack?.id === msg.musicTrackId && audioPlayerStore.isPlaying
+}
+
+async function playMsgMusic(msg) {
+  if (!msg.musicTrackId) return
+  
+  if (audioPlayerStore.currentTrack?.id === msg.musicTrackId) {
+    if (audioPlayerStore.isPlaying) {
+      audioPlayerStore.pause()
+    } else {
+      audioPlayerStore.resume()
+    }
+    return
+  }
+  
+  try {
+    const res = await api.get(`/music/stream/${msg.musicTrackId}`)
+    audioPlayerStore.play({
+      id: msg.musicTrackId,
+      url: res.data.url,
+      name: msg.musicTitle,
+      source: msg.musicArtist,
+      artwork: msg.musicArtwork
+    })
+    
+    api.post('/music/history', {
+      trackId: msg.musicTrackId,
+      title: msg.musicTitle,
+      artist: msg.musicArtist,
+      artwork: msg.musicArtwork
+    }).catch(() => {})
+  } catch (err) {
+    notifications.error('Не удалось воспроизвести трек')
+  }
 }
 
 async function unblockUser() {
@@ -1543,7 +1652,7 @@ function handleClickOutside(e) {
 
 function onNewMessage(msg) {
   if (selectedUserId.value === msg.senderId) {
-    messages.value.push(msg)
+    messages.value.push(parseMessageMedia(msg))
     scrollToBottom()
     api.post(`/messages/${msg.senderId}/read`)
   }
@@ -2423,6 +2532,163 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .msg-files-list .audio-message-wrap,
 .msg-files-list .file-message-wrap {
   margin: 0;
+}
+
+.msg-music-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.msg-music-artwork {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.msg-music-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.msg-music-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.msg-music-placeholder svg {
+  width: 22px;
+  height: 22px;
+  color: var(--text-muted);
+}
+.msg-music-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.msg-music-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msg-music-artist {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.msg-music-remove {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.msg-music-remove:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+.msg-music-remove svg {
+  width: 16px;
+  height: 16px;
+}
+
+.msg-music-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.msg-music-track:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.msg-music-track-artwork {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+.msg-music-track-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.msg-music-track-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.msg-music-track-placeholder svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+}
+.msg-music-track-play {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.msg-music-track:hover .msg-music-track-play,
+.msg-music-track-play.playing {
+  opacity: 1;
+}
+.msg-music-track-play svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+.msg-music-track-play .play-icon {
+  margin-left: -1px;
+}
+.msg-music-track-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.msg-music-track-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msg-music-track-artist {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.attach-icon.music {
+  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
 }
 
 @media (hover: none) and (pointer: coarse) {

@@ -87,6 +87,7 @@
         <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')">Записи</button>
         <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')">Фото</button>
         <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')">Видео</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'audio' }" @click="setTab('audio')">Аудио</button>
         <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')">Друзья</button>
         <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')">Архив</button>
       </div>
@@ -115,6 +116,87 @@
           <div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
         </div>
         <div v-if="!videos.length" class="empty-state glass"><p>Нет видео</p></div>
+      </div>
+
+      <div v-else-if="activeTab === 'audio'" class="audio-section">
+        <div class="audio-tabs">
+          <button class="audio-tab" :class="{ active: audioTab === 'all' }" @click="audioTab = 'all'; loadAllTracks()">Все песни</button>
+          <button class="audio-tab" :class="{ active: audioTab === 'library' }" @click="audioTab = 'library'">Моя музыка</button>
+          <button class="audio-tab" :class="{ active: audioTab === 'recent' }" @click="audioTab = 'recent'">Недавние</button>
+        </div>
+
+        <div v-if="audioTab === 'all'" class="audio-search">
+          <div class="search-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input v-model="audioSearchQuery" @input="handleAudioSearch" placeholder="Поиск музыки...">
+          </div>
+        </div>
+
+        <div v-if="audioLoading" class="loading-state"><div class="spinner"></div></div>
+        <template v-else>
+          <div v-if="audioTab === 'all'" class="audio-list">
+            <div v-if="!allTracks.length" class="empty-state glass"><p>{{ audioSearchQuery ? 'Ничего не найдено' : 'Введите запрос для поиска' }}</p></div>
+            <div v-for="track in allTracks" :key="track.id" class="audio-list-item" @click="playTrack(track)">
+              <div class="audio-item-artwork">
+                <img v-if="track.artwork" :src="track.artwork" alt="">
+                <div v-else class="artwork-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+                <div class="play-overlay" :class="{ visible: isTrackPlaying(track) }">
+                  <svg v-if="isTrackPlaying(track)" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+              </div>
+              <div class="audio-item-info">
+                <span class="audio-item-name">{{ track.title }}</span>
+                <span class="audio-item-artist">{{ track.artist }}</span>
+              </div>
+              <button v-if="!isInLibrary(track)" class="audio-add-btn" @click.stop="addToLibrary(track)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div v-else-if="audioTab === 'library'" class="audio-list">
+            <div v-if="!audioLibrary.length" class="empty-state glass"><p>Нет сохраненных треков</p></div>
+            <div v-for="track in audioLibrary" :key="track.id" class="audio-list-item" @click="playTrack(track)">
+              <div class="audio-item-artwork">
+                <img v-if="track.artwork" :src="track.artwork" alt="">
+                <div v-else class="artwork-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+                <div class="play-overlay" :class="{ visible: isTrackPlaying(track) }">
+                  <svg v-if="isTrackPlaying(track)" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+              </div>
+              <div class="audio-item-info">
+                <span class="audio-item-name">{{ track.title }}</span>
+                <span class="audio-item-artist">{{ track.artist }}</span>
+              </div>
+              <button v-if="isOwner" class="audio-remove-btn" @click.stop="removeFromLibrary(track)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div v-else-if="audioTab === 'recent'" class="audio-list">
+            <div v-if="!audioHistory.length" class="empty-state glass"><p>Нет недавних треков</p></div>
+            <div v-for="track in audioHistory" :key="track.id" class="audio-list-item" @click="playTrack(track)">
+              <div class="audio-item-artwork">
+                <img v-if="track.artwork" :src="track.artwork" alt="">
+                <div v-else class="artwork-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+                <div class="play-overlay" :class="{ visible: isTrackPlaying(track) }">
+                  <svg v-if="isTrackPlaying(track)" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+              </div>
+              <div class="audio-item-info">
+                <span class="audio-item-name">{{ track.title }}</span>
+                <span class="audio-item-artist">{{ track.artist }}</span>
+              </div>
+              <button v-if="!isInLibrary(track)" class="audio-add-btn" @click.stop="addToLibrary(track)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+          </div>
+        </template>
       </div>
 
       <div v-else-if="activeTab === 'friends'" class="friends-section">
@@ -220,6 +302,7 @@ import { ref, computed, watch, reactive, nextTick, onMounted, onUnmounted } from
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { useAudioPlayerStore } from '../stores/audioPlayer'
 import { cache } from '../stores/cache'
 import CreatePost from '../components/CreatePost.vue'
 import PostCard from '../components/PostCard.vue'
@@ -228,12 +311,20 @@ import api from '../api'
 const route = useRoute()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
+const audioPlayerStore = useAudioPlayerStore()
 
 const user = ref(null)
 const posts = ref([])
 const archivedPosts = ref([])
 const photos = ref([])
 const videos = ref([])
+const audioLibrary = ref([])
+const audioHistory = ref([])
+const allTracks = ref([])
+const audioLoading = ref(false)
+const audioTab = ref('all')
+const audioSearchQuery = ref('')
+let audioSearchTimeout = null
 const activeTab = ref('posts')
 const showEditModal = ref(false)
 const showProfileMenu = ref(false)
@@ -261,6 +352,7 @@ function setTab(tab) {
   if (tab === 'videos' && !videos.value.length) fetchVideos()
   if (tab === 'friends' && !friendsList.value.length) fetchFriends()
   if (tab === 'archive' && !archivedPosts.value.length) fetchArchivedPosts()
+  if (tab === 'audio') fetchAudio()
 }
 
 const friendsList = ref([])
@@ -461,7 +553,121 @@ async function fetchFriends() {
   } catch {} finally { friendsLoading.value = false }
 }
 
-// Poll for updates to posts (likes, comments counts)
+async function fetchAudio() {
+  const id = route.params.id || authStore.user?.id
+  audioLoading.value = true
+  try {
+    const [libraryRes, historyRes] = await Promise.all([
+      api.get(`/music/user/${id}`),
+      isOwner.value ? api.get('/music/history') : Promise.resolve({ data: [] })
+    ])
+    audioLibrary.value = libraryRes.data.map(t => ({
+      id: t.trackId,
+      title: t.title,
+      artist: t.artist,
+      artwork: t.artwork,
+      duration: t.duration
+    }))
+    audioHistory.value = historyRes.data.map(t => ({
+      id: t.trackId,
+      title: t.title,
+      artist: t.artist,
+      artwork: t.artwork,
+      duration: t.duration
+    }))
+  } catch {} finally { audioLoading.value = false }
+}
+
+async function loadAllTracks() {
+  if (!audioSearchQuery.value.trim()) {
+    audioLoading.value = true
+    try {
+      const res = await api.get('/music/trending')
+      allTracks.value = res.data
+    } catch {} finally { audioLoading.value = false }
+  }
+}
+
+function handleAudioSearch() {
+  clearTimeout(audioSearchTimeout)
+  if (!audioSearchQuery.value.trim()) {
+    loadAllTracks()
+    return
+  }
+  audioLoading.value = true
+  audioSearchTimeout = setTimeout(async () => {
+    try {
+      const res = await api.get('/music/search', { params: { q: audioSearchQuery.value } })
+      allTracks.value = res.data
+    } catch {} finally { audioLoading.value = false }
+  }, 300)
+}
+
+function isTrackPlaying(track) {
+  return audioPlayerStore.currentTrack?.id === track.id && audioPlayerStore.isPlaying
+}
+
+function isInLibrary(track) {
+  return audioLibrary.value.some(t => t.id === track.id)
+}
+
+async function playTrack(track) {
+  if (audioPlayerStore.currentTrack?.id === track.id) {
+    if (audioPlayerStore.isPlaying) {
+      audioPlayerStore.pause()
+    } else {
+      audioPlayerStore.resume()
+    }
+    return
+  }
+  
+  try {
+    const res = await api.get(`/music/stream/${track.id}`)
+    audioPlayerStore.play({
+      id: track.id,
+      url: res.data.url,
+      name: track.title,
+      source: track.artist,
+      artwork: track.artwork
+    })
+    
+    api.post('/music/history', {
+      trackId: track.id,
+      title: track.title,
+      artist: track.artist,
+      artwork: track.artwork,
+      duration: track.duration
+    }).catch(() => {})
+  } catch (err) {
+    notifications.error('Не удалось воспроизвести трек')
+  }
+}
+
+async function addToLibrary(track) {
+  try {
+    await api.post('/music/library', {
+      trackId: track.id,
+      title: track.title,
+      artist: track.artist,
+      artwork: track.artwork,
+      duration: track.duration
+    })
+    audioLibrary.value.unshift(track)
+    notifications.success('Добавлено в библиотеку')
+  } catch (err) {
+    notifications.error('Не удалось добавить')
+  }
+}
+
+async function removeFromLibrary(track) {
+  try {
+    await api.delete(`/music/library/${track.id}`)
+    audioLibrary.value = audioLibrary.value.filter(t => t.id !== track.id)
+  } catch (err) {
+    notifications.error('Не удалось удалить')
+  }
+}
+
 async function pollPostUpdates() {
   if (!posts.value.length) return
   const id = route.params.id || authStore.user?.id
@@ -583,11 +789,33 @@ onUnmounted(() => {
 .audio-list { display: flex; flex-direction: column; gap: 4px; }
 .audio-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); cursor: pointer; transition: background 0.2s ease; }
 .audio-list-item:hover { background: rgba(255, 255, 255, 0.06); }
-.audio-item-icon { width: 44px; height: 44px; background: rgba(255, 255, 255, 0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.audio-item-icon svg { width: 20px; height: 20px; color: white; margin-left: 2px; }
-.audio-item-info { flex: 1; min-width: 0; }
-.audio-item-name { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.audio-item-size { display: block; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.audio-item-artwork { width: 48px; height: 48px; border-radius: var(--radius); overflow: hidden; position: relative; flex-shrink: 0; }
+.audio-item-artwork img { width: 100%; height: 100%; object-fit: cover; }
+.audio-item-artwork .artwork-placeholder { width: 100%; height: 100%; background: rgba(255, 255, 255, 0.05); display: flex; align-items: center; justify-content: center; }
+.audio-item-artwork .artwork-placeholder svg { width: 20px; height: 20px; color: var(--text-muted); }
+.audio-item-artwork .play-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s ease; }
+.audio-list-item:hover .play-overlay, .audio-item-artwork .play-overlay.visible { opacity: 1; }
+.audio-item-artwork .play-overlay svg { width: 20px; height: 20px; color: white; }
+.audio-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.audio-item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-item-artist { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-add-btn, .audio-remove-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius); flex-shrink: 0; transition: all 0.15s ease; }
+.audio-add-btn:hover, .audio-remove-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
+.audio-add-btn svg, .audio-remove-btn svg { width: 16px; height: 16px; }
+.audio-section { display: flex; flex-direction: column; gap: 16px; }
+.audio-tabs { display: flex; gap: 8px; padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-full); }
+.audio-tab { flex: 1; padding: 10px 16px; font-size: 14px; color: var(--text-muted); border-radius: var(--radius-full); text-align: center; transition: all 0.15s ease; }
+.audio-tab:hover { color: var(--text-secondary); }
+.audio-tab.active { color: #fff; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
+.audio-search { margin-bottom: 8px; }
+.audio-search .search-input-wrap { display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); padding: 12px 16px; }
+.audio-search .search-input-wrap svg { width: 20px; height: 20px; color: var(--text-muted); flex-shrink: 0; }
+.audio-search .search-input-wrap input { flex: 1; background: none; border: none; color: var(--text-primary); font-size: 15px; }
+.audio-search .search-input-wrap input::placeholder { color: var(--text-muted); }
+.audio-search .search-input-wrap input:focus { outline: none; }
+.audio-group { }
+.audio-group .group-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.audio-group .group-title .count { color: var(--text-secondary); }
 
 /* Files list */
 .files-list { display: flex; flex-direction: column; gap: 4px; }
@@ -661,6 +889,53 @@ onUnmounted(() => {
   .profile-meta { justify-content: center; }
   .profile-actions { width: 100%; justify-content: center; }
   .media-grid { grid-template-columns: repeat(2, 1fr); }
+  
+  .liquid-tabs {
+    margin: 0 -20px 20px;
+    border-radius: 0;
+    background: rgba(255,255,255,0.02);
+    padding: 0;
+    gap: 0;
+  }
+  
+  .liquid-tab {
+    padding: 14px 8px;
+    font-size: 14px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+  }
+  
+  .liquid-tab.active {
+    background: transparent;
+    box-shadow: none;
+    border-bottom: 2px solid rgba(255,255,255,0.8);
+  }
+  
+  .audio-tabs {
+    margin: 0 -20px 16px;
+    padding: 0;
+    border-radius: 0;
+    background: rgba(255,255,255,0.02);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .audio-tabs::-webkit-scrollbar { display: none; }
+  
+  .audio-tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-radius: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .audio-tab.active {
+    background: transparent;
+    box-shadow: none;
+    border-bottom: 2px solid rgba(255,255,255,0.8);
+  }
   
   .cover-edit {
     width: 36px;
@@ -752,6 +1027,18 @@ onUnmounted(() => {
   .friend-item:active {
     transform: scale(0.97);
     background: rgba(255, 255, 255, 0.06);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .audio-tab:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
+  .audio-list-item:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.08);
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
 }

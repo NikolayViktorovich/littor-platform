@@ -90,19 +90,34 @@ router.get('/:id/posts', authMiddleware, (req, res) => {
     ORDER BY p.isPinned DESC, p.createdAt DESC
   `).all(req.userId, req.params.id)
 
-  const result = posts.map(p => ({
-    id: p.id,
-    content: p.content,
-    image: p.image,
-    createdAt: p.createdAt,
-    likesCount: p.likesCount,
-    commentsCount: p.commentsCount,
-    isLiked: !!p.isLiked,
-    isPinned: !!p.isPinned,
-    isArchived: !!p.isArchived,
-    commentsDisabled: !!p.commentsDisabled,
-    author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
-  }))
+  const result = posts.map(p => {
+    let media = []
+    if (p.media) {
+      try {
+        const items = JSON.parse(p.media)
+        media = items.map(item => ({ url: item.url, mediaType: item.type, fileName: item.name, fileSize: item.size }))
+      } catch {}
+    }
+    return {
+      id: p.id,
+      content: p.content,
+      image: p.image,
+      media,
+      mediaType: media.length > 0 ? media[0].mediaType : null,
+      musicTrackId: p.musicTrackId,
+      musicTitle: p.musicTitle,
+      musicArtist: p.musicArtist,
+      musicArtwork: p.musicArtwork,
+      createdAt: p.createdAt,
+      likesCount: p.likesCount,
+      commentsCount: p.commentsCount,
+      isLiked: !!p.isLiked,
+      isPinned: !!p.isPinned,
+      isArchived: !!p.isArchived,
+      commentsDisabled: !!p.commentsDisabled,
+      author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
+    }
+  })
 
   res.json(result)
 })

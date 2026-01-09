@@ -60,9 +60,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zM7 10.5v3m3-3.5v4c0 .5.5 1 1 1h1.5m2.5-5v4h2.5"/></svg>
                 <span>GIF</span>
               </label>
+              <button class="attach-btn" @click="showMusicPicker = true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+                <span>Музыка</span>
+              </button>
               <label class="attach-btn">
                 <input type="file" accept="audio/*" @change="handleFile" multiple hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
                 <span>Аудио</span>
               </label>
               <label class="attach-btn">
@@ -70,6 +74,22 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
                 <span>Файл</span>
               </label>
+            </div>
+
+            <div v-if="selectedMusic" class="music-preview">
+              <div class="music-artwork">
+                <img v-if="selectedMusic.artwork" :src="selectedMusic.artwork" alt="">
+                <div v-else class="artwork-placeholder">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                </div>
+              </div>
+              <div class="music-info">
+                <span class="music-title">{{ selectedMusic.title }}</span>
+                <span class="music-artist">{{ selectedMusic.artist }}</span>
+              </div>
+              <button @click="selectedMusic = null" class="music-remove">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
             </div>
           </div>
 
@@ -82,6 +102,10 @@
         </div>
       </div>
     </Transition>
+
+    <Transition name="modal">
+      <MusicPicker v-if="showMusicPicker" @close="showMusicPicker = false" @select="onMusicSelect" />
+    </Transition>
   </Teleport>
 </template>
 
@@ -90,6 +114,7 @@ import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import EmojiPicker from './EmojiPicker.vue'
+import MusicPicker from './MusicPicker.vue'
 import api from '../api'
 
 const emit = defineEmits(['created'])
@@ -101,8 +126,10 @@ const content = ref('')
 const mediaFiles = ref([])
 const loading = ref(false)
 const textareaRef = ref(null)
+const showMusicPicker = ref(false)
+const selectedMusic = ref(null)
 
-const canSubmit = computed(() => content.value.trim() || mediaFiles.value.length > 0)
+const canSubmit = computed(() => content.value.trim() || mediaFiles.value.length > 0 || selectedMusic.value)
 
 function getMediaType(file) {
   if (file.type === 'image/gif') return 'gif'
@@ -134,9 +161,14 @@ function insertEmoji(emoji) {
   }
 }
 
+function onMusicSelect(track) {
+  selectedMusic.value = track
+}
+
 function closeModal() {
   showModal.value = false
   content.value = ''
+  selectedMusic.value = null
   clearMedia()
 }
 
@@ -178,10 +210,25 @@ async function submit() {
     const formData = new FormData()
     formData.append('content', content.value)
     
-    // Append all media files
+    if (selectedMusic.value) {
+      formData.append('musicTrackId', selectedMusic.value.id)
+      formData.append('musicTitle', selectedMusic.value.title)
+      formData.append('musicArtist', selectedMusic.value.artist)
+      if (selectedMusic.value.artwork) formData.append('musicArtwork', selectedMusic.value.artwork)
+    }
+    
     mediaFiles.value.forEach(item => {
       formData.append('media', item.file)
     })
+    
+    if (mediaFiles.value.length > 0) {
+      const filesMeta = mediaFiles.value.map(item => ({
+        name: item.file.name,
+        size: item.file.size,
+        type: item.type
+      }))
+      formData.append('filesMeta', JSON.stringify(filesMeta))
+    }
     
     const res = await api.post('/posts', formData)
     emit('created', res.data)
@@ -418,4 +465,76 @@ async function submit() {
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .modal-enter-from .modal-content { transform: scale(0.95); }
 .modal-leave-to .modal-content { transform: scale(0.95); }
+
+.music-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-lg);
+}
+.music-artwork {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.music-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.music-artwork .artwork-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.music-artwork .artwork-placeholder svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+}
+.music-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.music-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.music-artist {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.music-remove {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+.music-remove:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+.music-remove svg {
+  width: 16px;
+  height: 16px;
+}
 </style>

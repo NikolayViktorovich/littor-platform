@@ -156,6 +156,23 @@
     </div>
     </template>
 
+    <div v-if="post.musicTrackId" class="post-music" @click="playMusic">
+      <div class="music-artwork">
+        <img v-if="post.musicArtwork" :src="post.musicArtwork" alt="">
+        <div v-else class="artwork-placeholder">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        </div>
+        <div class="play-overlay">
+          <svg v-if="isMusicPlaying" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+      </div>
+      <div class="music-info">
+        <span class="music-title">{{ post.musicTitle }}</span>
+        <span class="music-artist">{{ post.musicArtist }}</span>
+      </div>
+    </div>
+
     <div class="post-actions">
       <button @click="handleLike" class="action-btn" :class="{ active: post.isLiked, pressed: likePressed }">
         <svg viewBox="0 0 24 24" :fill="post.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -322,6 +339,43 @@ const postAudioTime = computed(() => {
   }
   return '0:00'
 })
+
+const isMusicPlaying = computed(() => {
+  return audioPlayerStore.currentTrack?.id === props.post.musicTrackId && audioPlayerStore.isPlaying
+})
+
+async function playMusic() {
+  if (!props.post.musicTrackId) return
+  
+  if (audioPlayerStore.currentTrack?.id === props.post.musicTrackId) {
+    if (audioPlayerStore.isPlaying) {
+      audioPlayerStore.pause()
+    } else {
+      audioPlayerStore.resume()
+    }
+    return
+  }
+  
+  try {
+    const res = await api.get(`/music/stream/${props.post.musicTrackId}`)
+    audioPlayerStore.play({
+      id: props.post.musicTrackId,
+      url: res.data.url,
+      name: props.post.musicTitle,
+      source: props.post.musicArtist,
+      artwork: props.post.musicArtwork
+    })
+    
+    api.post('/music/history', {
+      trackId: props.post.musicTrackId,
+      title: props.post.musicTitle,
+      artist: props.post.musicArtist,
+      artwork: props.post.musicArtwork
+    }).catch(() => {})
+  } catch (err) {
+    console.error('Failed to play music:', err)
+  }
+}
 
 function togglePostAudio() {
   // Use global audio player
@@ -1056,6 +1110,87 @@ const vClickOutside = {
 .post-audio-wrap .audio-meta {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post-music {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.post-music:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.post-music .music-artwork {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+.post-music .music-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.post-music .artwork-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.post-music .artwork-placeholder svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+}
+.post-music .play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.post-music:hover .play-overlay {
+  opacity: 1;
+}
+.post-music .play-overlay svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+.post-music .music-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.post-music .music-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.post-music .music-artist {
+  font-size: 13px;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
