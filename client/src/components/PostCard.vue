@@ -81,10 +81,6 @@
       <div v-if="!imageLoaded && !isVideo" class="image-placeholder skeleton"></div>
     </div>
 
-    <div class="post-stats" v-if="post.commentsCount">
-      <span class="stat-item">{{ post.commentsCount }} комментариев</span>
-    </div>
-
     <div class="post-actions">
       <button @click="handleLike" class="action-btn" :class="{ active: post.isLiked, pressed: likePressed }">
         <svg viewBox="0 0 24 24" :fill="post.isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
