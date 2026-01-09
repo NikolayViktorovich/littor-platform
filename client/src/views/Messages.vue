@@ -85,7 +85,7 @@
                     </div>
                     <div class="circle-info">
                       <span class="circle-timer">{{ getCircleCurrentTime(msg.id) }}</span>
-                      <span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span>
+                      <span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
                     </div>
                   </div>
                   <!-- Voice message -->
@@ -100,7 +100,7 @@
                       </div>
                       <div class="voice-bottom">
                         <span class="voice-duration">{{ getVoiceDuration(msg.id) }}</span>
-                        <span class="voice-msg-time">{{ formatMsgTime(msg.createdAt) }}</span>
+                        <span class="voice-msg-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
                       </div>
                     </div>
                     <audio :src="msg.media" :id="'voice-' + msg.id" @ended="onVoiceEnded(msg.id)" @loadedmetadata="onVoiceLoaded($event, msg.id)" @timeupdate="onVoiceTimeUpdate($event, msg.id)" hidden></audio>
@@ -115,7 +115,7 @@
                     <span v-else-if="msg.forwarded" class="forwarded-label">Переслано</span>
                     <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="" @click="openMediaViewer(msg.media, 'image')">
                     <video v-else-if="msg.mediaType === 'video'" :src="msg.media" class="message-media" controls></video>
-                    <span class="message-text-wrap"><p v-if="msg.content">{{ msg.content }}</p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}</span></span>
+                    <span class="message-text-wrap"><p v-if="msg.content">{{ msg.content }}</p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span></span>
                   </div>
                 </div>
               </div>
@@ -864,10 +864,12 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .floating-date-enter-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .floating-date-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .floating-date-enter-from, .floating-date-leave-to { opacity: 0; }
-.message-text-wrap { display: inline; }
+.message-text-wrap { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px 8px; }
 .message-bubble p { display: inline; word-break: break-word; line-height: 1.4; font-size: 15px; }
-.message-time { display: inline; font-size: 11px; color: rgba(255,255,255,0.5); margin-left: 8px; vertical-align: bottom; }
+.message-time { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: rgba(255,255,255,0.5); white-space: nowrap; margin-left: auto; }
 .message.own .message-time { color: rgba(255,255,255,0.7); }
+.read-status { width: 14px; height: 8px; color: rgba(255,255,255,0.5); }
+.message.own .read-status { color: rgba(255,255,255,0.7); }
 .message-media { max-width: 100%; max-height: 250px; border-radius: 12px; margin-bottom: 6px; cursor: pointer; display: block; }
 .circle-video { width: 180px; height: 180px; border-radius: 50%; overflow: hidden; margin-bottom: 6px; cursor: pointer; }
 .circle-player { width: 100%; height: 100%; object-fit: cover; }
@@ -887,8 +889,8 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .circle-mute { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 36px; height: 36px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .circle-mute svg { width: 18px; height: 18px; color: white; }
 .circle-info { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 6px; padding: 0 4px; }
-.circle-timer { font-size: 11px; color: var(--text-secondary); }
-.circle-info .message-time { font-size: 11px; color: rgba(255,255,255,0.35); }
+.circle-timer { font-size: 10px; color: var(--text-secondary); }
+.circle-info .message-time { font-size: 10px; color: rgba(255,255,255,0.35); margin-left: 0; }
 
 .voice-message-wrap { display: flex; align-items: center; gap: 10px; background: rgba(30,30,30,0.95); padding: 10px 14px; border-radius: 20px; min-width: 200px; max-width: 280px; }
 .message.own .voice-message-wrap { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
@@ -905,10 +907,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message.own .wave-bar { background: rgba(255,255,255,0.4); }
 .message.own .wave-bar.active { background: rgba(255,255,255,1); }
 .voice-bottom { display: flex; justify-content: space-between; align-items: center; }
-.voice-duration { font-size: 12px; color: rgba(255,255,255,0.6); }
+.voice-duration { font-size: 10px; color: rgba(255,255,255,0.6); }
 .message.own .voice-duration { color: rgba(255,255,255,0.8); }
-.voice-msg-time { font-size: 12px; color: rgba(255,255,255,0.35); }
+.voice-msg-time { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: rgba(255,255,255,0.35); }
 .message.own .voice-msg-time { color: rgba(255,255,255,0.5); }
+.voice-msg-time .read-status { width: 14px; height: 8px; }
 
 .message.media-message .message-content { background: none; }
 .message.media-message { max-width: none; }
@@ -1228,7 +1231,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .message-time {
-    font-size: 12px;
+    font-size: 10px;
   }
   
   .message-media {
@@ -1308,7 +1311,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   
   .circle-timer,
   .circle-info .message-time {
-    font-size: 12px;
+    font-size: 10px;
   }
   
   .voice-message-wrap {
@@ -1338,7 +1341,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   
   .voice-duration,
   .voice-msg-time {
-    font-size: 11px;
+    font-size: 10px;
   }
 }
 </style>
