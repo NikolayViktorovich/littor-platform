@@ -1,12 +1,5 @@
 <template>
   <div class="feed-page">
-    <div class="feed-header">
-      <div class="liquid-tabs">
-        <button class="liquid-tab active">Для вас</button>
-        <button class="liquid-tab">Подписки</button>
-      </div>
-    </div>
-
     <div class="feed-content">
       <CreatePost @created="addPost" />
       
@@ -20,6 +13,7 @@
           v-for="post in posts" 
           :key="post.id" 
           :post="post"
+          :hide-pin="true"
           @delete="deletePost"
           @update="updatePost"
           @open-media="openMedia"
@@ -100,13 +94,11 @@ async function pollNewPosts() {
     const res = await api.get('/posts', { params: { page: 1, limit: 5 } })
     const newPosts = res.data.posts
     
-    // Check for new posts that we don't have
     for (const newPost of newPosts) {
       const exists = posts.value.find(p => p.id === newPost.id)
       if (!exists) {
         posts.value.unshift(newPost)
       } else {
-        // Update existing post (likes, comments count)
         const idx = posts.value.findIndex(p => p.id === newPost.id)
         if (idx !== -1) {
           posts.value[idx] = { ...posts.value[idx], likesCount: newPost.likesCount, commentsCount: newPost.commentsCount }
@@ -132,14 +124,16 @@ async function deletePost(id) {
 function updatePost(updated) {
   const idx = posts.value.findIndex(p => p.id === updated.id)
   if (idx !== -1) {
-    posts.value[idx] = updated
+    if (updated.isArchived) {
+      posts.value.splice(idx, 1)
+    } else {
+      posts.value[idx] = updated
+    }
   }
 }
 
 onMounted(() => {
   fetchPosts(true)
-  
-  // Poll for new posts every 5 seconds
   pollInterval = setInterval(pollNewPosts, 5000)
   
   observer = new IntersectionObserver(entries => {
@@ -160,15 +154,6 @@ onUnmounted(() => {
   min-height: 100vh;
   padding: 20px;
   padding-left: calc(var(--sidebar-width) + 20px);
-}
-
-.feed-header {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-  position: sticky;
-  top: 20px;
-  z-index: 50;
 }
 
 .feed-content {

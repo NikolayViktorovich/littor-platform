@@ -58,10 +58,22 @@ export async function initDb() {
       authorId TEXT NOT NULL,
       content TEXT,
       image TEXT,
+      isPinned INTEGER DEFAULT 0,
+      isArchived INTEGER DEFAULT 0,
+      commentsDisabled INTEGER DEFAULT 0,
       createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (authorId) REFERENCES users(id)
     )
   `)
+
+  // Migration for posts
+  try {
+    const cols = db.exec("PRAGMA table_info(posts)")
+    const colNames = cols[0]?.values?.map(c => c[1]) || []
+    if (!colNames.includes('isPinned')) db.run(`ALTER TABLE posts ADD COLUMN isPinned INTEGER DEFAULT 0`)
+    if (!colNames.includes('isArchived')) db.run(`ALTER TABLE posts ADD COLUMN isArchived INTEGER DEFAULT 0`)
+    if (!colNames.includes('commentsDisabled')) db.run(`ALTER TABLE posts ADD COLUMN commentsDisabled INTEGER DEFAULT 0`)
+  } catch (e) {}
 
   db.run(`
     CREATE TABLE IF NOT EXISTS likes (

@@ -71,8 +71,8 @@ router.get('/:id/posts', authMiddleware, (req, res) => {
       EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked
     FROM posts p
     JOIN users u ON p.authorId = u.id
-    WHERE p.authorId = ?
-    ORDER BY p.createdAt DESC
+    WHERE p.authorId = ? AND (p.isArchived = 0 OR p.isArchived IS NULL)
+    ORDER BY p.isPinned DESC, p.createdAt DESC
   `).all(req.userId, req.params.id)
 
   const result = posts.map(p => ({
@@ -83,6 +83,9 @@ router.get('/:id/posts', authMiddleware, (req, res) => {
     likesCount: p.likesCount,
     commentsCount: p.commentsCount,
     isLiked: !!p.isLiked,
+    isPinned: !!p.isPinned,
+    isArchived: !!p.isArchived,
+    commentsDisabled: !!p.commentsDisabled,
     author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
   }))
 

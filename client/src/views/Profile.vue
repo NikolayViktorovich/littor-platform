@@ -61,12 +61,18 @@
         <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')" ref="tabPhotos">Фото</button>
         <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')" ref="tabVideos">Видео</button>
         <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')" ref="tabFriends">Друзья</button>
+        <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')" ref="tabArchive">Архив</button>
       </div>
 
       <div v-if="activeTab === 'posts'" class="profile-posts">
         <CreatePost v-if="isOwner" @created="addPost" />
         <PostCard v-for="post in posts" :key="post.id" :post="post" @delete="deletePost" @update="updatePost" @open-media="openMedia"/>
         <div v-if="!posts.length" class="empty-state glass"><p>Нет записей</p></div>
+      </div>
+
+      <div v-else-if="activeTab === 'archive'" class="profile-posts">
+        <PostCard v-for="post in archivedPosts" :key="post.id" :post="post" @delete="deleteArchivedPost" @update="updateArchivedPost" @open-media="openMedia"/>
+        <div v-if="!archivedPosts.length" class="empty-state glass"><p>Архив пуст</p></div>
       </div>
 
       <div v-else-if="activeTab === 'photos'" class="media-grid">
@@ -198,6 +204,7 @@ const notifications = useNotificationsStore()
 
 const user = ref(null)
 const posts = ref([])
+const archivedPosts = ref([])
 const photos = ref([])
 const videos = ref([])
 const activeTab = ref('posts')
@@ -224,12 +231,13 @@ const tabPosts = ref(null)
 const tabPhotos = ref(null)
 const tabVideos = ref(null)
 const tabFriends = ref(null)
+const tabArchive = ref(null)
 const indicatorStyle = ref({})
 const isAnimating = ref(false)
 
 function updateIndicator(animate = false) {
   nextTick(() => {
-    const tabRefs = { posts: tabPosts, photos: tabPhotos, videos: tabVideos, friends: tabFriends }
+    const tabRefs = { posts: tabPosts, photos: tabPhotos, videos: tabVideos, friends: tabFriends, archive: tabArchive }
     const activeTabRef = tabRefs[activeTab.value]?.value
     const container = tabsContainer.value
     
@@ -283,6 +291,7 @@ function setTab(tab) {
   if (tab === 'photos' && !photos.value.length) fetchPhotos()
   if (tab === 'videos' && !videos.value.length) fetchVideos()
   if (tab === 'friends' && !friendsList.value.length) fetchFriends()
+  if (tab === 'archive' && !archivedPosts.value.length) fetchArchivedPosts()
 }
 
 const friendsList = ref([])
@@ -323,6 +332,32 @@ async function fetchPhotos() {
 async function fetchVideos() {
   const id = route.params.id || authStore.user?.id
   try { const res = await api.get(`/users/${id}/videos`); videos.value = res.data } catch {}
+}
+
+async function fetchArchivedPosts() {
+  try { const res = await api.get('/posts/archived'); archivedPosts.value = res.data.posts } catch {}
+}
+
+function deleteArchivedPost(id) {
+  archivedPosts.value = archivedPosts.value.filter(p => p.id !== id)
+}
+
+function updateArchivedPost(updated) {
+  const idx = archivedPosts.value.findIndex(p => p.id === updated.id)
+  if (idx !== -1) {
+    // Если разархивирован - убираем из архива и добавляем в посты
+    if (!updated.isArchived) {
+      archivedPosts.value.splice(idx, 1)
+      posts.value.unshift(updated)
+      posts.value.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1
+        if (!a.isPinned && b.isPinned) return 1
+        return new Date(b.createdAt) - new Date(a.createdAt)
+      })
+    } else {
+      archivedPosts.value[idx] = updated
+    }
+  }
 }
 
 async function uploadAvatar(e) {
@@ -386,7 +421,23 @@ async function removeFriend() { try { await api.delete(`/friends/${user.value.id
 
 function addPost(post) { posts.value.unshift(post) }
 async function deletePost(id) { try { await api.delete(`/posts/${id}`); posts.value = posts.value.filter(p => p.id !== id) } catch (err) { notifications.error(err.message) } }
-function updatePost(updated) { const idx = posts.value.findIndex(p => p.id === updated.id); if (idx !== -1) posts.value[idx] = updated }
+function updatePost(updated) { 
+  const idx = posts.value.findIndex(p => p.id === updated.id)
+  if (idx !== -1) {
+    // Если архивирован - убираем из списка
+    if (updated.isArchived) {
+      posts.value.splice(idx, 1)
+    } else {
+      posts.value[idx] = updated
+      // Пересортировать: закрепленные наверху
+      posts.value.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1
+        if (!a.isPinned && b.isPinned) return 1
+        return new Date(b.createdAt) - new Date(a.createdAt)
+      })
+    }
+  }
+}
 
 function openMedia(src, type, idx = 0, list = []) { mediaViewerSrc.value = src; mediaViewerType.value = type; mediaIndex.value = idx; mediaList.value = list; showMediaViewer.value = true }
 function closeMedia() { showMediaViewer.value = false }

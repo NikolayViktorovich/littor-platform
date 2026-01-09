@@ -1,5 +1,12 @@
 <template>
-  <article class="post glass" :class="{ 'menu-open': menuOpen }">
+  <article class="post glass" :class="{ 'menu-open': menuOpen, 'pinned': post.isPinned && !hidePin }">
+    <div v-if="post.isPinned && !hidePin" class="pinned-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 4.5L19.5 9l-8 8L7 21l4-4.5 8-8L15 4.5z"/>
+        <path d="M9 15l-6 6"/>
+      </svg>
+      Закреплено
+    </div>
     <div class="post-header">
       <router-link :to="`/profile/${post.author.id}`" class="post-author">
         <img :src="authorAvatar" class="avatar" alt="" @error="handleAvatarError">
@@ -20,18 +27,18 @@
         
         <Transition name="menu" @after-leave="menuOpen = false">
           <div v-if="showMenu" class="post-dropdown glass-modal" v-click-outside="closeMenu">
-            <button class="dropdown-item" v-if="isOwner">
+            <button @click="handlePin" class="dropdown-item" v-if="isOwner && !hidePin">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M9 4v6l-2 4v2h10v-2l-2-4V4M12 16v5M8 4h8"/>
               </svg>
-              Закрепить
+              {{ post.isPinned ? 'Открепить' : 'Закрепить' }}
             </button>
-            <button class="dropdown-item" v-if="isOwner">
+            <button @click="handleToggleComments" class="dropdown-item" v-if="isOwner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 <path d="M9 9h6"/>
               </svg>
-              Отключить комментарии
+              {{ post.commentsDisabled ? 'Включить комментарии' : 'Отключить комментарии' }}
             </button>
             <button @click="copyLink" class="dropdown-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -43,13 +50,13 @@
             
             <template v-if="isOwner">
               <div class="dropdown-divider"></div>
-              <button class="dropdown-item">
+              <button @click="handleArchive" class="dropdown-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M21 8v13H3V8"/>
                   <path d="M1 3h22v5H1z"/>
                   <path d="M10 12h4"/>
                 </svg>
-                Архивировать
+                {{ post.isArchived ? 'Разархивировать' : 'Архивировать' }}
               </button>
               <button @click="handleDelete" class="dropdown-item danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -87,7 +94,7 @@
         <span v-if="post.likesCount" class="count">{{ formatCount(post.likesCount) }}</span>
       </button>
       
-      <button @click="handleComment" class="action-btn" :class="{ active: showComments, pressed: commentPressed }">
+      <button @click="handleComment" class="action-btn" :class="{ active: showComments, pressed: commentPressed, disabled: post.commentsDisabled }" :disabled="post.commentsDisabled">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
@@ -197,7 +204,8 @@ import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
 
 const props = defineProps({
-  post: { type: Object, required: true }
+  post: { type: Object, required: true },
+  hidePin: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['delete', 'update', 'open-media'])
@@ -294,6 +302,30 @@ function formatCount(num) {
 function handleDelete() {
   showMenu.value = false
   emit('delete', props.post.id)
+}
+
+async function handlePin() {
+  showMenu.value = false
+  try {
+    const res = await api.post(`/posts/${props.post.id}/pin`)
+    emit('update', { ...props.post, isPinned: res.data.isPinned })
+  } catch {}
+}
+
+async function handleArchive() {
+  showMenu.value = false
+  try {
+    const res = await api.post(`/posts/${props.post.id}/archive`)
+    emit('update', { ...props.post, isArchived: res.data.isArchived })
+  } catch {}
+}
+
+async function handleToggleComments() {
+  showMenu.value = false
+  try {
+    const res = await api.post(`/posts/${props.post.id}/comments-toggle`)
+    emit('update', { ...props.post, commentsDisabled: res.data.commentsDisabled })
+  } catch {}
 }
 
 function copyLink() {
@@ -437,6 +469,26 @@ const vClickOutside = {
   padding: 20px;
   position: relative;
   overflow: visible !important;
+}
+
+.post.pinned {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.pinned-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pinned-badge svg {
+  width: 14px;
+  height: 14px;
 }
 
 .post.menu-open {
@@ -648,6 +700,11 @@ const vClickOutside = {
 
 .action-btn.active {
   color: var(--text-primary);
+}
+
+.action-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .action-btn.pressed {

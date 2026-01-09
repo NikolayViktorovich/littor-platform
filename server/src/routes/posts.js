@@ -6,6 +6,42 @@ import { upload } from '../middleware/upload.js'
 
 const router = Router()
 
+// Архивированные посты
+router.get('/archived', authMiddleware, (req, res) => {
+  const page = parseInt(req.query.page) || 1
+  const limit = parseInt(req.query.limit) || 10
+  const offset = (page - 1) * limit
+
+  const posts = db.prepare(`
+    SELECT p.*, u.name as authorName, u.avatar as authorAvatar,
+      (SELECT COUNT(*) FROM likes WHERE postId = p.id) as likesCount,
+      (SELECT COUNT(*) FROM comments WHERE postId = p.id) as commentsCount,
+      EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked
+    FROM posts p
+    JOIN users u ON p.authorId = u.id
+    WHERE p.isArchived = 1 AND p.authorId = ?
+    ORDER BY p.createdAt DESC
+    LIMIT ? OFFSET ?
+  `).all(req.userId, req.userId, limit + 1, offset)
+
+  const hasMore = posts.length > limit
+  const result = posts.slice(0, limit).map(p => ({
+    id: p.id,
+    content: p.content,
+    image: p.image,
+    createdAt: p.createdAt,
+    likesCount: p.likesCount,
+    commentsCount: p.commentsCount,
+    isLiked: !!p.isLiked,
+    isPinned: !!p.isPinned,
+    isArchived: !!p.isArchived,
+    commentsDisabled: !!p.commentsDisabled,
+    author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
+  }))
+
+  res.json({ posts: result, hasMore })
+})
+
 router.get('/', authMiddleware, (req, res) => {
   const page = parseInt(req.query.page) || 1
   const limit = parseInt(req.query.limit) || 10
@@ -18,11 +54,12 @@ router.get('/', authMiddleware, (req, res) => {
       EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked
     FROM posts p
     JOIN users u ON p.authorId = u.id
-    WHERE p.authorId = ? 
-      OR p.authorId IN (
-        SELECT CASE WHEN userId = ? THEN friendId ELSE userId END
-        FROM friendships WHERE (userId = ? OR friendId = ?) AND status = 'accepted'
-      )
+    WHERE (p.isArchived = 0 OR p.isArchived IS NULL)
+      AND (p.authorId = ? 
+        OR p.authorId IN (
+          SELECT CASE WHEN userId = ? THEN friendId ELSE userId END
+          FROM friendships WHERE (userId = ? OR friendId = ?) AND status = 'accepted'
+        ))
     ORDER BY p.createdAt DESC
     LIMIT ? OFFSET ?
   `).all(req.userId, req.userId, req.userId, req.userId, req.userId, limit + 1, offset)
@@ -36,6 +73,9 @@ router.get('/', authMiddleware, (req, res) => {
     likesCount: p.likesCount,
     commentsCount: p.commentsCount,
     isLiked: !!p.isLiked,
+    isPinned: !!p.isPinned,
+    isArchived: !!p.isArchived,
+    commentsDisabled: !!p.commentsDisabled,
     author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
   }))
 
@@ -81,6 +121,66 @@ router.delete('/:id', authMiddleware, (req, res) => {
 
   db.prepare('DELETE FROM posts WHERE id = ?').run(req.params.id)
   res.json({ success: true })
+})
+
+// Закрепить/открепить пост
+router.post('/:id/pin', authMiddleware, (req, res) => {
+  const post = db.prepare('SELECT authorId, isPinned FROM posts WHERE id = ?').get(req.params.id)
+
+  if (!post) {
+    return res.status(404).json({ error: 'Пост не найден' })
+  }
+
+  if (post.authorId !== req.userId) {
+    return res.status(403).json({ error: 'Нет доступа' })
+  }
+
+  const newPinned = post.isPinned ? 0 : 1
+  
+  // Если закрепляем, сначала открепляем все остальные посты пользователя
+  if (newPinned) {
+    db.prepare('UPDATE posts SET isPinned = 0 WHERE authorId = ?').run(req.userId)
+  }
+  
+  db.prepare('UPDATE posts SET isPinned = ? WHERE id = ?').run(newPinned, req.params.id)
+  
+  res.json({ isPinned: !!newPinned })
+})
+
+// Архивировать/разархивировать пост
+router.post('/:id/archive', authMiddleware, (req, res) => {
+  const post = db.prepare('SELECT authorId, isArchived FROM posts WHERE id = ?').get(req.params.id)
+
+  if (!post) {
+    return res.status(404).json({ error: 'Пост не найден' })
+  }
+
+  if (post.authorId !== req.userId) {
+    return res.status(403).json({ error: 'Нет доступа' })
+  }
+
+  const newArchived = post.isArchived ? 0 : 1
+  db.prepare('UPDATE posts SET isArchived = ? WHERE id = ?').run(newArchived, req.params.id)
+  
+  res.json({ isArchived: !!newArchived })
+})
+
+// Включить/отключить комментарии
+router.post('/:id/comments-toggle', authMiddleware, (req, res) => {
+  const post = db.prepare('SELECT authorId, commentsDisabled FROM posts WHERE id = ?').get(req.params.id)
+
+  if (!post) {
+    return res.status(404).json({ error: 'Пост не найден' })
+  }
+
+  if (post.authorId !== req.userId) {
+    return res.status(403).json({ error: 'Нет доступа' })
+  }
+
+  const newDisabled = post.commentsDisabled ? 0 : 1
+  db.prepare('UPDATE posts SET commentsDisabled = ? WHERE id = ?').run(newDisabled, req.params.id)
+  
+  res.json({ commentsDisabled: !!newDisabled })
 })
 
 router.post('/:id/like', authMiddleware, (req, res) => {
