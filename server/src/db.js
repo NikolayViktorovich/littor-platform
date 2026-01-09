@@ -8,7 +8,6 @@ let db = null
 export async function initDb() {
   const SQL = await initSqlJs()
   
-  // Load existing database or create new
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH)
     db = new SQL.Database(buffer)
@@ -31,7 +30,6 @@ export async function initDb() {
     )
   `)
 
-  // Migration for users
   try {
     const cols = db.exec("PRAGMA table_info(users)")
     const colNames = cols[0]?.values?.map(c => c[1]) || []
@@ -66,7 +64,6 @@ export async function initDb() {
     )
   `)
 
-  // Migration for posts
   try {
     const cols = db.exec("PRAGMA table_info(posts)")
     const colNames = cols[0]?.values?.map(c => c[1]) || []
@@ -111,11 +108,9 @@ export async function initDb() {
     )
   `)
 
-  // Migration: add parentId column if not exists
   try {
     db.run(`ALTER TABLE comments ADD COLUMN parentId TEXT`)
   } catch (e) {
-    // Column already exists
   }
 
   db.run(`
@@ -145,7 +140,6 @@ export async function initDb() {
     )
   `)
 
-  // Migration: add media columns if not exists
   try {
     const cols = db.exec("PRAGMA table_info(messages)")
     const colNames = cols[0]?.values?.map(c => c[1]) || []
@@ -171,10 +165,8 @@ export async function initDb() {
       db.run(`ALTER TABLE messages ADD COLUMN replyToId TEXT`)
     }
   } catch (e) {
-    console.log('Migration check:', e.message)
   }
 
-  // Pinned messages table
   db.run(`
     CREATE TABLE IF NOT EXISTS pinned_messages (
       oderId TEXT NOT NULL,
@@ -186,7 +178,6 @@ export async function initDb() {
     )
   `)
 
-  // Dialog settings table (pin, mute)
   db.run(`
     CREATE TABLE IF NOT EXISTS dialog_settings (
       oderId TEXT PRIMARY KEY,
@@ -225,7 +216,6 @@ export function saveDb() {
   }
 }
 
-// Helper functions to match better-sqlite3 API
 export function prepare(sql) {
   return {
     run(...params) {

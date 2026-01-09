@@ -22,18 +22,15 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 4000
 
-// Store online users: { oderId: socketId }
 const onlineUsers = new Map()
 
 app.use(cors())
 app.use(express.json())
 app.use('/uploads', express.static('uploads'))
 
-// Make io available to routes
 app.set('io', io)
 app.set('onlineUsers', onlineUsers)
 
-// Socket.io authentication and connection
 io.use((socket, next) => {
   const token = socket.handshake.auth.token
   if (!token) return next(new Error('Authentication required'))
@@ -51,10 +48,8 @@ io.on('connection', (socket) => {
   const userId = socket.userId
   onlineUsers.set(userId, socket.id)
   
-  // Join personal room for direct messages
   socket.join(`user:${userId}`)
   
-  // Broadcast online status
   socket.broadcast.emit('user:online', { userId })
   
   socket.on('disconnect', () => {
@@ -62,7 +57,6 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('user:offline', { userId })
   })
   
-  // Join a post room to receive comments/likes updates
   socket.on('post:join', (postId) => {
     socket.join(`post:${postId}`)
   })
@@ -72,14 +66,12 @@ io.on('connection', (socket) => {
   })
 })
 
-// Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/posts', postsRoutes)
 app.use('/api/friends', friendsRoutes)
 app.use('/api/messages', messagesRoutes)
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error(err)
   res.status(500).json({ error: 'Внутренняя ошибка сервера' })

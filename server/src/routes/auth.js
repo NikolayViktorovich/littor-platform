@@ -7,7 +7,6 @@ import { sendVerificationEmail, sendPasswordResetEmail, generateCode } from '../
 
 const router = Router()
 
-// Register - Step 1: Create account and send verification code
 router.post('/register', async (req, res) => {
   const { email, password, name } = req.body
 
@@ -24,7 +23,6 @@ router.post('/register', async (req, res) => {
     if (existing.emailVerified) {
       return res.status(400).json({ error: 'Email уже зарегистрирован' })
     }
-    // Delete unverified account to allow re-registration
     db.prepare('DELETE FROM users WHERE id = ?').run(existing.id)
   }
 
@@ -34,9 +32,8 @@ router.post('/register', async (req, res) => {
   db.prepare('INSERT INTO users (id, email, password, name, emailVerified) VALUES (?, ?, ?, ?, 0)')
     .run(id, email, hashedPassword, name)
 
-  // Generate and send verification code
   const code = generateCode()
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 minutes
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
   db.prepare('INSERT INTO verification_codes (id, email, code, type, expiresAt) VALUES (?, ?, ?, ?, ?)')
     .run(uuid(), email, code, 'email_verification', expiresAt)
@@ -51,7 +48,6 @@ router.post('/register', async (req, res) => {
   })
 })
 
-// Verify email code
 router.post('/verify-email', async (req, res) => {
   const { email, code } = req.body
 
@@ -73,10 +69,7 @@ router.post('/verify-email', async (req, res) => {
     return res.status(400).json({ error: 'Код истёк. Запросите новый.' })
   }
 
-  // Mark code as used
   db.prepare('UPDATE verification_codes SET used = 1 WHERE id = ?').run(verification.id)
-
-  // Verify user email
   db.prepare('UPDATE users SET emailVerified = 1 WHERE email = ?').run(email)
 
   const user = db.prepare('SELECT id, email, name, avatar, bio FROM users WHERE email = ?').get(email)
@@ -85,7 +78,6 @@ router.post('/verify-email', async (req, res) => {
   res.json({ user, token, message: 'Email подтверждён' })
 })
 
-// Resend verification code
 router.post('/resend-verification', async (req, res) => {
   const { email } = req.body
 
@@ -102,7 +94,6 @@ router.post('/resend-verification', async (req, res) => {
     return res.status(400).json({ error: 'Email уже подтверждён' })
   }
 
-  // Check rate limit (1 code per minute)
   const recentCode = db.prepare(`
     SELECT * FROM verification_codes 
     WHERE email = ? AND type = 'email_verification' 
@@ -124,7 +115,6 @@ router.post('/resend-verification', async (req, res) => {
   res.json({ message: 'Код отправлен повторно', emailSent: sent })
 })
 
-// Login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body
 
@@ -142,7 +132,6 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Неверный email или пароль' })
   }
 
-  // Check if email is verified
   if (!user.emailVerified) {
     return res.status(403).json({ 
       error: 'Email не подтверждён', 
@@ -157,7 +146,6 @@ router.post('/login', async (req, res) => {
   res.json({ user: userData, token })
 })
 
-// Request password reset
 router.post('/forgot-password', async (req, res) => {
   const { email } = req.body
 
@@ -167,11 +155,9 @@ router.post('/forgot-password', async (req, res) => {
 
   const user = db.prepare('SELECT id FROM users WHERE email = ?').get(email)
   if (!user) {
-    // Don't reveal if email exists
     return res.json({ message: 'Если email зарегистрирован, код будет отправлен' })
   }
 
-  // Check rate limit
   const recentCode = db.prepare(`
     SELECT * FROM verification_codes 
     WHERE email = ? AND type = 'password_reset' 
@@ -193,7 +179,6 @@ router.post('/forgot-password', async (req, res) => {
   res.json({ message: 'Код отправлен на email', emailSent: sent })
 })
 
-// Verify reset code
 router.post('/verify-reset-code', async (req, res) => {
   const { email, code } = req.body
 
@@ -218,7 +203,6 @@ router.post('/verify-reset-code', async (req, res) => {
   res.json({ valid: true, message: 'Код верный' })
 })
 
-// Reset password
 router.post('/reset-password', async (req, res) => {
   const { email, code, newPassword } = req.body
 
@@ -244,10 +228,8 @@ router.post('/reset-password', async (req, res) => {
     return res.status(400).json({ error: 'Код истёк. Запросите новый.' })
   }
 
-  // Mark code as used
   db.prepare('UPDATE verification_codes SET used = 1 WHERE id = ?').run(verification.id)
 
-  // Update password
   const hashedPassword = await bcrypt.hash(newPassword, 10)
   db.prepare('UPDATE users SET password = ? WHERE email = ?').run(hashedPassword, email)
 

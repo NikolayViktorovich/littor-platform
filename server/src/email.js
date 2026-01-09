@@ -1,10 +1,7 @@
 import { Resend } from 'resend'
 
-// Resend API - бесплатно 100 писем/день
-// Получить ключ: https://resend.com (регистрация через GitHub)
 const resend = new Resend(process.env.RESEND_API_KEY || '')
 
-// Режим разработки - если ключ не указан, коды выводятся в консоль
 const DEV_MODE = !process.env.RESEND_API_KEY
 
 export async function sendVerificationEmail(to, code) {
@@ -53,7 +50,6 @@ export async function sendVerificationEmail(to, code) {
       html
     })
     
-    // Логируем код для Gmail (часто блокируют onboarding@resend.dev)
     if (to.includes('gmail.com')) {
       console.log('\n⚠️ Gmail может заблокировать письмо!')
       console.log('📧 VERIFICATION CODE for', to)
@@ -118,7 +114,6 @@ export async function sendPasswordResetEmail(to, code) {
       html
     })
     
-    // Логируем код для Gmail (часто блокируют onboarding@resend.dev)
     if (to.includes('gmail.com')) {
       console.log('\n⚠️ Gmail может заблокировать письмо!')
       console.log('📧 PASSWORD RESET CODE for', to)

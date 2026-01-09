@@ -26,7 +26,7 @@
                 <div class="dialog-bottom">
                   <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content || 'Медиа' }}</p>
                   <span v-if="dialog.unreadCount" class="unread-badge">{{ dialog.unreadCount }}</span>
-                  <svg v-else-if="dialog.lastMessage.senderId === authStore.user?.id" class="read-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  <svg v-else-if="dialog.lastMessage.senderId === authStore.user?.id" class="read-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6l-11 11-5-5"/></svg>
                 </div>
               </div>
             </div>
@@ -43,7 +43,7 @@
         <div v-if="selectedUserId" class="chat-panel glass" :key="selectedUserId">
           <div class="chat-header">
             <button v-if="isMobile" @click="goBack" class="back-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
             <router-link v-if="chatUser && !selectMode" :to="`/profile/${chatUser.id}`" class="chat-user">
               <div class="chat-avatar-wrap">
@@ -110,7 +110,7 @@
               <div v-else class="message" :id="'msg-' + msg.id" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice', selected: selectedMessages.includes(msg.id) }" @contextmenu.prevent="openMsgMenu($event, msg)" @click="selectMode ? toggleMessageSelection(msg.id) : null">
                 <div v-if="selectMode" class="message-checkbox" @click.stop="toggleMessageSelection(msg.id)">
                   <div class="checkbox-inner" :class="{ checked: selectedMessages.includes(msg.id) }">
-                    <svg v-if="selectedMessages.includes(msg.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <svg v-if="selectedMessages.includes(msg.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6l-11 11-5-5"/></svg>
                   </div>
                 </div>
                 <router-link v-if="msg.senderId !== authStore.user?.id" :to="`/profile/${chatUser?.id}`" class="msg-avatar">
@@ -128,8 +128,8 @@
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z"/></svg>
                       </div>
                       <button class="circle-mute" @click.stop="toggleMute(msg.id)">
-                        <svg v-if="mutedCircles[msg.id]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                        <svg v-if="mutedCircles[msg.id]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/></svg>
+                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                       </button>
                     </div>
                     <div class="circle-info">
@@ -141,7 +141,7 @@
                   <div v-else-if="msg.mediaType === 'voice'" class="voice-message-wrap">
                     <button class="voice-play-btn" @click="toggleVoice($event, msg.id)">
                       <svg v-if="!playingVoices[msg.id]" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
-                      <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
+                      <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5a1.5 1.5 0 0 1 1.5-1.5h1A1.5 1.5 0 0 1 10 5v14a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 6 19V5zM14 5a1.5 1.5 0 0 1 1.5-1.5h1A1.5 1.5 0 0 1 18 5v14a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 14 19V5z"/></svg>
                     </button>
                     <div class="voice-wave-wrap">
                       <div class="voice-waveform">
@@ -155,7 +155,7 @@
                     <audio :src="msg.media" :id="'voice-' + msg.id" @ended="onVoiceEnded(msg.id)" @loadedmetadata="onVoiceLoaded($event, msg.id)" @timeupdate="onVoiceTimeUpdate($event, msg.id)" hidden></audio>
                   </div>
                   <!-- Regular message bubble -->
-                  <div v-else class="message-bubble">
+                  <div v-else class="message-bubble" :class="{ 'files-only': getFileMedia(msg).length > 0 && !msg.content && getVisualMedia(msg).length === 0 }">
                     <!-- Reply preview in message -->
                     <div v-if="msg.replyTo" class="reply-in-message" @click.stop="scrollToMessage(msg.replyTo.id)">
                       <span class="reply-sender">{{ msg.replyTo.senderName }}</span>
@@ -167,8 +167,44 @@
                       <span class="forwarded-name">{{ msg.forwardedFrom.name }}</span>
                     </div>
                     <span v-else-if="msg.forwarded" class="forwarded-label">Переслано</span>
-                    <img v-if="msg.mediaType === 'image'" :src="msg.media" class="message-media" alt="" @click="openMediaViewer(msg.media, 'image')">
-                    <video v-else-if="msg.mediaType === 'video'" :src="msg.media" class="message-media" controls></video>
+                    
+                    <!-- Visual media gallery (images, videos, gifs) -->
+                    <div v-if="getVisualMedia(msg).length > 0" class="msg-media-gallery" :class="'media-count-' + Math.min(getVisualMedia(msg).length, 4)">
+                      <div v-for="(item, idx) in getVisualMedia(msg).slice(0, 4)" :key="item.id || idx" class="msg-gallery-item" :class="{ 'has-more': idx === 3 && getVisualMedia(msg).length > 4 }" @click="openMediaViewer(item.url, item.mediaType)">
+                        <img v-if="item.mediaType === 'image' || item.mediaType === 'gif'" :src="item.url" alt="">
+                        <video v-else-if="item.mediaType === 'video'" :src="item.url" @click.stop controls></video>
+                        <div v-if="idx === 3 && getVisualMedia(msg).length > 4" class="msg-gallery-more">+{{ getVisualMedia(msg).length - 4 }}</div>
+                      </div>
+                    </div>
+                    
+                    <!-- File media (audio, documents) - shown as list -->
+                    <div v-if="getFileMedia(msg).length > 0" class="msg-files-list">
+                      <template v-for="(item, idx) in getFileMedia(msg)" :key="item.id || idx">
+                        <!-- Audio -->
+                        <div v-if="item.mediaType === 'audio'" class="audio-message-wrap" @click="toggleAudio($event, item)">
+                          <button class="audio-play-btn" @click.stop="toggleAudio($event, item)">
+                            <svg v-if="!isAudioPlaying(item.url)" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+                            <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4zM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V4z"/></svg>
+                          </button>
+                          <div class="audio-info">
+                            <div class="audio-name">{{ item.fileName || 'Аудио' }}</div>
+                            <div class="audio-meta">{{ getAudioTimeGlobal(item.url) }} · {{ item.artist || 'Неизвестный исполнитель' }}</div>
+                          </div>
+                          <span class="file-msg-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
+                        </div>
+                        <!-- File -->
+                        <div v-else class="file-message-wrap" @click="downloadFile(item.url, item.fileName)">
+                          <div class="file-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+                          </div>
+                          <div class="file-info">
+                            <div class="file-name">{{ item.fileName || 'Файл' }}</div>
+                            <div class="file-size">{{ formatFileSize(item.fileSize) }}</div>
+                          </div>
+                          <span class="file-msg-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
+                        </div>
+                      </template>
+                    </div>
                     <span class="message-text-wrap"><p v-if="msg.content">{{ msg.content }}</p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span></span>
                   </div>
                 </div>
@@ -178,12 +214,6 @@
           </template>
         </div>
 
-        <div v-if="mediaPreview" class="media-preview">
-          <img v-if="mediaType === 'image'" :src="mediaPreview" alt="">
-          <video v-else-if="mediaType === 'video' || mediaType === 'circle'" :src="mediaPreview" :class="{ circle: mediaType === 'circle' }"></video>
-          <div v-else-if="mediaType === 'voice'" class="voice-preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg><span>Голосовое</span></div>
-          <button @click="clearMedia" class="clear-media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-        </div>
         <div v-if="isRecording" class="voice-recording-bar">
           <div class="voice-rec-left">
             <div class="voice-rec-dot"></div>
@@ -213,9 +243,60 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
+        <!-- Media preview cards above input -->
+        <div v-if="mediaFiles.length > 0 && !chatUser?.blockedByUser && !chatUser?.iBlockedUser" class="msg-media-previews">
+          <div v-for="item in mediaFiles" :key="item.id" class="msg-media-preview-item">
+            <div class="msg-preview-thumb">
+              <img v-if="item.type === 'image' || item.type === 'gif'" :src="item.preview" alt="">
+              <video v-else-if="item.type === 'video'" :src="item.preview" muted></video>
+              <div v-else class="msg-preview-icon" :class="item.type">
+                <svg v-if="item.type === 'audio'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+                <svg v-else-if="item.type === 'voice'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/></svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+              </div>
+            </div>
+            <button @click="removeMediaFile(item.id)" class="msg-preview-remove-small">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <button v-if="mediaFiles.length > 1" @click="clearMedia" class="msg-clear-all">Очистить всё</button>
+        </div>
         <form v-if="!chatUser?.blockedByUser && !chatUser?.iBlockedUser" @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
           <div class="input-actions-left">
-            <label class="action-btn"><input type="file" accept="image/*,video/*" @change="handleMediaSelect" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></label>
+            <div class="attach-wrap">
+              <button type="button" class="action-btn" @click="showAttachMenu = !showAttachMenu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+              <Transition name="attach-dropdown">
+                <div v-if="showAttachMenu" class="attach-dropdown glass-modal" @click.stop>
+                  <label class="attach-dropdown-item">
+                    <input type="file" accept="image/*" @change="handleAttachSelect" multiple hidden>
+                    <div class="attach-icon photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5-11 11"/></svg></div>
+                    <span>Фото</span>
+                  </label>
+                  <label class="attach-dropdown-item">
+                    <input type="file" accept="video/*" @change="handleAttachSelect" multiple hidden>
+                    <div class="attach-icon video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7zM1 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7z"/></svg></div>
+                    <span>Видео</span>
+                  </label>
+                  <label class="attach-dropdown-item">
+                    <input type="file" accept="image/gif" @change="handleAttachSelect" multiple hidden>
+                    <div class="attach-icon gif"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4.18a2.18 2.18 0 0 1 2.18-2.18h15.64A2.18 2.18 0 0 1 22 4.18v15.64A2.18 2.18 0 0 1 19.82 22H4.18A2.18 2.18 0 0 1 2 19.82V4.18zM7 10.5v3M10 10v4c0 .5.5 1 1 1h1.5M14 10v4h2.5"/></svg></div>
+                    <span>GIF</span>
+                  </label>
+                  <label class="attach-dropdown-item">
+                    <input type="file" accept="audio/*" @change="handleAttachSelect" multiple hidden>
+                    <div class="attach-icon audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></div>
+                    <span>Аудио</span>
+                  </label>
+                  <label class="attach-dropdown-item">
+                    <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z" @change="handleAttachSelect" multiple hidden>
+                    <div class="attach-icon file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg></div>
+                    <span>Файл</span>
+                  </label>
+                </div>
+              </Transition>
+            </div>
           </div>
           <div class="input-wrap">
             <input v-model="newMessage" placeholder="Написать сообщение..." autocomplete="off" ref="msgInput">
@@ -224,9 +305,9 @@
           <div class="input-actions-right">
             <button type="submit" class="action-btn voice-btn" @click.prevent="onRightBtnClick" @mousedown="onVoiceMouseDown" @mousemove="onVoiceMouseMove" @mouseup="onVoiceMouseUp" @mouseleave="onVoiceMouseUp" @touchstart.prevent="onVoiceBtnDown" @touchend.prevent="onVoiceBtnUp" @touchmove.prevent="onVoiceBtnTouchMove" ref="voiceBtnRef">
               <Transition name="icon-flip" mode="out-in">
-                <svg v-if="newMessage.trim() || mediaPreview" key="send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-                <svg v-else-if="voiceBtnMode === 'voice'" key="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
-                <svg v-else key="circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg v-if="newMessage.trim() || mediaFiles.length > 0" key="send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                <svg v-else-if="voiceBtnMode === 'voice'" key="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></svg>
+                <svg v-else key="circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
               </Transition>
             </button>
           </div>
@@ -245,18 +326,18 @@
             <video ref="circlePreviewEl" class="circle-preview-video" autoplay muted playsinline></video>
           </div>
           <button class="circle-rec-pause" @click="toggleCirclePause">
-            <svg v-if="!circlePaused" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-            <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <svg v-if="!circlePaused" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4zM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V4z"/></svg>
+            <svg v-else viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
           </button>
         </div>
         <div class="circle-rec-controls">
           <div class="circle-rec-left">
             <button class="circle-rec-btn" @click="switchCamera">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
             </button>
             <button class="circle-rec-btn" :class="{ active: circleMuted }" @click="toggleCircleRecMute">
-              <svg v-if="circleMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <svg v-if="circleMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l22 22M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23M12 19v4M8 23h8"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
             </button>
           </div>
           <div class="circle-rec-bottom">
@@ -275,7 +356,7 @@
         <Transition name="menu">
           <div v-if="showDialogMenu" class="msg-menu glass-modal" :style="{ top: dialogMenuY + 'px', left: dialogMenuX + 'px' }" @click.stop>
             <button class="menu-item" @click="toggleDialogPin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ selectedDialog?.isPinned ? 'Открепить' : 'Закрепить' }}</button>
-            <button class="menu-item" @click="toggleDialogMute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><template v-if="!selectedDialog?.isMuted"><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></template><template v-else><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></template></svg>{{ selectedDialog?.isMuted ? 'Включить звук' : 'Отключить звук' }}</button>
+            <button class="menu-item" @click="toggleDialogMute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><template v-if="!selectedDialog?.isMuted"><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></template><template v-else><path d="M23 9l-6 6M17 9l6 6"/></template></svg>{{ selectedDialog?.isMuted ? 'Включить звук' : 'Отключить звук' }}</button>
             <button class="menu-item danger" @click="confirmDeleteDialogForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
             <button class="menu-item muted" @click="confirmDeleteDialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
           </div>
@@ -380,6 +461,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { useAudioPlayerStore } from '../stores/audioPlayer'
 import { currentChatUserId } from '../stores/chat'
 import { cache } from '../stores/cache'
 import { useSocket } from '../socket'
@@ -389,6 +471,7 @@ import api from '../api'
 const route = useRoute()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
+const audioPlayerStore = useAudioPlayerStore()
 const { on, off } = useSocket()
 
 const dialogs = ref([])
@@ -402,9 +485,7 @@ const messagesContainer = ref(null)
 const msgInput = ref(null)
 const circlePreviewEl = ref(null)
 
-const mediaFile = ref(null)
-const mediaPreview = ref(null)
-const mediaType = ref(null)
+const mediaFiles = ref([])
 const isRecording = ref(false)
 const showCircleOverlay = ref(false)
 const recordingTime = ref(0)
@@ -425,7 +506,6 @@ const showMsgMenu = ref(false)
 const msgMenuX = ref(0)
 const msgMenuY = ref(0)
 
-// Dialog menu
 const showDialogMenu = ref(false)
 const dialogMenuX = ref(0)
 const dialogMenuY = ref(0)
@@ -436,9 +516,13 @@ const showDeleteDialogForAllModal = ref(false)
 const playingCircles = ref({})
 const mutedCircles = ref({})
 const playingVoices = ref({})
+const playingAudios = ref({})
 const voiceDurations = ref({})
 const voiceTotalDurations = ref({})
 const voiceProgress = ref({})
+const audioDurations = ref({})
+const audioTotalDurations = ref({})
+const audioProgress = ref({})
 const circleDurations = ref({})
 const circleCurrentTime = ref({})
 const circleProgress = ref({})
@@ -446,8 +530,8 @@ const selectedMsg = ref(null)
 const showForwardModal = ref(false)
 const showDeleteForAllModal = ref(false)
 const showDeleteForMeModal = ref(false)
+const showAttachMenu = ref(false)
 
-// System message menu
 const showSystemMsgMenu = ref(false)
 const systemMsgMenuX = ref(0)
 const systemMsgMenuY = ref(0)
@@ -458,7 +542,6 @@ const showMediaViewerModal = ref(false)
 const viewerSrc = ref('')
 const viewerType = ref('image')
 
-// Reply, selection, and pinning
 const replyingTo = ref(null)
 const selectMode = ref(false)
 const selectedMessages = ref([])
@@ -473,7 +556,7 @@ let floatingDateHideTimeout = null
 let lastScrollTime = 0
 let isProgrammaticScroll = false
 
-const canSend = computed(() => newMessage.value.trim() || mediaFile.value)
+const canSend = computed(() => newMessage.value.trim() || mediaFiles.value.length > 0)
 const isMobile = ref(window.innerWidth <= 900)
 
 function saveScrollPosition() {
@@ -593,19 +676,16 @@ function scrollToBottom() {
 function onChatScroll() {
   if (!messagesContainer.value || !messages.value.length) return
   
-  // Игнорируем программные скроллы
   if (isProgrammaticScroll) return
   
   const container = messagesContainer.value
   
-  // Не показываем если скролл в самом низу
   const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50
   if (isAtBottom) {
     showFloatingDate.value = false
     return
   }
   
-  // Находим сообщение ближе к верху видимой области
   const containerRect = container.getBoundingClientRect()
   const targetY = containerRect.top + 60
   
@@ -629,11 +709,9 @@ function onChatScroll() {
     showFloatingDate.value = true
   }
   
-  // Сбрасываем таймер скрытия при каждом скролле
   clearTimeout(floatingDateHideTimeout)
   lastScrollTime = Date.now()
   
-  // Скрываем через 1.5 секунды после остановки скролла
   floatingDateHideTimeout = setTimeout(() => {
     showFloatingDate.value = false
   }, 1500)
@@ -764,9 +842,194 @@ function getWaveHeight(i) {
   return heights[(i - 1) % heights.length]
 }
 
+function toggleAudio(e, item) {
+  if (audioPlayerStore.currentTrack?.url === item.url && audioPlayerStore.isPlaying) {
+    audioPlayerStore.pause()
+  } else {
+    audioPlayerStore.play({
+      url: item.url,
+      name: item.fileName || 'Аудио',
+      source: chatUser.value?.name || 'Сообщение'
+    })
+  }
+}
+
+function isAudioPlaying(url) {
+  return audioPlayerStore.currentTrack?.url === url && audioPlayerStore.isPlaying
+}
+
+function getAudioProgressGlobal(url) {
+  if (audioPlayerStore.currentTrack?.url === url) {
+    return audioPlayerStore.progress
+  }
+  return 0
+}
+
+function getAudioTimeGlobal(url) {
+  if (audioPlayerStore.currentTrack?.url === url) {
+    return audioPlayerStore.formattedCurrentTime
+  }
+  return '0:00'
+}
+
+function seekAudioGlobal(e, url) {
+  if (audioPlayerStore.currentTrack?.url !== url) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const percent = ((e.clientX - rect.left) / rect.width) * 100
+  audioPlayerStore.seek(percent)
+}
+
+function onAudioEnded(msgId) {
+  playingAudios.value[msgId] = false
+  audioProgress.value[msgId] = 0
+  if (audioTotalDurations.value[msgId]) {
+    audioDurations.value[msgId] = audioTotalDurations.value[msgId]
+  }
+}
+
+function onAudioLoaded(e, msgId) {
+  const duration = e.target.duration
+  const mins = Math.floor(duration / 60)
+  const secs = Math.floor(duration % 60)
+  const formatted = `${mins}:${secs.toString().padStart(2, '0')}`
+  audioDurations.value[msgId] = formatted
+  audioTotalDurations.value[msgId] = formatted
+  audioProgress.value[msgId] = 0
+}
+
+function onAudioTimeUpdate(e, msgId) {
+  const audio = e.target
+  const current = audio.currentTime
+  const duration = audio.duration
+  const mins = Math.floor(current / 60)
+  const secs = Math.floor(current % 60)
+  audioDurations.value[msgId] = `${mins}:${secs.toString().padStart(2, '0')}`
+  audioProgress.value[msgId] = duration > 0 ? (current / duration) * 100 : 0
+}
+
+function seekAudio(e, msgId) {
+  const audio = document.getElementById('audio-' + msgId)
+  if (!audio) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const percent = (e.clientX - rect.left) / rect.width
+  audio.currentTime = percent * audio.duration
+}
+
+function getAudioDuration(msgId) {
+  return audioDurations.value[msgId] || '0:00'
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' Б'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' МБ'
+}
+
+function downloadFile(url, filename) {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename || 'file'
+  a.target = '_blank'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
 function insertEmoji(emoji) { const input = msgInput.value; if (input) { const start = input.selectionStart, end = input.selectionEnd; newMessage.value = newMessage.value.substring(0, start) + emoji + newMessage.value.substring(end); nextTick(() => { input.focus(); input.setSelectionRange(start + emoji.length, start + emoji.length) }) } else newMessage.value += emoji }
-function handleMediaSelect(e) { const file = e.target.files[0]; if (!file) return; mediaFile.value = file; mediaPreview.value = URL.createObjectURL(file); mediaType.value = file.type.startsWith('image/') ? 'image' : 'video'; e.target.value = '' }
-function clearMedia() { if (mediaPreview.value) URL.revokeObjectURL(mediaPreview.value); mediaFile.value = null; mediaPreview.value = null; mediaType.value = null }
+
+function getMediaType(file) {
+  if (file.type === 'image/gif') return 'gif'
+  if (file.type.startsWith('image/')) return 'image'
+  if (file.type.startsWith('video/')) return 'video'
+  if (file.type.startsWith('audio/')) return 'audio'
+  return 'file'
+}
+
+function getVisualMedia(msg) {
+  const items = msg.mediaItems || []
+  const visualTypes = ['image', 'video', 'gif']
+  
+  if (items.length > 0) {
+    return items.filter(item => visualTypes.includes(item.mediaType))
+  }
+  
+  if (msg.media && visualTypes.includes(msg.mediaType)) {
+    return [{ url: msg.media, mediaType: msg.mediaType, id: msg.id }]
+  }
+  
+  return []
+}
+
+function getFileMedia(msg) {
+  const items = msg.mediaItems || []
+  const fileTypes = ['audio', 'file']
+  
+  if (items.length > 0) {
+    return items.filter(item => fileTypes.includes(item.mediaType))
+  }
+  
+  if (msg.media && fileTypes.includes(msg.mediaType)) {
+    return [{ url: msg.media, mediaType: msg.mediaType, fileName: msg.fileName, fileSize: msg.fileSize, id: msg.id }]
+  }
+  
+  return []
+}
+
+function handleMediaSelect(e) { 
+  const files = Array.from(e.target.files)
+  if (!files.length) return
+  
+  files.forEach(file => {
+    if (mediaFiles.value.length >= 10) return
+    const type = getMediaType(file)
+    const preview = (type === 'image' || type === 'gif' || type === 'video') ? URL.createObjectURL(file) : null
+    mediaFiles.value.push({ file, preview, type, id: Date.now() + Math.random() })
+  })
+  e.target.value = ''
+}
+
+function handleAttachSelect(e) {
+  const fileList = e.target.files
+  if (!fileList || !fileList.length) {
+    showAttachMenu.value = false
+    return
+  }
+  
+  const files = Array.from(fileList)
+  
+  files.forEach(file => {
+    if (mediaFiles.value.length >= 10) return
+    const type = getMediaType(file)
+    const preview = (type === 'image' || type === 'gif' || type === 'video') ? URL.createObjectURL(file) : null
+    mediaFiles.value.push({ file, preview, type, id: Date.now() + Math.random() })
+  })
+  
+  e.target.value = ''
+  nextTick(() => {
+    showAttachMenu.value = false
+  })
+}
+
+function formatFileSizeMsg(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' Б'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' МБ'
+}
+
+function removeMediaFile(id) {
+  const idx = mediaFiles.value.findIndex(f => f.id === id)
+  if (idx !== -1) {
+    if (mediaFiles.value[idx].preview) URL.revokeObjectURL(mediaFiles.value[idx].preview)
+    mediaFiles.value.splice(idx, 1)
+  }
+}
+
+function clearMedia() {
+  mediaFiles.value.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview) })
+  mediaFiles.value = []
+}
 
 async function startVoice() { 
   try { 
@@ -798,9 +1061,8 @@ async function startVoice() {
     mediaRecorder.onstop = () => { 
       if (recordedChunks.length > 0) { 
         const blob = new Blob(recordedChunks, { type: 'audio/webm' })
-        mediaFile.value = new File([blob], 'voice.webm', { type: 'audio/webm' })
-        mediaPreview.value = URL.createObjectURL(blob)
-        mediaType.value = 'voice'
+        const file = new File([blob], 'voice.webm', { type: 'audio/webm' })
+        mediaFiles.value = [{ file, preview: null, type: 'voice', id: Date.now() }]
         sendMessage() 
       } 
       stream.getTracks().forEach(t => t.stop())
@@ -834,7 +1096,7 @@ function onVoiceBtnClick() {
 }
 
 function onRightBtnClick() {
-  if (newMessage.value.trim() || mediaFile.value) {
+  if (newMessage.value.trim() || mediaFiles.value.length > 0) {
     sendMessage()
   } else {
     onVoiceBtnClick()
@@ -884,7 +1146,35 @@ function onVoiceBtnTouchMove(e) {
     voiceBtnStartY.value = 0
   }
 }
-async function startCircle() { try { circlePaused.value = false; circleMuted.value = false; stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode.value, width: 480, height: 480 }, audio: true }); showCircleOverlay.value = true; await nextTick(); if (circlePreviewEl.value) circlePreviewEl.value.srcObject = stream; mediaRecorder = new MediaRecorder(stream); recordedChunks = []; mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data) }; mediaRecorder.onstop = () => { if (recordedChunks.length > 0) { const blob = new Blob(recordedChunks, { type: 'video/webm' }); mediaFile.value = new File([blob], 'circle.webm', { type: 'video/webm' }); mediaPreview.value = URL.createObjectURL(blob); mediaType.value = 'circle'; sendMessage() } stream.getTracks().forEach(t => t.stop()); showCircleOverlay.value = false }; mediaRecorder.start(); recordingTime.value = 0; recordingInterval = setInterval(() => recordingTime.value++, 1000) } catch { notifications.error('Нет доступа к камере'); showCircleOverlay.value = false } }
+async function startCircle() { 
+  try { 
+    circlePaused.value = false
+    circleMuted.value = false
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode.value, width: 480, height: 480 }, audio: true })
+    showCircleOverlay.value = true
+    await nextTick()
+    if (circlePreviewEl.value) circlePreviewEl.value.srcObject = stream
+    mediaRecorder = new MediaRecorder(stream)
+    recordedChunks = []
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data) }
+    mediaRecorder.onstop = () => { 
+      if (recordedChunks.length > 0) { 
+        const blob = new Blob(recordedChunks, { type: 'video/webm' })
+        const file = new File([blob], 'circle.webm', { type: 'video/webm' })
+        mediaFiles.value = [{ file, preview: URL.createObjectURL(blob), type: 'circle', id: Date.now() }]
+        sendMessage() 
+      } 
+      stream.getTracks().forEach(t => t.stop())
+      showCircleOverlay.value = false 
+    }
+    mediaRecorder.start()
+    recordingTime.value = 0
+    recordingInterval = setInterval(() => recordingTime.value++, 1000) 
+  } catch { 
+    notifications.error('Нет доступа к камере')
+    showCircleOverlay.value = false 
+  } 
+}
 function stopCircle() { if (mediaRecorder) { mediaRecorder.stop(); clearInterval(recordingInterval) } }
 function toggleCirclePause() { if (!mediaRecorder) return; if (circlePaused.value) { mediaRecorder.resume(); recordingInterval = setInterval(() => recordingTime.value++, 1000); circlePaused.value = false } else { mediaRecorder.pause(); clearInterval(recordingInterval); circlePaused.value = true } }
 function toggleCircleRecMute() { circleMuted.value = !circleMuted.value; if (stream) { stream.getAudioTracks().forEach(t => t.enabled = !circleMuted.value) } }
@@ -940,7 +1230,6 @@ async function pollMessages() {
     const newIds = res.data.map(m => m.id).join(',')
     const oldIds = messages.value.map(m => m.id).join(',')
     
-    // Only update if messages actually changed
     if (newIds !== oldIds) { 
       const container = messagesContainer.value
       const wasAtBottom = container && (container.scrollHeight - container.scrollTop - container.clientHeight < 100)
@@ -964,7 +1253,41 @@ async function pollPinnedMessage() {
   if (!selectedUserId.value) return
   fetchPinnedMessage()
 }
-async function sendMessage() { if (!canSend.value || !selectedUserId.value) return; try { const formData = new FormData(); if (newMessage.value.trim()) formData.append('content', newMessage.value.trim()); if (mediaFile.value) { formData.append('media', mediaFile.value); formData.append('mediaType', mediaType.value) }; if (replyingTo.value) formData.append('replyToId', replyingTo.value.id); const res = await api.post(`/messages/${selectedUserId.value}`, formData); messages.value.push(res.data); newMessage.value = ''; clearMedia(); replyingTo.value = null; scrollToBottom(); fetchDialogs() } catch (err) { notifications.error(err.message) } }
+
+async function sendMessage() { 
+  if (!canSend.value || !selectedUserId.value) return
+  
+  try {
+    const formData = new FormData()
+    
+    if (newMessage.value.trim()) {
+      formData.append('content', newMessage.value.trim())
+    }
+    
+    mediaFiles.value.forEach(item => {
+      formData.append('media', item.file)
+    })
+    
+    if (mediaFiles.value.length === 1 && (mediaFiles.value[0].type === 'voice' || mediaFiles.value[0].type === 'circle')) {
+      formData.append('mediaType', mediaFiles.value[0].type)
+    }
+    
+    if (replyingTo.value) {
+      formData.append('replyToId', replyingTo.value.id)
+    }
+    
+    const res = await api.post(`/messages/${selectedUserId.value}`, formData)
+    messages.value.push(res.data)
+    
+    newMessage.value = ''
+    clearMedia()
+    replyingTo.value = null
+    scrollToBottom()
+    fetchDialogs()
+  } catch (err) { 
+    notifications.error(err.message) 
+  } 
+}
 
 async function unblockUser() {
   if (!chatUser.value) return
@@ -978,7 +1301,6 @@ async function unblockUser() {
 function openMsgMenu(e, msg) { selectedMsg.value = msg; msgMenuX.value = Math.min(e.clientX, window.innerWidth - 200); msgMenuY.value = Math.min(e.clientY, window.innerHeight - 150); showMsgMenu.value = true }
 function closeMsgMenu() { showMsgMenu.value = false; selectedMsg.value = null }
 
-// Dialog menu functions
 function openDialogMenu(e, dialog) {
   selectedDialog.value = dialog
   dialogMenuX.value = Math.min(e.clientX, window.innerWidth - 200)
@@ -1085,7 +1407,6 @@ async function deleteForMe() {
 }
 function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = type; showMediaViewerModal.value = true }
 
-// Reply functions
 function startReply() {
   if (!selectedMsg.value) return
   const msg = selectedMsg.value
@@ -1104,7 +1425,6 @@ function cancelReply() {
   replyingTo.value = null
 }
 
-// Selection functions
 function startSelectMode() {
   selectMode.value = true
   if (selectedMsg.value) {
@@ -1134,7 +1454,6 @@ function bulkForward() {
   showForwardModal.value = true
 }
 
-// Check if all selected messages are own (can delete for all)
 const canBulkDeleteForAll = computed(() => {
   if (!selectedMessages.value.length) return false
   return selectedMessages.value.every(msgId => {
@@ -1165,7 +1484,6 @@ async function bulkDeleteForMe() {
   } catch (err) { notifications.error(err.message) }
 }
 
-// Pinning functions
 async function fetchPinnedMessage() {
   if (!selectedUserId.value) return
   try {
@@ -1187,7 +1505,6 @@ async function pinMessage() {
     } else {
       pinnedMessage.value = null
     }
-    // Refresh messages to get system message
     const res = await api.get(`/messages/${selectedUserId.value}`)
     messages.value = res.data
     scrollToBottom()
@@ -1221,23 +1538,19 @@ function handleClickOutside(e) {
   if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu()
   if (showDialogMenu.value && !e.target.closest('.msg-menu')) closeDialogMenu()
   if (showSystemMsgMenu.value && !e.target.closest('.msg-menu')) closeSystemMsgMenu()
+  if (showAttachMenu.value && !e.target.closest('.attach-wrap')) showAttachMenu.value = false
 }
 
-// Socket event handlers
 function onNewMessage(msg) {
-  // If we're in the chat with this sender, add message
   if (selectedUserId.value === msg.senderId) {
     messages.value.push(msg)
     scrollToBottom()
-    // Mark as read immediately
     api.post(`/messages/${msg.senderId}/read`)
   }
-  // Update dialogs
   fetchDialogs()
 }
 
 function onMessageRead(data) {
-  // If we're in the chat with the person who read our messages
   if (selectedUserId.value === data.by) {
     messages.value.forEach(m => {
       if (m.senderId === authStore.user?.id) {
@@ -1248,7 +1561,6 @@ function onMessageRead(data) {
 }
 
 function onMessagePin(data) {
-  // Refresh pinned message when other user pins/unpins
   if (selectedUserId.value) {
     fetchPinnedMessage()
   }
@@ -1256,7 +1568,6 @@ function onMessagePin(data) {
 
 onMounted(() => { 
   fetchDialogs()
-  // Keep polling as fallback for reliability
   pollInterval = setInterval(() => { 
     pollMessages()
     fetchDialogs() 
@@ -1265,7 +1576,6 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', handleResize)
   
-  // Socket listeners
   on('message:new', onNewMessage)
   on('message:read', onMessageRead)
   on('message:pin', onMessagePin)
@@ -1278,8 +1588,6 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   currentChatUserId.value = null
   clearTimeout(floatingDateHideTimeout)
-  
-  // Remove socket listeners
   off('message:new', onNewMessage)
   off('message:read', onMessageRead)
   off('message:pin', onMessagePin)
@@ -1323,7 +1631,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .chat-empty h3 { font-size: 20px; font-weight: 600; }
 .chat-empty p { color: var(--text-secondary); }
 .chat-panel { display: flex; flex-direction: column; }
-.chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
 .back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); flex-shrink: 0; transition: all 0.2s ease; }
 .back-btn:hover { background: rgba(255,255,255,0.04); }
 .back-btn:active { transform: scale(0.9); }
@@ -1341,9 +1649,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message-content { display: flex; flex-direction: column; min-width: 0; }
 .msg-sender { display: none; }
 .message.own .msg-avatar { display: none; }
-.message-bubble { display: inline-block; padding: 8px 12px; border-radius: 18px; position: relative; }
-.message:not(.own) .message-bubble { background: #262626; border-bottom-left-radius: 4px; }
-.message.own .message-bubble { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom-right-radius: 4px; }
+.message-bubble { display: inline-block; padding: 10px 14px; border-radius: 20px; position: relative; }
+.message:not(.own) .message-bubble { background: rgba(38, 38, 38, 0.95); }
+.message.own .message-bubble { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.message.own .message-bubble.files-only { background: transparent; padding: 0; }
+.message:not(.own) .message-bubble.files-only { background: transparent; padding: 0; }
 .forwarded-label { display: block; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px; font-style: italic; }
 .forwarded-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
 .forwarded-text { font-size: 12px; color: rgba(255,255,255,0.5); }
@@ -1383,6 +1693,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .floating-date-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .floating-date-enter-from, .floating-date-leave-to { opacity: 0; }
 .message-text-wrap { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px 8px; }
+.message-bubble.files-only .message-text-wrap { display: none; }
 .message-bubble p { display: inline; word-break: break-word; line-height: 1.4; font-size: 15px; }
 .message-time { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: rgba(255,255,255,0.5); white-space: nowrap; margin-left: auto; }
 .message.own .message-time { color: rgba(255,255,255,0.7); }
@@ -1446,7 +1757,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .cancel-rec { margin-left: auto; color: var(--text-muted); font-size: 14px; }
 
-/* Select mode header */
 .select-mode-header { display: flex; align-items: center; gap: 12px; flex: 1; }
 .select-cancel-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); transition: all 0.2s ease; }
 .select-cancel-btn:hover { background: rgba(255,255,255,0.04); }
@@ -1460,7 +1770,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .select-action-btn.danger { color: #ff6666; }
 .select-action-btn.danger:hover:not(:disabled) { background: rgba(255, 100, 100, 0.1); color: #ff5555; }
 
-/* Pinned message banner */
 .pinned-banner { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: rgba(255, 255, 255, 0.04); border-bottom: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer; transition: background 0.2s ease; }
 .pinned-banner:hover { background: rgba(255, 255, 255, 0.06); }
 .pinned-banner .pin-icon { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
@@ -1471,7 +1780,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .unpin-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
 .unpin-btn svg { width: 16px; height: 16px; }
 
-/* Message checkbox for selection */
 .message-checkbox { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; cursor: pointer; }
 .checkbox-inner { width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
 .checkbox-inner.checked { background: white; border-color: white; }
@@ -1480,13 +1788,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message.selected .voice-message-wrap { background: rgba(120, 90, 200, 0.5) !important; }
 .message.selected .circle-video-wrap { background: rgba(120, 90, 200, 0.5) !important; }
 
-/* Reply in message */
 .reply-in-message { display: flex; flex-direction: column; padding: 6px 10px; margin-bottom: 6px; background: rgba(255,255,255,0.1); border-left: 3px solid rgba(255, 255, 255, 0.5); border-radius: 4px; cursor: pointer; transition: background 0.2s ease; }
 .reply-in-message:hover { background: rgba(255,255,255,0.15); }
 .reply-sender { font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.8); }
 .reply-text { font-size: 13px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 
-/* Reply preview above input */
 .reply-preview { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: rgba(255, 255, 255, 0.06); border-left: 3px solid rgba(255, 255, 255, 0.4); margin: 0 12px; border-radius: 8px; }
 .reply-preview-content { flex: 1; min-width: 0; }
 .reply-preview-name { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); }
@@ -1495,13 +1801,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .reply-cancel:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
 .reply-cancel svg { width: 16px; height: 16px; }
 
-/* Message highlight animation */
 .message.highlight .message-bubble,
 .message.highlight .voice-message-wrap,
 .message.highlight .circle-video-wrap { animation: highlightPulse 2s ease; }
 @keyframes highlightPulse { 0%, 100% { box-shadow: none; } 25%, 75% { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); } }
 
-/* Message list transitions */
 .messages-wrapper { display: flex; flex-direction: column; gap: 6px; }
 .message-list-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .message-list-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -1581,23 +1885,71 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   background: rgba(255, 255, 255, 0.06);
 }
 
-.chat-input { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
-.voice-recording-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.chat-input { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  padding: 10px 12px;
+  margin: 8px 12px;
+  margin-bottom: calc(8px + env(safe-area-inset-bottom));
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 26px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.voice-recording-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 8px 12px; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); border-radius: 26px; }
 .input-actions-left, .input-actions-right { display: flex; }
-.action-btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); border-radius: 50%; transition: all 0.2s; cursor: pointer; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-.action-btn:hover { background: rgba(255,255,255,0.12); color: white; }
+.action-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); border-radius: 50%; transition: all 0.2s; cursor: pointer; background: transparent; border: none; }
+.action-btn:hover { color: white; }
 .action-btn svg { width: 22px; height: 22px; }
 .input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
-.input-wrap input { width: 100%; border-radius: 22px; padding: 12px 50px 12px 18px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); font-size: 16px; color: white; }
-.input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
-.input-wrap :deep(.emoji-wrap) { position: absolute; right: 12px; }
-.send-btn { width: 44px; height: 44px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-.send-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); transform: scale(1.05); }
+.input-wrap input { width: 100%; border-radius: 18px; padding: 8px 44px 8px 14px; background: transparent; border: none; font-size: 16px; color: white; }
+.input-wrap input::placeholder { color: rgba(255,255,255,0.35); }
+.input-wrap input:focus { outline: none; }
+.input-wrap :deep(.emoji-wrap) { position: absolute; right: 8px; }
+.send-btn { width: 36px; height: 36px; background: transparent; border: none; color: rgba(255,255,255,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.send-btn:hover:not(:disabled) { color: white; transform: scale(1.05); }
 .send-btn:disabled { opacity: 0.5; }
 .send-btn svg { width: 20px; height: 20px; }
-.send-btn svg { width: 20px; height: 20px; }
-.voice-btn { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
-.voice-btn:hover { background: rgba(255,255,255,0.12); color: white; }
+.voice-btn { background: transparent; border: none; color: rgba(255,255,255,0.6); }
+.voice-btn:hover { color: white; }
+
+.audio-preview, .file-preview { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); }
+.audio-preview svg, .file-preview svg { width: 24px; height: 24px; flex-shrink: 0; }
+.audio-preview span, .file-preview span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+.message-gif { cursor: default; }
+
+.audio-message-wrap { display: flex; align-items: center; gap: 12px; background: rgba(30,30,30,0.95); padding: 12px 16px; border-radius: 20px; min-width: 200px; max-width: 280px; cursor: pointer; }
+.message.own .audio-message-wrap { background: rgba(30,30,30,0.95); }
+.audio-play-btn { width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: transform 0.15s; }
+.audio-play-btn:hover { transform: scale(1.05); }
+.audio-play-btn:active { transform: scale(0.95); }
+.audio-play-btn svg { width: 24px; height: 24px; color: #1a1a1a; }
+.audio-play-btn .play-icon { margin-left: -2px; }
+.audio-info { flex: 1; min-width: 0; }
+.audio-name { font-size: 15px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.audio-meta { font-size: 13px; color: rgba(255,255,255,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.file-msg-time { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: rgba(255,255,255,0.5); white-space: nowrap; flex-shrink: 0; margin-left: auto; padding-left: 8px; }
+.file-msg-time .read-status { width: 14px; height: 8px; color: rgba(255,255,255,0.5); }
+
+.file-message-wrap { display: flex; align-items: center; gap: 12px; background: rgba(30,30,30,0.95); padding: 12px 14px; border-radius: 20px; min-width: 200px; max-width: 300px; cursor: pointer; transition: background 0.2s ease; }
+.file-message-wrap:hover { background: rgba(40,40,40,0.95); }
+.message.own .file-message-wrap { background: rgba(30,30,30,0.95); }
+.message.own .file-message-wrap:hover { background: rgba(40,40,40,0.95); }
+.file-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.file-icon svg { width: 22px; height: 22px; color: rgba(255,255,255,0.7); }
+.message.own .file-icon { background: rgba(255,255,255,0.1); }
+.message.own .file-icon svg { color: rgba(255,255,255,0.7); }
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-size { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+.message.own .file-name { color: white; }
+.message.own .file-size { color: rgba(255,255,255,0.5); }
+
 .msg-menu { position: fixed; z-index: 500; min-width: 180px; padding: 6px; }
 .menu-enter-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .menu-leave-active { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -1674,6 +2026,53 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .btn-swap-enter-active, .btn-swap-leave-active { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
 .btn-swap-enter-from { opacity: 0; transform: scale(0.8); }
 .btn-swap-leave-to { opacity: 0; transform: scale(0.8); }
+
+.attach-wrap { position: relative; }
+.attach-dropdown { 
+  position: absolute; 
+  bottom: calc(100% + 8px); 
+  left: 0; 
+  min-width: 180px; 
+  padding: 8px; 
+  z-index: 100;
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.attach-dropdown-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; }
+.attach-dropdown-item:hover { background: rgba(255, 255, 255, 0.06); }
+.attach-dropdown-item:active { transform: scale(0.98); }
+.attach-dropdown-item span { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+.attach-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.attach-icon svg { width: 20px; height: 20px; color: white; }
+.attach-icon.photo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.attach-icon.video { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.attach-icon.gif { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.attach-icon.audio { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.attach-icon.file { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+
+.attach-dropdown-enter-active { transition: all 0.15s cubic-bezier(0.2, 0, 0, 1); }
+.attach-dropdown-leave-active { transition: all 0.1s cubic-bezier(0.4, 0, 1, 1); }
+.attach-dropdown-enter-from { opacity: 0; transform: translateY(8px) scale(0.96); }
+.attach-dropdown-leave-to { opacity: 0; transform: translateY(8px) scale(0.96); }
+
+.msg-media-previews { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 12px 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; align-items: center; }
+.msg-media-preview-item { position: relative; }
+.msg-preview-thumb { width: 56px; height: 56px; border-radius: 10px; overflow: hidden; background: rgba(255, 255, 255, 0.06); }
+.msg-preview-thumb img, .msg-preview-thumb video { width: 100%; height: 100%; object-fit: cover; }
+.msg-preview-icon { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.msg-preview-icon svg { width: 24px; height: 24px; color: white; }
+.msg-preview-icon.audio { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.msg-preview-icon.voice { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.msg-preview-icon.file { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.msg-preview-remove-small { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: rgba(0, 0, 0, 0.7); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+.msg-preview-remove-small:hover { background: rgba(255, 100, 100, 0.9); transform: scale(1.1); }
+.msg-preview-remove-small svg { width: 12px; height: 12px; }
+.msg-clear-all { font-size: 12px; color: var(--text-muted); padding: 6px 12px; border-radius: 8px; transition: all 0.2s ease; }
+.msg-clear-all:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
 
 @media (max-width: 900px) {
   .messages-container { grid-template-columns: 1fr; }
@@ -1776,12 +2175,16 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     z-index: 100;
   }
   
+  .app.has-audio-player .chat-panel {
+    top: 64px;
+    height: calc(100vh - 64px);
+  }
+  
   .chat-header {
     padding: 10px 12px;
-    background: rgba(14, 14, 14, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     gap: 10px;
   }
   
@@ -1831,11 +2234,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .message:not(.own) .message-bubble {
-    border-bottom-left-radius: 6px;
+    background: rgba(38, 38, 38, 0.95);
   }
   
   .message.own .message-bubble {
-    border-bottom-right-radius: 6px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
   
   .message-bubble p {
@@ -1862,31 +2265,32 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   
   .chat-input {
     padding: 8px 10px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    margin: 8px;
+    margin-bottom: calc(8px + env(safe-area-inset-bottom));
     gap: 6px;
   }
   
   .input-wrap input {
-    padding: 12px 16px;
-    padding-right: 44px;
+    padding: 10px 14px;
+    padding-right: 40px;
     font-size: 16px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 24px;
+    background: transparent;
+    border-radius: 18px;
   }
   
   .action-btn {
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
   }
   
   .action-btn svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
   
   .send-btn {
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
   }
   
   .media-preview {
@@ -1955,5 +2359,69 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   .voice-msg-time {
     font-size: 10px;
   }
+}
+
+.msg-media-gallery {
+  display: grid;
+  gap: 2px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.msg-media-gallery.media-count-1 { grid-template-columns: 1fr; }
+.msg-media-gallery.media-count-2 { grid-template-columns: 1fr 1fr; }
+.msg-media-gallery.media-count-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.msg-media-gallery.media-count-3 .msg-gallery-item:first-child { grid-row: span 2; }
+.msg-media-gallery.media-count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.msg-gallery-item {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.2);
+}
+.msg-media-gallery.media-count-1 .msg-gallery-item { aspect-ratio: auto; max-height: 300px; }
+.msg-media-gallery.media-count-2 .msg-gallery-item { aspect-ratio: 4/3; }
+.msg-gallery-item img,
+.msg-gallery-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.msg-gallery-item video { cursor: default; }
+.msg-gallery-file {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+.msg-gallery-file svg {
+  width: 28px;
+  height: 28px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.msg-gallery-more {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: white;
+}
+
+.msg-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.msg-files-list .audio-message-wrap,
+.msg-files-list .file-message-wrap {
+  margin: 0;
 }
 </style>

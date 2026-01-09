@@ -615,6 +615,29 @@ onUnmounted(() => {
 .media-item:hover img, .media-item:hover video { transform: scale(1.05); }
 .video-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
 .play-icon svg { width: 40px; height: 40px; color: white; }
+
+/* Audio list */
+.audio-list { display: flex; flex-direction: column; gap: 4px; }
+.audio-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); cursor: pointer; transition: background 0.2s ease; }
+.audio-list-item:hover { background: rgba(255, 255, 255, 0.06); }
+.audio-item-icon { width: 44px; height: 44px; background: rgba(255, 255, 255, 0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.audio-item-icon svg { width: 20px; height: 20px; color: white; margin-left: 2px; }
+.audio-item-info { flex: 1; min-width: 0; }
+.audio-item-name { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-item-size { display: block; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+/* Files list */
+.files-list { display: flex; flex-direction: column; gap: 4px; }
+.file-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); text-decoration: none; color: inherit; transition: background 0.2s ease; }
+.file-list-item:hover { background: rgba(255, 255, 255, 0.06); }
+.file-item-icon { width: 44px; height: 44px; background: rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.file-item-icon svg { width: 22px; height: 22px; color: rgba(255, 255, 255, 0.6); }
+.file-item-info { flex: 1; min-width: 0; }
+.file-item-name { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-item-size { display: block; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.file-item-download { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.file-item-download svg { width: 20px; height: 20px; color: rgba(255, 255, 255, 0.4); }
+
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); grid-column: 1 / -1; }
 .blocked-message { max-width: 400px; margin: 40px auto; padding: 40px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .blocked-message svg { width: 48px; height: 48px; color: var(--text-muted); opacity: 0.5; }

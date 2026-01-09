@@ -119,7 +119,6 @@ async function fetchCounts() {
   try {
     const res = await api.get('/messages/counts')
     
-    // Check for new friend requests - add to notifications
     if (res.data.friends > prevCounts.friends) {
       const diff = res.data.friends - prevCounts.friends
       for (let i = 0; i < diff; i++) {
@@ -163,15 +162,12 @@ function handleClickOutside(e) {
 }
 
 onMounted(() => {
-  // Only fetch if user is authenticated
   if (authStore.isAuthenticated) {
     fetchCounts()
     sendHeartbeat()
     
-    // Poll every 3 seconds for real-time updates
     pollInterval = setInterval(fetchCounts, 3000)
     
-    // Heartbeat every 30 seconds
     heartbeatInterval = setInterval(sendHeartbeat, 30000)
   }
   
@@ -209,11 +205,11 @@ onUnmounted(() => {
 .nav-divider { width: 32px; height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0; }
 
 .nav { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin-top: -40px; }
-.nav-item { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius-lg); transition: all 0.15s ease; position: relative; }
+.nav-item { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius-lg); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); position: relative; }
 .nav-item:hover { color: var(--text-primary); }
 .nav-item.active { color: var(--text-primary); }
 .nav-item.active svg { transform: scale(1.1); }
-.nav-item svg { width: 26px; height: 26px; transition: transform 0.15s ease; }
+.nav-item svg { width: 26px; height: 26px; transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .nav-item.pressed { transform: scale(0.85); }
 .nav-item.create-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
 .nav-item.create-btn:hover { background: rgba(255, 255, 255, 0.08); }
@@ -225,9 +221,10 @@ onUnmounted(() => {
 .menu-item.danger:hover { color: var(--danger); }
 .menu-item svg { width: 18px; height: 18px; }
 
-.menu-enter-active, .menu-leave-active, .dropdown-enter-active, .dropdown-leave-active { transition: all var(--transition); }
-.menu-enter-from, .menu-leave-to { opacity: 0; transform: translateX(-8px); }
-.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateX(-8px); }
+.menu-enter-active, .dropdown-enter-active { transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); }
+.menu-leave-active, .dropdown-leave-active { transition: all 0.08s cubic-bezier(0.4, 0, 1, 1); }
+.menu-enter-from, .menu-leave-to { opacity: 0; transform: translateX(-6px); }
+.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateX(-6px); }
 
 @media (max-width: 768px) {
   .sidebar {

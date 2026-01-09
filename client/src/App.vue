@@ -1,12 +1,17 @@
 <template>
-  <div class="app" :class="{ 'with-sidebar': authStore.isAuthenticated }">
+  <div class="app" :class="{ 'with-sidebar': authStore.isAuthenticated, 'has-audio-player': hasActivePlayer }">
     <Sidebar v-if="authStore.isAuthenticated" @create="showCreateModal = true" />
     
     <main class="main-content">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </router-view>
     </main>
     
     <MessageToast v-if="authStore.isAuthenticated" />
+    <GlobalAudioPlayer />
     
     <Teleport to="body">
       <Transition name="modal">
@@ -17,16 +22,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useAudioPlayerStore } from './stores/audioPlayer'
 import Sidebar from './components/Sidebar.vue'
 import CreatePostModal from './components/CreatePostModal.vue'
 import MessageToast from './components/MessageToast.vue'
+import GlobalAudioPlayer from './components/GlobalAudioPlayer.vue'
 
 const authStore = useAuthStore()
+const audioPlayerStore = useAudioPlayerStore()
 const router = useRouter()
 const showCreateModal = ref(false)
+const isMobile = ref(window.innerWidth <= 768)
+
+const hasActivePlayer = computed(() => audioPlayerStore.currentTrack !== null && isMobile.value)
+
+function handleResize() {
+  isMobile.value = window.innerWidth <= 768
+}
 
 function handlePostCreated() {
   showCreateModal.value = false
@@ -37,6 +52,11 @@ function handlePostCreated() {
 
 onMounted(() => {
   authStore.checkAuth()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -52,17 +72,17 @@ onMounted(() => {
 /* Page transitions */
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.1s cubic-bezier(0.2, 0, 0, 1), transform 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(4px);
 }
 
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-4px);
 }
 
 @media (max-width: 768px) {
@@ -70,19 +90,23 @@ onMounted(() => {
     margin-left: 0;
     padding-bottom: 72px;
   }
+  
+  .app.has-audio-player .main-content {
+    padding-top: 64px;
+  }
 }
 
 .modal-enter-active {
-  transition: opacity 0.1s ease-out;
+  transition: opacity 0.08s cubic-bezier(0.2, 0, 0, 1);
 }
 .modal-enter-active .modal-content {
-  transition: transform 0.1s ease-out;
+  transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
 }
 .modal-leave-active {
-  transition: opacity 0.08s ease-in;
+  transition: opacity 0.06s cubic-bezier(0.4, 0, 1, 1);
 }
 .modal-leave-active .modal-content {
-  transition: transform 0.08s ease-in;
+  transition: transform 0.06s cubic-bezier(0.4, 0, 1, 1);
 }
 .modal-enter-from, .modal-leave-to {
   opacity: 0;

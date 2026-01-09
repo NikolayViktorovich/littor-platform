@@ -2,7 +2,7 @@
   <article class="post glass" :class="{ 'menu-open': menuOpen, 'pinned': post.isPinned && !hidePin }">
     <div v-if="post.isPinned && !hidePin" class="pinned-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/>
+        <path d="M12 15v6m-5-17h10m-8 0v6l-2 3v2h10v-2l-2-3V4"/>
       </svg>
       Закреплено
     </div>
@@ -28,21 +28,19 @@
           <div v-if="showMenu" class="post-dropdown glass-modal" v-click-outside="closeMenu">
             <button @click="handlePin" class="dropdown-item" v-if="isOwner && !hidePin">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/>
+                <path d="M12 15v6m-5-17h10m-8 0v6l-2 3v2h10v-2l-2-3V4"/>
               </svg>
               {{ post.isPinned ? 'Открепить' : 'Закрепить' }}
             </button>
             <button @click="handleToggleComments" class="dropdown-item" v-if="isOwner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                <path d="M9 9h6"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10zM9 9h6"/>
               </svg>
               {{ post.commentsDisabled ? 'Включить комментарии' : 'Отключить комментарии' }}
             </button>
             <button @click="copyLink" class="dropdown-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
               </svg>
               Скопировать ссылку
             </button>
@@ -51,19 +49,13 @@
               <div class="dropdown-divider"></div>
               <button @click="handleArchive" class="dropdown-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 8v13H3V8"/>
-                  <path d="M1 3h22v5H1z"/>
-                  <path d="M10 12h4"/>
+                  <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>
                 </svg>
                 {{ post.isArchived ? 'Разархивировать' : 'Архивировать' }}
               </button>
               <button @click="handleDelete" class="dropdown-item danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M3 6h18"/>
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                  <path d="M10 11v6"/>
-                  <path d="M14 11v6"/>
+                  <path d="M3 6h18M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M10 11v6M14 11v6"/>
                 </svg>
                 Удалить
               </button>
@@ -75,11 +67,94 @@
 
     <p v-if="post.content" class="post-content">{{ post.content }}</p>
     
-    <div v-if="post.image" class="post-image-wrap" @click="openMedia">
-      <img :src="postImage" class="post-image" alt="" @error="handleImageError" @load="imageLoaded = true">
-      <video v-if="isVideo" :src="postImage" class="post-image post-video" controls @click.stop></video>
-      <div v-if="!imageLoaded && !isVideo" class="image-placeholder skeleton"></div>
+    <!-- Multiple media - visual gallery (images, videos, gifs) -->
+    <div v-if="visualMedia.length > 0" class="post-media-gallery" :class="'media-count-' + Math.min(visualMedia.length, 4)">
+      <div v-for="(item, index) in visualMedia.slice(0, 4)" :key="item.id" class="media-gallery-item" :class="{ 'has-more': index === 3 && visualMedia.length > 4 }" @click="openMediaGallery(index)">
+        <img v-if="item.mediaType === 'image' || item.mediaType === 'gif'" :src="item.url" alt="">
+        <video v-else-if="item.mediaType === 'video'" :src="item.url" @click.stop controls></video>
+        <div v-if="index === 3 && visualMedia.length > 4" class="more-overlay">+{{ visualMedia.length - 4 }}</div>
+      </div>
     </div>
+    
+    <!-- Multiple media - file list (audio, documents) -->
+    <div v-if="fileMedia.length > 0" class="post-files-list">
+      <template v-for="(item, index) in fileMedia" :key="item.id">
+        <!-- Audio -->
+        <div v-if="item.mediaType === 'audio'" class="post-audio-wrap" @click="toggleMediaAudio(index, item)">
+          <button class="audio-play-btn" @click.stop="toggleMediaAudio(index, item)">
+            <svg v-if="!isMediaAudioPlaying(item.url)" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+            <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4zM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V4z"/></svg>
+          </button>
+          <div class="audio-info">
+            <div class="audio-name">{{ item.fileName || 'Аудио' }}</div>
+            <div class="audio-meta">{{ getMediaAudioTime(item.url) }} · {{ item.artist || 'Неизвестный исполнитель' }}</div>
+          </div>
+        </div>
+        <!-- File -->
+        <div v-else class="post-file-wrap" @click="downloadMediaFile(item)">
+          <div class="file-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6"/></svg>
+          </div>
+          <div class="file-info">
+            <div class="file-name">{{ item.fileName || 'Файл' }}</div>
+            <div class="file-size">{{ formatFileSize(item.fileSize) }}</div>
+          </div>
+          <div class="file-download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          </div>
+        </div>
+      </template>
+    </div>
+    
+    <!-- Legacy single image/video support -->
+    <template v-else-if="post.image && (!post.media || post.media.length === 0)">
+      <!-- Image/Video media -->
+      <div v-if="post.mediaType === 'image' || !post.mediaType" class="post-image-wrap" @click="openMedia">
+        <img :src="postImage" class="post-image" alt="" @error="handleImageError" @load="imageLoaded = true">
+        <div v-if="!imageLoaded" class="image-placeholder skeleton"></div>
+      </div>
+    
+    <!-- GIF -->
+    <div v-else-if="post.image && post.mediaType === 'gif'" class="post-image-wrap">
+      <img :src="postImage" class="post-image post-gif" alt="" @error="handleImageError">
+    </div>
+    
+    <!-- Video -->
+    <div v-else-if="post.image && post.mediaType === 'video'" class="post-image-wrap">
+      <video :src="postImage" class="post-image post-video" controls></video>
+    </div>
+    
+    <!-- Audio -->
+    <div v-else-if="post.image && post.mediaType === 'audio'" class="post-audio-wrap" @click="togglePostAudio">
+      <button class="audio-play-btn" @click.stop="togglePostAudio">
+        <svg v-if="!isPostAudioPlaying" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+        <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4zM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V4z"/></svg>
+      </button>
+      <div class="audio-info">
+        <div class="audio-name">{{ post.fileName || 'Аудио' }}</div>
+        <div class="audio-meta">{{ postAudioTime }} · {{ post.artist || 'Неизвестный исполнитель' }}</div>
+      </div>
+    </div>
+    
+    <!-- File -->
+    <div v-else-if="post.image && post.mediaType === 'file'" class="post-file-wrap" @click="downloadFile">
+      <div class="file-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6"/></svg>
+      </div>
+      <div class="file-info">
+        <div class="file-name">{{ post.fileName || 'Файл' }}</div>
+        <div class="file-size">{{ formatFileSize(post.fileSize) }}</div>
+      </div>
+      <div class="file-download">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      </div>
+    </div>
+    
+    <!-- Legacy video support -->
+    <div v-else-if="post.image && isVideo" class="post-image-wrap">
+      <video :src="postImage" class="post-image post-video" controls></video>
+    </div>
+    </template>
 
     <div class="post-actions">
       <button @click="handleLike" class="action-btn" :class="{ active: post.isLiked, pressed: likePressed }">
@@ -168,8 +243,7 @@
             <EmojiPicker @select="insertCommentEmoji" class="comment-emoji" />
             <button v-if="!replyingTo" type="submit" class="inside-btn send-inside" :disabled="!newComment.trim()" key="send-inside">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 12h14"/>
-                <path d="M12 5l7 7-7 7"/>
+                <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
             <button v-else type="button" class="inside-btn cancel-inside" @click="cancelReply" key="cancel-inside">
@@ -181,8 +255,7 @@
           <div class="outside-btn-wrap">
             <button type="submit" class="outside-btn" :disabled="!newComment.trim()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 12h14"/>
-                <path d="M12 5l7 7-7 7"/>
+                <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
           </div>
@@ -195,6 +268,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useAudioPlayerStore } from '../stores/audioPlayer'
 import { useSocket } from '../socket'
 import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
@@ -207,6 +281,7 @@ const props = defineProps({
 const emit = defineEmits(['delete', 'update', 'open-media'])
 
 const authStore = useAuthStore()
+const audioPlayerStore = useAudioPlayerStore()
 const { on, off, joinPost, leavePost } = useSocket()
 const showComments = ref(false)
 const showMenu = ref(false)
@@ -222,6 +297,91 @@ const likePressed = ref(false)
 const commentPressed = ref(false)
 const sharePressed = ref(false)
 const commentInput = ref(null)
+
+// Audio playback - using global player
+const audioEl = ref(null)
+const isAudioPlaying = ref(false)
+const audioDuration = ref('0:00')
+const audioProgress = ref(0)
+
+// Computed for legacy audio sync with global player
+const isPostAudioPlaying = computed(() => {
+  return audioPlayerStore.currentTrack?.url === props.post.image && audioPlayerStore.isPlaying
+})
+
+const postAudioProgress = computed(() => {
+  if (audioPlayerStore.currentTrack?.url === props.post.image) {
+    return audioPlayerStore.progress
+  }
+  return 0
+})
+
+const postAudioTime = computed(() => {
+  if (audioPlayerStore.currentTrack?.url === props.post.image) {
+    return audioPlayerStore.formattedCurrentTime
+  }
+  return '0:00'
+})
+
+function togglePostAudio() {
+  // Use global audio player
+  if (audioPlayerStore.currentTrack?.url === props.post.image && audioPlayerStore.isPlaying) {
+    audioPlayerStore.pause()
+  } else {
+    audioPlayerStore.play({
+      url: props.post.image,
+      name: props.post.fileName || 'Аудио',
+      source: props.post.author.name
+    })
+  }
+}
+
+function onAudioEnded() {
+  isAudioPlaying.value = false
+  audioProgress.value = 0
+}
+
+function onAudioLoaded() {
+  if (!audioEl.value) return
+  const duration = audioEl.value.duration
+  const mins = Math.floor(duration / 60)
+  const secs = Math.floor(duration % 60)
+  audioDuration.value = `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function onAudioTimeUpdate() {
+  if (!audioEl.value) return
+  const current = audioEl.value.currentTime
+  const duration = audioEl.value.duration
+  const mins = Math.floor(current / 60)
+  const secs = Math.floor(current % 60)
+  audioDuration.value = `${mins}:${secs.toString().padStart(2, '0')}`
+  audioProgress.value = duration > 0 ? (current / duration) * 100 : 0
+}
+
+function seekPostAudio(e) {
+  if (audioPlayerStore.currentTrack?.url !== props.post.image) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const percent = ((e.clientX - rect.left) / rect.width) * 100
+  audioPlayerStore.seek(percent)
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' Б'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' МБ'
+}
+
+function downloadFile() {
+  const a = document.createElement('a')
+  a.href = props.post.image
+  a.download = props.post.fileName || 'file'
+  a.target = '_blank'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
 
 function insertCommentEmoji(emoji) {
   const input = commentInput.value
@@ -252,9 +412,110 @@ const isVideo = computed(() => {
   return img.match(/\.(mp4|webm|mov)$/i)
 })
 
+// Computed for visual media (images, videos, gifs)
+const visualMedia = computed(() => {
+  const media = props.post.media || []
+  const visualTypes = ['image', 'video', 'gif']
+  return media.filter(item => visualTypes.includes(item.mediaType))
+})
+
+// Computed for file media (audio, documents)
+const fileMedia = computed(() => {
+  const media = props.post.media || []
+  const fileTypes = ['audio', 'file']
+  return media.filter(item => fileTypes.includes(item.mediaType))
+})
+
+// Multiple audio playback support - using global player
+const mediaAudioEls = ref({})
+const playingMediaAudios = ref({})
+const mediaAudioProgress = ref({})
+const mediaAudioDurations = ref({})
+
+function toggleMediaAudio(index, item) {
+  // Use global audio player
+  if (audioPlayerStore.currentTrack?.url === item.url && audioPlayerStore.isPlaying) {
+    audioPlayerStore.pause()
+  } else {
+    audioPlayerStore.play({
+      url: item.url,
+      name: item.fileName || 'Аудио',
+      source: props.post.author.name
+    })
+  }
+}
+
+function isMediaAudioPlaying(url) {
+  return audioPlayerStore.currentTrack?.url === url && audioPlayerStore.isPlaying
+}
+
+function getMediaAudioProgress(url) {
+  if (audioPlayerStore.currentTrack?.url === url) {
+    return audioPlayerStore.progress
+  }
+  return 0
+}
+
+function getMediaAudioTime(url) {
+  if (audioPlayerStore.currentTrack?.url === url) {
+    return audioPlayerStore.formattedCurrentTime
+  }
+  return '0:00'
+}
+
+function seekMediaAudio(e, url) {
+  if (audioPlayerStore.currentTrack?.url !== url) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const percent = ((e.clientX - rect.left) / rect.width) * 100
+  audioPlayerStore.seek(percent)
+}
+
+function onMediaAudioEnded(index) {
+  playingMediaAudios.value[index] = false
+  mediaAudioProgress.value[index] = 0
+}
+
+function onMediaAudioLoaded(e, index) {
+  const duration = e.target.duration
+  const mins = Math.floor(duration / 60)
+  const secs = Math.floor(duration % 60)
+  mediaAudioDurations.value[index] = `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function onMediaAudioTimeUpdate(e, index) {
+  const current = e.target.currentTime
+  const duration = e.target.duration
+  const mins = Math.floor(current / 60)
+  const secs = Math.floor(current % 60)
+  mediaAudioDurations.value[index] = `${mins}:${secs.toString().padStart(2, '0')}`
+  mediaAudioProgress.value[index] = duration > 0 ? (current / duration) * 100 : 0
+}
+
+function getMediaAudioDuration(index) {
+  return mediaAudioDurations.value[index] || '0:00'
+}
+
+function downloadMediaFile(item) {
+  const a = document.createElement('a')
+  a.href = item.url
+  a.download = item.fileName || 'file'
+  a.target = '_blank'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
 function openMedia() {
   if (isVideo.value) return
   emit('open-media', props.post.image, 'image', 0, [{ src: props.post.image, type: 'image' }])
+}
+
+function openMediaGallery(index) {
+  const items = visualMedia.value
+  const item = items[index]
+  if (!item) return
+  if (item.mediaType === 'video') return // Videos play inline
+  emit('open-media', item.url, item.mediaType, index, items.map(m => ({ src: m.url, type: m.mediaType })))
 }
 
 function getAvatarUrl(avatar) {
@@ -515,7 +776,7 @@ onMounted(() => {
   joinPost(props.post.id)
   on('post:like', onPostLike)
   on('post:comment', onPostComment)
-  commentsPollInterval = setInterval(pollComments, 2)
+  commentsPollInterval = setInterval(pollComments, 5000)
 })
 
 onUnmounted(() => {
@@ -735,6 +996,130 @@ const vClickOutside = {
 .image-placeholder {
   width: 100%;
   height: 300px;
+}
+
+/* Post GIF */
+.post-gif {
+  cursor: default;
+}
+
+/* Post Audio - compact style */
+.post-audio-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  background: rgba(30, 30, 30, 0.95);
+  border-radius: 18px;
+  cursor: pointer;
+}
+.post-audio-wrap .audio-play-btn {
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.post-audio-wrap .audio-play-btn:hover {
+  transform: scale(1.05);
+}
+.post-audio-wrap .audio-play-btn:active {
+  transform: scale(0.95);
+}
+.post-audio-wrap .audio-play-btn svg {
+  width: 22px;
+  height: 22px;
+  color: #1a1a1a;
+}
+.post-audio-wrap .audio-play-btn .play-icon {
+  margin-left: -1px;
+}
+.post-audio-wrap .audio-info {
+  flex: 1;
+  min-width: 0;
+}
+.post-audio-wrap .audio-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.post-audio-wrap .audio-meta {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Post File */
+.post-file-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.post-file-wrap:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.post-file-wrap .file-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.post-file-wrap .file-icon svg {
+  width: 26px;
+  height: 26px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.post-file-wrap .file-info {
+  flex: 1;
+  min-width: 0;
+}
+.post-file-wrap .file-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.post-file-wrap .file-size {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.post-file-wrap .file-download {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.post-file-wrap .file-download svg {
+  width: 22px;
+  height: 22px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .post-stats {
@@ -1090,6 +1475,105 @@ const vClickOutside = {
     opacity: 0;
     transform: scale(0.5);
   }
+}
+
+/* Media Gallery Styles */
+.post-media-gallery {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.post-media-gallery.media-count-1 {
+  grid-template-columns: 1fr;
+}
+.post-media-gallery.media-count-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.post-media-gallery.media-count-3 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.post-media-gallery.media-count-3 .media-gallery-item:first-child {
+  grid-row: span 2;
+}
+.post-media-gallery.media-count-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.media-gallery-item {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+}
+.post-media-gallery.media-count-1 .media-gallery-item {
+  aspect-ratio: auto;
+  max-height: 500px;
+}
+.post-media-gallery.media-count-2 .media-gallery-item {
+  aspect-ratio: 4/3;
+}
+.media-gallery-item img,
+.media-gallery-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.media-gallery-item video {
+  cursor: default;
+}
+.gallery-audio-item,
+.gallery-file-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(100, 100, 255, 0.2), rgba(150, 100, 255, 0.1));
+}
+.gallery-audio-item svg,
+.gallery-file-item svg {
+  width: 32px;
+  height: 32px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.gallery-audio-item span,
+.gallery-file-item span {
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 80%;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.more-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  color: white;
+}
+
+/* Post files list */
+.post-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.post-files-list .post-audio-wrap,
+.post-files-list .post-file-wrap {
+  margin-bottom: 0;
 }
 
 .menu-enter-active {

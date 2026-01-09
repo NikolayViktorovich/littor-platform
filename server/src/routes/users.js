@@ -39,7 +39,6 @@ router.get('/:id', authMiddleware, (req, res) => {
     return res.status(404).json({ error: 'Пользователь не найден' })
   }
 
-  // Check if this user blocked me
   const blockedByUser = db.prepare('SELECT 1 FROM blocks WHERE blockerId = ? AND blockedId = ?')
     .get(req.params.id, req.userId)
   
@@ -53,7 +52,6 @@ router.get('/:id', authMiddleware, (req, res) => {
     })
   }
 
-  // Check if I blocked this user
   const iBlockedUser = db.prepare('SELECT 1 FROM blocks WHERE blockerId = ? AND blockedId = ?')
     .get(req.userId, req.params.id)
 
@@ -75,7 +73,6 @@ router.get('/:id', authMiddleware, (req, res) => {
     }
   }
 
-  // Check if online (last seen within 5 minutes)
   const isOnline = user.lastSeen && (Date.now() - new Date(user.lastSeen).getTime()) < 300000
 
   res.json({ ...user, friendStatus, isOnline, iBlockedUser: !!iBlockedUser })
@@ -181,7 +178,6 @@ router.get('/:id/friends', authMiddleware, (req, res) => {
       AND u.id != ?
   `).all(req.params.id, req.params.id, req.params.id)
   
-  // Add isOnline status
   const result = friends.map(f => ({
     ...f,
     isOnline: f.lastSeen && (Date.now() - new Date(f.lastSeen).getTime()) < 300000
@@ -190,7 +186,6 @@ router.get('/:id/friends', authMiddleware, (req, res) => {
   res.json(result)
 })
 
-// Block user
 router.post('/:id/block', authMiddleware, (req, res) => {
   const blockedId = req.params.id
   
@@ -198,13 +193,11 @@ router.post('/:id/block', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'Нельзя заблокировать себя' })
   }
   
-  // Check if user exists
   const user = db.prepare('SELECT id FROM users WHERE id = ?').get(blockedId)
   if (!user) {
     return res.status(404).json({ error: 'Пользователь не найден' })
   }
   
-  // Check if already blocked
   const existing = db.prepare('SELECT 1 FROM blocks WHERE blockerId = ? AND blockedId = ?')
     .get(req.userId, blockedId)
   
@@ -212,11 +205,9 @@ router.post('/:id/block', authMiddleware, (req, res) => {
     return res.json({ success: true })
   }
   
-  // Add block
   db.prepare('INSERT INTO blocks (blockerId, blockedId) VALUES (?, ?)')
     .run(req.userId, blockedId)
   
-  // Remove friendship if exists
   db.prepare(`DELETE FROM friendships WHERE 
     (userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)`)
     .run(req.userId, blockedId, blockedId, req.userId)
@@ -224,7 +215,6 @@ router.post('/:id/block', authMiddleware, (req, res) => {
   res.json({ success: true })
 })
 
-// Unblock user
 router.delete('/:id/block', authMiddleware, (req, res) => {
   const blockedId = req.params.id
   

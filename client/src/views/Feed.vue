@@ -1,7 +1,7 @@
 <template>
   <div class="feed-page">
     <div class="feed-content">
-      <CreatePost @created="addPost" />
+      <CreatePost @created="onPostCreated" />
       
       <div v-if="loading && !posts.length" class="loading-state">
         <div class="spinner-lg"></div>
@@ -10,7 +10,7 @@
       
       <TransitionGroup name="post" tag="div" class="posts-list">
         <PostCard 
-          v-for="post in posts" 
+          v-for="post in sortedPosts" 
           :key="post.id" 
           :post="post"
           :hide-pin="true"
@@ -42,12 +42,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import CreatePost from '../components/CreatePost.vue'
 import PostCard from '../components/PostCard.vue'
 import { useNotificationsStore } from '../stores/notifications'
 import { useSocket } from '../socket'
-import { cache } from '../stores/cache'
 import api from '../api'
 
 const notifications = useNotificationsStore()
@@ -57,11 +56,23 @@ const loading = ref(false)
 const hasMore = ref(true)
 const page = ref(1)
 const loadMore = ref(null)
+const lastFetchTime = ref(null)
 let observer
 
 const showMediaViewer = ref(false)
 const mediaViewerSrc = ref('')
 const mediaViewerType = ref('image')
+
+// Sort posts: pinned first, then by date
+const sortedPosts = computed(() => {
+  return [...posts.value].sort((a, b) => {
+    // Pinned posts always first
+    if (a.isPinned && !b.isPinned) return -1
+    if (!a.isPinned && b.isPinned) return 1
+    // Then by date
+    return new Date(b.createdAt) - new Date(a.createdAt)
+  })
+})
 
 function openMedia(src, type) { mediaViewerSrc.value = src; mediaViewerType.value = type; showMediaViewer.value = true }
 function closeMedia() { showMediaViewer.value = false }
@@ -78,6 +89,7 @@ async function fetchPosts(reset = false) {
     if (reset) {
       posts.value = res.data.posts
       page.value = 2
+      lastFetchTime.value = new Date().toISOString()
     } else {
       posts.value.push(...res.data.posts)
       page.value++
@@ -90,6 +102,29 @@ async function fetchPosts(reset = false) {
   }
 }
 
+// Poll for new posts since last fetch
+async function pollNewPosts() {
+  if (!lastFetchTime.value) return
+  try {
+    const res = await api.get('/posts', { params: { since: lastFetchTime.value } })
+    if (res.data.posts.length > 0) {
+      res.data.posts.forEach(newPost => {
+        const exists = posts.value.find(p => p.id === newPost.id)
+        if (!exists) {
+          posts.value.unshift(newPost)
+        } else {
+          // Update existing post
+          const idx = posts.value.findIndex(p => p.id === newPost.id)
+          if (idx !== -1) {
+            Object.assign(posts.value[idx], newPost)
+          }
+        }
+      })
+      lastFetchTime.value = new Date().toISOString()
+    }
+  } catch {}
+}
+
 // Socket handler for new posts from friends
 function onNewPost(post) {
   const exists = posts.value.find(p => p.id === post.id)
@@ -98,9 +133,13 @@ function onNewPost(post) {
   }
 }
 
-function addPost(post) {
-  posts.value.unshift(post)
+function onPostCreated(post) {
+  const exists = posts.value.find(p => p.id === post.id)
+  if (!exists) {
+    posts.value.unshift(post)
+  }
 }
+
 async function deletePost(id) {
   try {
     await api.delete(`/posts/${id}`)
@@ -116,30 +155,9 @@ function updatePost(updated) {
     if (updated.isArchived) {
       posts.value.splice(idx, 1)
     } else {
-      // Use Object.assign to maintain reactivity
       Object.assign(posts.value[idx], updated)
     }
   }
-}
-
-// Poll for updates to existing posts (likes, comments counts)
-async function pollPostUpdates() {
-  if (!posts.value.length) return
-  try {
-    const res = await api.get('/posts', { params: { page: 1, limit: posts.value.length } })
-    res.data.posts.forEach(newPost => {
-      const idx = posts.value.findIndex(p => p.id === newPost.id)
-      if (idx !== -1) {
-        // Update counts without replacing the whole object
-        posts.value[idx].likesCount = newPost.likesCount
-        posts.value[idx].commentsCount = newPost.commentsCount
-        posts.value[idx].isLiked = newPost.isLiked
-      } else {
-        // New post from friend
-        posts.value.unshift(newPost)
-      }
-    })
-  } catch {}
 }
 
 let pollInterval = null
@@ -148,8 +166,8 @@ onMounted(() => {
   fetchPosts(true)
   on('post:new', onNewPost)
   
-  // Poll every 2ms for instant updates
-  pollInterval = setInterval(pollPostUpdates, 2)
+  // Poll every 3 seconds for new posts
+  pollInterval = setInterval(pollNewPosts, 3000)
   
   observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) fetchPosts()

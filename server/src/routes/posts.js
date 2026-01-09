@@ -6,7 +6,6 @@ import { upload } from '../middleware/upload.js'
 
 const router = Router()
 
-// Архивированные посты
 router.get('/archived', authMiddleware, (req, res) => {
   const page = parseInt(req.query.page) || 1
   const limit = parseInt(req.query.limit) || 10
@@ -107,7 +106,6 @@ router.post('/', authMiddleware, upload.single('image'), (req, res) => {
     author: user
   }
 
-  // Notify friends about new post
   const io = req.app.get('io')
   const friends = db.prepare(`
     SELECT CASE WHEN userId = ? THEN friendId ELSE userId END as friendId
@@ -136,7 +134,6 @@ router.delete('/:id', authMiddleware, (req, res) => {
   res.json({ success: true })
 })
 
-// Закрепить/открепить пост
 router.post('/:id/pin', authMiddleware, (req, res) => {
   const post = db.prepare('SELECT authorId, isPinned FROM posts WHERE id = ?').get(req.params.id)
 
@@ -150,7 +147,6 @@ router.post('/:id/pin', authMiddleware, (req, res) => {
 
   const newPinned = post.isPinned ? 0 : 1
   
-  // Если закрепляем, сначала открепляем все остальные посты пользователя
   if (newPinned) {
     db.prepare('UPDATE posts SET isPinned = 0 WHERE authorId = ?').run(req.userId)
   }
@@ -160,7 +156,6 @@ router.post('/:id/pin', authMiddleware, (req, res) => {
   res.json({ isPinned: !!newPinned })
 })
 
-// Архивировать/разархивировать пост
 router.post('/:id/archive', authMiddleware, (req, res) => {
   const post = db.prepare('SELECT authorId, isArchived FROM posts WHERE id = ?').get(req.params.id)
 
@@ -178,7 +173,6 @@ router.post('/:id/archive', authMiddleware, (req, res) => {
   res.json({ isArchived: !!newArchived })
 })
 
-// Включить/отключить комментарии
 router.post('/:id/comments-toggle', authMiddleware, (req, res) => {
   const post = db.prepare('SELECT authorId, commentsDisabled FROM posts WHERE id = ?').get(req.params.id)
 
@@ -211,7 +205,6 @@ router.post('/:id/like', authMiddleware, (req, res) => {
   const likesCount = db.prepare('SELECT COUNT(*) as count FROM likes WHERE postId = ?')
     .get(req.params.id).count
 
-  // Emit to all users viewing this post
   const io = req.app.get('io')
   io.to(`post:${req.params.id}`).emit('post:like', {
     postId: req.params.id,
@@ -298,7 +291,6 @@ router.post('/:id/comments', authMiddleware, (req, res) => {
       replies: []
     }
 
-    // Emit to all users viewing this post
     const io = req.app.get('io')
     io.to(`post:${req.params.id}`).emit('post:comment', {
       postId: req.params.id,
@@ -344,19 +336,15 @@ router.delete('/comments/:id', authMiddleware, (req, res) => {
       return res.status(404).json({ error: 'Комментарий не найден' })
     }
 
-    // Можно удалить свой комментарий или любой комментарий под своим постом
     if (comment.authorId !== req.userId && comment.postAuthorId !== req.userId) {
       return res.status(403).json({ error: 'Нет доступа' })
     }
 
-    // Удаляем ответы на комментарий
     db.prepare('DELETE FROM comment_likes WHERE commentId IN (SELECT id FROM comments WHERE parentId = ?)').run(req.params.id)
     db.prepare('DELETE FROM comments WHERE parentId = ?').run(req.params.id)
     
-    // Удаляем лайки комментария
     db.prepare('DELETE FROM comment_likes WHERE commentId = ?').run(req.params.id)
     
-    // Удаляем сам комментарий
     db.prepare('DELETE FROM comments WHERE id = ?').run(req.params.id)
 
     res.json({ success: true })

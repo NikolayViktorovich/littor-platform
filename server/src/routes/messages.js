@@ -31,7 +31,6 @@ router.get('/dialogs', authMiddleware, (req, res) => {
 
   const result = dialogs.map(d => {
     let content = d.content
-    // For system messages, show preview instead of raw content
     if (d.mediaType === 'system') {
       content = getMediaPreview(d.mediaType, d.content)
     } else if (!content) {
@@ -81,17 +80,14 @@ router.get('/unread-count', authMiddleware, (req, res) => {
   res.json({ count: result.count })
 })
 
-// Counts endpoint for sidebar badges
 router.get('/counts', authMiddleware, (req, res) => {
   try {
-    // Count unread messages
     const messagesResult = db.prepare(`
       SELECT COUNT(DISTINCT senderId) as count 
       FROM messages 
       WHERE receiverId = ? AND isRead = 0
     `).get(req.userId)
 
-    // Count incoming friend requests
     const friendsResult = db.prepare(`
       SELECT COUNT(*) as count 
       FROM friendships 
@@ -108,7 +104,6 @@ router.get('/counts', authMiddleware, (req, res) => {
   }
 })
 
-// Get recent unread messages for toast notifications
 router.get('/recent', authMiddleware, (req, res) => {
   try {
     const messages = db.prepare(`
@@ -127,7 +122,6 @@ router.get('/recent', authMiddleware, (req, res) => {
   }
 })
 
-// Pin/unpin dialog
 router.post('/dialogs/:id/pin', authMiddleware, (req, res) => {
   try {
     const oderId = [req.userId, req.params.id].sort().join('-')
@@ -149,7 +143,6 @@ router.post('/dialogs/:id/pin', authMiddleware, (req, res) => {
   }
 })
 
-// Mute/unmute dialog
 router.post('/dialogs/:id/mute', authMiddleware, (req, res) => {
   try {
     const oderId = [req.userId, req.params.id].sort().join('-')
@@ -169,19 +162,16 @@ router.post('/dialogs/:id/mute', authMiddleware, (req, res) => {
   }
 })
 
-// Delete dialog (delete all messages for current user)
 router.delete('/dialogs/:id', authMiddleware, (req, res) => {
   try {
     const { forAll } = req.query
     
     if (forAll === 'true') {
-      // Delete all messages completely
       db.prepare(`
         DELETE FROM messages 
         WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?)
       `).run(req.userId, req.params.id, req.params.id, req.userId)
     } else {
-      // Mark all messages as deleted for this user only
       db.prepare(`
         UPDATE messages SET deletedBySender = 1 
         WHERE senderId = ? AND receiverId = ?
@@ -193,7 +183,6 @@ router.delete('/dialogs/:id', authMiddleware, (req, res) => {
       `).run(req.params.id, req.userId)
     }
     
-    // Also delete dialog settings
     const oderId = [req.userId, req.params.id].sort().join('-')
     db.prepare('DELETE FROM dialog_settings WHERE oderId = ?').run(oderId)
     db.prepare('DELETE FROM pinned_messages WHERE oderId = ?').run(oderId)
@@ -205,12 +194,10 @@ router.delete('/dialogs/:id', authMiddleware, (req, res) => {
   }
 })
 
-// Forward message - must be before /:id route
 router.post('/forward', authMiddleware, (req, res) => {
   try {
     const { messageId, toUserId } = req.body
     
-    // Check if blocked
     const blocked = db.prepare(`
       SELECT 1 FROM blocks 
       WHERE (blockerId = ? AND blockedId = ?) OR (blockerId = ? AND blockedId = ?)
@@ -227,7 +214,6 @@ router.post('/forward', authMiddleware, (req, res) => {
 
     const id = uuid()
     const createdAt = new Date().toISOString()
-    // Если сообщение уже было переслано, сохраняем оригинального отправителя
     const forwardedFromId = original.forwardedFromId || original.senderId
 
     db.prepare(`
@@ -288,7 +274,6 @@ router.get('/:id', authMiddleware, (req, res) => {
   res.json(result)
 })
 
-// Get pinned message for a chat
 router.get('/:id/pinned', authMiddleware, (req, res) => {
   try {
     const oderId = [req.userId, req.params.id].sort().join('-')
@@ -306,17 +291,14 @@ router.get('/:id/pinned', authMiddleware, (req, res) => {
   }
 })
 
-// Pin/unpin message
 router.post('/:id/pin', authMiddleware, (req, res) => {
   try {
     const { messageId } = req.body
     const oderId = [req.userId, req.params.id].sort().join('-')
     
-    // Check if already pinned
     const existing = db.prepare('SELECT * FROM pinned_messages WHERE oderId = ?').get(oderId)
     
     if (existing) {
-      // Unpin or replace
       db.prepare('DELETE FROM pinned_messages WHERE oderId = ?').run(oderId)
     }
     
@@ -327,7 +309,6 @@ router.post('/:id/pin', authMiddleware, (req, res) => {
       action = 'pinned'
     }
     
-    // Create system message about pin/unpin with reference to pinned message
     const systemMsgId = uuid()
     const createdAt = new Date().toISOString()
     const systemContent = action === 'pinned' ? `pinned_message:${messageId}` : 'unpinned_message'
@@ -337,7 +318,6 @@ router.post('/:id/pin', authMiddleware, (req, res) => {
       VALUES (?, ?, ?, ?, 'system', ?)
     `).run(systemMsgId, req.userId, req.params.id, systemContent, createdAt)
     
-    // Emit to both users
     const io = req.app.get('io')
     const systemMsg = {
       id: systemMsgId,
@@ -366,7 +346,6 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
       return res.status(400).json({ error: 'Сообщение не может быть пустым' })
     }
 
-    // Check if blocked
     const blocked = db.prepare(`
       SELECT 1 FROM blocks 
       WHERE (blockerId = ? AND blockedId = ?) OR (blockerId = ? AND blockedId = ?)
@@ -383,7 +362,6 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
     db.prepare('INSERT INTO messages (id, senderId, receiverId, content, media, mediaType, replyToId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
       .run(id, req.userId, req.params.id, messageContent, media, mediaType || null, replyToId || null, createdAt)
 
-    // Get reply info if exists
     let replyTo = null
     if (replyToId) {
       const replyMsg = db.prepare(`
@@ -413,7 +391,6 @@ router.post('/:id', authMiddleware, upload.single('media'), (req, res) => {
       createdAt
     }
 
-    // Emit to receiver via socket
     const io = req.app.get('io')
     io.to(`user:${req.params.id}`).emit('message:new', message)
 
@@ -428,7 +405,6 @@ router.post('/:id/read', authMiddleware, (req, res) => {
   db.prepare('UPDATE messages SET isRead = 1 WHERE senderId = ? AND receiverId = ?')
     .run(req.params.id, req.userId)
 
-  // Notify sender that messages were read
   const io = req.app.get('io')
   io.to(`user:${req.params.id}`).emit('message:read', { 
     by: req.userId,
@@ -438,7 +414,6 @@ router.post('/:id/read', authMiddleware, (req, res) => {
   res.json({ success: true })
 })
 
-// Delete message
 router.delete('/:id', authMiddleware, (req, res) => {
   try {
     const { forAll } = req.query
@@ -449,13 +424,11 @@ router.delete('/:id', authMiddleware, (req, res) => {
     }
 
     if (forAll === 'true') {
-      // Only sender can delete for all
       if (message.senderId !== req.userId) {
         return res.status(403).json({ error: 'Нет прав для удаления' })
       }
       db.prepare('DELETE FROM messages WHERE id = ?').run(req.params.id)
     } else {
-      // Delete for self - mark as deleted for this user
       if (message.senderId === req.userId) {
         db.prepare('UPDATE messages SET deletedBySender = 1 WHERE id = ?').run(req.params.id)
       } else {

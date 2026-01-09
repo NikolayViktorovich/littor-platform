@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 10000
+  timeout: 120000 // 2 minutes for file uploads
 })
 
 api.interceptors.response.use(

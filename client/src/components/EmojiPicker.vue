@@ -112,13 +112,19 @@ const categories = {
   margin-bottom: 8px;
   width: 320px;
   z-index: 100;
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+  overflow: hidden;
 }
 
 .emoji-tabs {
   display: flex;
   gap: 2px;
   padding: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   overflow-x: auto;
 }
 

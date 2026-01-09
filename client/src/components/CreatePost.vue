@@ -20,40 +20,56 @@
           </div>
 
           <div class="modal-body">
-            <div v-if="!images.length" class="upload-area" @click="triggerUpload">
-              <div class="upload-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <path d="M17 8l-5-5-5 5M12 3v12"/>
-                </svg>
-              </div>
-              <p class="upload-title">Добавьте фото или видео</p>
-              <label class="btn btn-secondary">
-                <input type="file" accept="image/*" multiple @change="handleImages" hidden ref="fileInput">
-                Загрузить с устройства
-              </label>
-            </div>
-
-            <div v-else class="images-grid">
-              <div v-for="(img, index) in images" :key="index" class="image-item">
-                <img :src="img.preview" alt="">
-                <button @click="removeImage(index)" class="remove-btn">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                  </svg>
+            <!-- Media previews -->
+            <div v-if="mediaFiles.length > 0" class="media-previews">
+              <div v-for="item in mediaFiles" :key="item.id" class="media-preview-item">
+                <div class="preview-thumb">
+                  <img v-if="item.type === 'image' || item.type === 'gif'" :src="item.preview" alt="">
+                  <video v-else-if="item.type === 'video'" :src="item.preview" muted></video>
+                  <div v-else class="preview-icon" :class="item.type">
+                    <svg v-if="item.type === 'audio'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+                  </div>
+                </div>
+                <button @click="removeFile(item.id)" class="preview-remove-small">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
               </div>
-              <label class="add-more">
-                <input type="file" accept="image/*" multiple @change="handleImages" hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
-              </label>
+              <button v-if="mediaFiles.length > 1" @click="clearMedia" class="clear-all-btn">Очистить</button>
             </div>
 
             <div class="text-input">
-              <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="2" ref="textareaRef"></textarea>
+              <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="3" ref="textareaRef"></textarea>
               <EmojiPicker @select="insertEmoji" />
+            </div>
+
+            <!-- Attachment buttons -->
+            <div class="attach-buttons">
+              <label class="attach-btn">
+                <input type="file" accept="image/*" @change="handleFile" multiple hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21"/></svg>
+                <span>Фото</span>
+              </label>
+              <label class="attach-btn">
+                <input type="file" accept="video/*" @change="handleFile" multiple hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7zM1 5h15a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H1V5z"/></svg>
+                <span>Видео</span>
+              </label>
+              <label class="attach-btn">
+                <input type="file" accept="image/gif" @change="handleFile" multiple hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zM7 10.5v3m3-3.5v4c0 .5.5 1 1 1h1.5m2.5-5v4h2.5"/></svg>
+                <span>GIF</span>
+              </label>
+              <label class="attach-btn">
+                <input type="file" accept="audio/*" @change="handleFile" multiple hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+                <span>Аудио</span>
+              </label>
+              <label class="attach-btn">
+                <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z" @change="handleFile" multiple hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+                <span>Файл</span>
+              </label>
             </div>
           </div>
 
@@ -82,12 +98,26 @@ const notifications = useNotificationsStore()
 
 const showModal = ref(false)
 const content = ref('')
-const images = ref([])
+const mediaFiles = ref([])
 const loading = ref(false)
-const fileInput = ref(null)
 const textareaRef = ref(null)
 
-const canSubmit = computed(() => content.value.trim() || images.value.length)
+const canSubmit = computed(() => content.value.trim() || mediaFiles.value.length > 0)
+
+function getMediaType(file) {
+  if (file.type === 'image/gif') return 'gif'
+  if (file.type.startsWith('image/')) return 'image'
+  if (file.type.startsWith('video/')) return 'video'
+  if (file.type.startsWith('audio/')) return 'audio'
+  return 'file'
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' Б'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' МБ'
+}
 
 function insertEmoji(emoji) {
   const textarea = textareaRef.value
@@ -104,33 +134,41 @@ function insertEmoji(emoji) {
   }
 }
 
-function triggerUpload() {
-  fileInput.value?.click()
-}
-
 function closeModal() {
   showModal.value = false
   content.value = ''
-  images.value.forEach(img => URL.revokeObjectURL(img.preview))
-  images.value = []
+  clearMedia()
 }
 
-function handleImages(e) {
+function handleFile(e) {
   const files = Array.from(e.target.files)
-  for (const file of files) {
-    if (file.size > 5 * 1024 * 1024) {
-      notifications.error('Максимальный размер 5MB')
-      continue
+  if (!files.length) return
+  
+  files.forEach(file => {
+    if (file.size > 100 * 1024 * 1024) {
+      notifications.error(`${file.name}: максимальный размер 100MB`)
+      return
     }
-    if (images.value.length >= 10) break
-    images.value.push({ file, preview: URL.createObjectURL(file) })
-  }
+    if (mediaFiles.value.length >= 10) return // Max 10 files
+    
+    const type = getMediaType(file)
+    const preview = (type === 'image' || type === 'gif' || type === 'video') ? URL.createObjectURL(file) : null
+    mediaFiles.value.push({ file, preview, type, id: Date.now() + Math.random() })
+  })
   e.target.value = ''
 }
 
-function removeImage(index) {
-  URL.revokeObjectURL(images.value[index].preview)
-  images.value.splice(index, 1)
+function removeFile(id) {
+  const idx = mediaFiles.value.findIndex(f => f.id === id)
+  if (idx !== -1) {
+    if (mediaFiles.value[idx].preview) URL.revokeObjectURL(mediaFiles.value[idx].preview)
+    mediaFiles.value.splice(idx, 1)
+  }
+}
+
+function clearMedia() {
+  mediaFiles.value.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview) })
+  mediaFiles.value = []
 }
 
 async function submit() {
@@ -139,7 +177,12 @@ async function submit() {
   try {
     const formData = new FormData()
     formData.append('content', content.value)
-    if (images.value.length) formData.append('image', images.value[0].file)
+    
+    // Append all media files
+    mediaFiles.value.forEach(item => {
+      formData.append('media', item.file)
+    })
+    
     const res = await api.post('/posts', formData)
     emit('created', res.data)
     closeModal()
@@ -183,7 +226,6 @@ async function submit() {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-  will-change: opacity;
 }
 .modal-content {
   width: 100%;
@@ -191,8 +233,6 @@ async function submit() {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  will-change: transform, opacity;
-  transform: translateZ(0);
 }
 .modal-header {
   display: flex;
@@ -218,102 +258,91 @@ async function submit() {
 
 .modal-body {
   flex: 1;
-  padding: 20px;
+  padding: 0 20px 20px;
   overflow-y: auto;
 }
-.upload-area {
-  border: 2px dashed rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-lg);
-  padding: 60px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color var(--transition);
-}
-.upload-area:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-}
-.upload-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 16px;
-  border: 2px dashed rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.upload-icon svg {
-  width: 32px;
-  height: 32px;
-  color: rgba(255, 255, 255, 0.5);
-}
-.upload-title {
-  font-size: 16px;
-  margin-bottom: 16px;
-  color: var(--text-primary);
-}
 
-.images-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+/* Media previews grid */
+.media-previews {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-lg);
+  align-items: center;
 }
-.image-item {
+.media-preview-item {
   position: relative;
-  aspect-ratio: 1;
-  border-radius: var(--radius);
-  overflow: hidden;
 }
-.image-item img {
+.preview-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+.preview-thumb img,
+.preview-thumb video {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.image-item .remove-btn {
+.preview-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.preview-icon svg {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+.preview-icon.audio {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+.preview-icon.file {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+.preview-remove-small {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 24px;
-  height: 24px;
-  background: rgba(0, 0, 0, 0.7);
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.8);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity var(--transition);
+  transition: all var(--transition);
 }
-.image-item:hover .remove-btn {
-  opacity: 1;
+.preview-remove-small:hover {
+  background: rgba(255, 100, 100, 0.9);
+  transform: scale(1.1);
 }
-.remove-btn svg {
+.preview-remove-small svg {
   width: 12px;
   height: 12px;
 }
-.add-more {
-  aspect-ratio: 1;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.4);
+.clear-all-btn {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-radius: 8px;
   transition: all var(--transition);
 }
-.add-more:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  color: rgba(255, 255, 255, 0.7);
-}
-.add-more svg {
-  width: 24px;
-  height: 24px;
+.clear-all-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
 }
 
 .text-input {
   position: relative;
-  margin-top: 16px;
 }
 .text-input textarea {
   width: 100%;
@@ -326,13 +355,42 @@ async function submit() {
 }
 .text-input textarea:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 .text-input :deep(.emoji-wrap) {
   position: absolute;
   right: 8px;
   bottom: 8px;
+}
+
+/* Attachment buttons */
+.attach-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.attach-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.attach-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.attach-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .modal-footer {
@@ -353,25 +411,11 @@ async function submit() {
   to { transform: rotate(360deg); }
 }
 
-.modal-enter-active {
-  transition: opacity 0.1s ease-out;
-}
-.modal-enter-active .modal-content {
-  transition: transform 0.1s ease-out;
-}
-.modal-leave-active {
-  transition: opacity 0.08s ease-in;
-}
-.modal-leave-active .modal-content {
-  transition: transform 0.08s ease-in;
-}
-.modal-enter-from, .modal-leave-to {
-  opacity: 0;
-}
-.modal-enter-from .modal-content {
-  transform: translateZ(0) scale(0.97);
-}
-.modal-leave-to .modal-content {
-  transform: translateZ(0) scale(0.97);
-}
+.modal-enter-active { transition: opacity 0.15s ease-out; }
+.modal-enter-active .modal-content { transition: transform 0.15s ease-out; }
+.modal-leave-active { transition: opacity 0.1s ease-in; }
+.modal-leave-active .modal-content { transition: transform 0.1s ease-in; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.modal-enter-from .modal-content { transform: scale(0.95); }
+.modal-leave-to .modal-content { transform: scale(0.95); }
 </style>
