@@ -167,9 +167,35 @@ export async function initDb() {
     if (!colNames.includes('forwardedFromId')) {
       db.run(`ALTER TABLE messages ADD COLUMN forwardedFromId TEXT`)
     }
+    if (!colNames.includes('replyToId')) {
+      db.run(`ALTER TABLE messages ADD COLUMN replyToId TEXT`)
+    }
   } catch (e) {
     console.log('Migration check:', e.message)
   }
+
+  // Pinned messages table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS pinned_messages (
+      oderId TEXT NOT NULL,
+      recipientId TEXT NOT NULL,
+      messageId TEXT NOT NULL,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (oderId, recipientId),
+      FOREIGN KEY (messageId) REFERENCES messages(id)
+    )
+  `)
+
+  // Dialog settings table (pin, mute)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS dialog_settings (
+      oderId TEXT PRIMARY KEY,
+      isPinned INTEGER DEFAULT 0,
+      isMuted INTEGER DEFAULT 0,
+      pinnedAt TEXT,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(authorId)`)
   db.run(`CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(createdAt DESC)`)

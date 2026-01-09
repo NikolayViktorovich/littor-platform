@@ -7,15 +7,21 @@
           <div class="dialogs-list">
             <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
             <div v-else-if="!dialogs.length" class="empty-state"><p>Нет диалогов</p></div>
-            <div v-else v-for="dialog in dialogs" :key="dialog.user.id" @click="selectDialog(dialog.user.id)" class="dialog-item" :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0 }">
+            <div v-else v-for="dialog in dialogs" :key="dialog.user.id" @click="selectDialog(dialog.user.id)" @contextmenu.prevent="openDialogMenu($event, dialog)" class="dialog-item" :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0, pinned: dialog.isPinned }">
               <div class="dialog-avatar-wrap">
                 <img :src="getAvatarUrl(dialog.user.avatar)" class="avatar" alt="" @error="handleAvatarError">
                 <span v-if="dialog.user.isOnline" class="online-indicator"></span>
               </div>
               <div class="dialog-content">
                 <div class="dialog-header">
-                  <span class="dialog-name">{{ dialog.user.name }}</span>
-                  <span class="dialog-time">{{ formatTime(dialog.lastMessage.createdAt) }}</span>
+                  <div class="dialog-name-wrap">
+                    <span class="dialog-name">{{ dialog.user.name }}</span>
+                    <svg v-if="dialog.isMuted" class="muted-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3.63 3.63a.996.996 0 0 0 0 1.41L7.29 8.7 7 9H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1h3l3.29 3.29c.63.63 1.71.18 1.71-.71v-4.17l4.18 4.18c-.49.37-1.02.68-1.6.91-.36.15-.58.53-.58.92 0 .72.73 1.18 1.39.91.8-.33 1.55-.77 2.22-1.31l1.34 1.34a.996.996 0 1 0 1.41-1.41L5.05 3.63c-.39-.39-1.02-.39-1.42 0zM19 12c0 .82-.15 1.61-.41 2.34l1.53 1.53c.56-1.17.88-2.48.88-3.87 0-3.83-2.4-7.11-5.78-8.4-.59-.23-1.22.23-1.22.86v.19c0 .38.25.71.61.85C17.18 6.54 19 9.06 19 12zm-8.71-6.29l-.17.17L12 7.76V6.41c0-.89-1.08-1.33-1.71-.7zM16.5 12A4.5 4.5 0 0 0 14 7.97v1.79l2.48 2.48c.01-.08.02-.16.02-.24z"/></svg>
+                  </div>
+                  <div class="dialog-icons">
+                    <svg v-if="dialog.isPinned" class="pinned-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>
+                    <span class="dialog-time">{{ formatTime(dialog.lastMessage.createdAt) }}</span>
+                  </div>
                 </div>
                 <div class="dialog-bottom">
                   <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content || 'Медиа' }}</p>
@@ -39,7 +45,7 @@
             <button v-if="isMobile" @click="goBack" class="back-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <router-link v-if="chatUser" :to="`/profile/${chatUser.id}`" class="chat-user">
+            <router-link v-if="chatUser && !selectMode" :to="`/profile/${chatUser.id}`" class="chat-user">
               <div class="chat-avatar-wrap">
                 <img :src="getAvatarUrl(chatUser.avatar)" class="avatar" alt="" @error="handleAvatarError">
                 <span v-if="chatUser.isOnline" class="online-indicator"></span>
@@ -49,6 +55,35 @@
                 <span class="user-status">{{ chatUser.isOnline ? 'в сети' : formatLastSeen(chatUser.lastSeen) }}</span>
               </div>
             </router-link>
+            <div v-if="selectMode" class="select-mode-header">
+              <button @click="cancelSelectMode" class="select-cancel-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+              <span class="select-count">Выбрано: {{ selectedMessages.length }}</span>
+              <div class="select-actions">
+                <button @click="bulkForward" class="select-action-btn" :disabled="!selectedMessages.length" title="Переслать">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M20 12H4"/></svg>
+                </button>
+                <button @click="bulkDeleteForAll" class="select-action-btn danger" :disabled="!canBulkDeleteForAll" title="Удалить для всех">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>
+                </button>
+                <button @click="bulkDeleteForMe" class="select-action-btn" :disabled="!selectedMessages.length" title="Удалить для себя">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pinned message banner -->
+          <div v-if="pinnedMessage" class="pinned-banner" @click="scrollToPinned">
+            <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>
+            <div class="pinned-content">
+              <span class="pinned-label">Закреплённое сообщение</span>
+              <span class="pinned-text">{{ pinnedMessage.content || 'Медиа' }}</span>
+            </div>
+            <button @click.stop="unpinMessage" class="unpin-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
           </div>
 
         <div class="chat-messages" ref="messagesContainer" @scroll="onChatScroll">
@@ -59,11 +94,25 @@
           </Transition>
           <div v-if="chatLoading" class="loading-state"><div class="spinner"></div></div>
           <template v-else>
+            <TransitionGroup name="message-list" tag="div" class="messages-wrapper">
             <template v-for="(msg, index) in messages" :key="msg.id">
               <div v-if="shouldShowDateSeparator(index)" class="date-separator">
                 <span>{{ formatDateSeparator(msg.createdAt) }}</span>
               </div>
-              <div class="message" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice' }" @contextmenu.prevent="openMsgMenu($event, msg)">
+              <!-- System message (pin/unpin) -->
+              <div v-if="msg.mediaType === 'system'" class="system-message" :class="{ clickable: msg.content.startsWith('pinned_message:') }" @click="handleSystemMessageClick(msg)" @contextmenu.prevent="openSystemMsgMenu($event, msg)">
+                <div class="system-message-content glass-pill">
+                  <svg v-if="msg.content.startsWith('pinned_message') || msg.content === 'unpinned_message'" class="system-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>
+                  <span>{{ formatSystemMessage(msg) }}</span>
+                </div>
+              </div>
+              <!-- Regular message -->
+              <div v-else class="message" :id="'msg-' + msg.id" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice', selected: selectedMessages.includes(msg.id) }" @contextmenu.prevent="openMsgMenu($event, msg)" @click="selectMode ? toggleMessageSelection(msg.id) : null">
+                <div v-if="selectMode" class="message-checkbox" @click.stop="toggleMessageSelection(msg.id)">
+                  <div class="checkbox-inner" :class="{ checked: selectedMessages.includes(msg.id) }">
+                    <svg v-if="selectedMessages.includes(msg.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                </div>
                 <router-link v-if="msg.senderId !== authStore.user?.id" :to="`/profile/${chatUser?.id}`" class="msg-avatar">
                   <img :src="getAvatarUrl(chatUser?.avatar)" class="avatar avatar-sm" alt="" @error="handleAvatarError">
                 </router-link>
@@ -107,6 +156,11 @@
                   </div>
                   <!-- Regular message bubble -->
                   <div v-else class="message-bubble">
+                    <!-- Reply preview in message -->
+                    <div v-if="msg.replyTo" class="reply-in-message" @click.stop="scrollToMessage(msg.replyTo.id)">
+                      <span class="reply-sender">{{ msg.replyTo.senderName }}</span>
+                      <span class="reply-text">{{ msg.replyTo.content || 'Медиа' }}</span>
+                    </div>
                     <div v-if="msg.forwarded && msg.forwardedFrom" class="forwarded-header">
                       <span class="forwarded-text">Переслано от</span>
                       <img :src="getAvatarUrl(msg.forwardedFrom.avatar)" class="forwarded-avatar" alt="">
@@ -120,6 +174,7 @@
                 </div>
               </div>
             </template>
+            </TransitionGroup>
           </template>
         </div>
 
@@ -148,7 +203,17 @@
         <div v-else-if="chatUser?.iBlockedUser" class="chat-blocked">
           <button @click="unblockUser" class="unblock-btn">Разблокировать</button>
         </div>
-        <form v-else @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
+        <!-- Reply preview above input -->
+        <div v-else-if="replyingTo" class="reply-preview">
+          <div class="reply-preview-content">
+            <span class="reply-preview-name">{{ replyingTo.senderName }}</span>
+            <span class="reply-preview-text">{{ replyingTo.content || 'Медиа' }}</span>
+          </div>
+          <button @click="cancelReply" class="reply-cancel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <form v-if="!chatUser?.blockedByUser && !chatUser?.iBlockedUser" @submit.prevent="sendMessage" class="chat-input" v-show="!isRecording">
           <div class="input-actions-left">
             <label class="action-btn"><input type="file" accept="image/*,video/*" @change="handleMediaSelect" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></label>
           </div>
@@ -208,10 +273,55 @@
 
       <Teleport to="body">
         <Transition name="menu">
+          <div v-if="showDialogMenu" class="msg-menu glass-modal" :style="{ top: dialogMenuY + 'px', left: dialogMenuX + 'px' }" @click.stop>
+            <button class="menu-item" @click="toggleDialogPin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ selectedDialog?.isPinned ? 'Открепить' : 'Закрепить' }}</button>
+            <button class="menu-item" @click="toggleDialogMute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><template v-if="!selectedDialog?.isMuted"><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></template><template v-else><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></template></svg>{{ selectedDialog?.isMuted ? 'Включить звук' : 'Отключить звук' }}</button>
+            <button class="menu-item danger" @click="confirmDeleteDialogForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
+            <button class="menu-item muted" @click="confirmDeleteDialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
+          <div v-if="showDeleteDialogModal" class="modal-overlay" @click.self="showDeleteDialogModal = false">
+            <div class="delete-modal glass-modal">
+              <h3>Удалить диалог?</h3>
+              <p>Все сообщения будут удалены только для вас.</p>
+              <div class="delete-actions">
+                <button class="delete-btn cancel" @click="showDeleteDialogModal = false">Отмена</button>
+                <button class="delete-btn" @click="deleteDialog(false)">Удалить</button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
+          <div v-if="showDeleteDialogForAllModal" class="modal-overlay" @click.self="showDeleteDialogForAllModal = false">
+            <div class="delete-modal glass-modal">
+              <h3>Удалить диалог для всех?</h3>
+              <p>Все сообщения будут удалены у вас и у собеседника навсегда.</p>
+              <div class="delete-actions">
+                <button class="delete-btn cancel" @click="showDeleteDialogForAllModal = false">Отмена</button>
+                <button class="delete-btn danger" @click="deleteDialog(true)">Удалить</button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="menu">
           <div v-if="showMsgMenu" class="msg-menu glass-modal" :style="{ top: msgMenuY + 'px', left: msgMenuX + 'px' }" @click.stop>
-            <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M20 12H4"/></svg>Переслать</button>
+            <button class="menu-item" @click="startReply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17l-5-5 5-5M4 12h16"/></svg>Ответить</button>
+            <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17l5-5-5-5M20 12H4"/></svg>Переслать</button>
+            <button class="menu-item" @click="pinMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ pinnedMessage?.id === selectedMsg?.id ? 'Открепить' : 'Закрепить' }}</button>
+            <button class="menu-item" @click="startSelectMode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Выбрать</button>
             <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
             <button class="menu-item muted" @click="confirmDeleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
+          </div>
+        </Transition>
+
+        <Transition name="menu">
+          <div v-if="showSystemMsgMenu" class="msg-menu glass-modal" :style="{ top: systemMsgMenuY + 'px', left: systemMsgMenuX + 'px' }" @click.stop>
+            <button v-if="selectedSystemMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="deleteSystemMsgForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
+            <button class="menu-item muted" @click="deleteSystemMsgForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
           </div>
         </Transition>
 
@@ -246,7 +356,7 @@
         <Transition name="modal">
           <div v-if="showForwardModal" class="modal-overlay" @click.self="showForwardModal = false">
             <div class="modal glass-modal">
-              <div class="modal-header"><h2>Переслать сообщение</h2><button @click="showForwardModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+              <div class="modal-header"><h2>{{ bulkForwardMode ? `Переслать (${selectedMessages.length})` : 'Переслать сообщение' }}</h2><button @click="showForwardModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
               <div class="forward-list">
                 <div v-for="d in dialogs" :key="d.user.id" class="forward-item" @click="doForward(d.user.id)"><img :src="getAvatarUrl(d.user.avatar)" class="avatar" alt=""><span>{{ d.user.name }}</span></div>
               </div>
@@ -315,6 +425,14 @@ const showMsgMenu = ref(false)
 const msgMenuX = ref(0)
 const msgMenuY = ref(0)
 
+// Dialog menu
+const showDialogMenu = ref(false)
+const dialogMenuX = ref(0)
+const dialogMenuY = ref(0)
+const selectedDialog = ref(null)
+const showDeleteDialogModal = ref(false)
+const showDeleteDialogForAllModal = ref(false)
+
 const playingCircles = ref({})
 const mutedCircles = ref({})
 const playingVoices = ref({})
@@ -328,11 +446,24 @@ const selectedMsg = ref(null)
 const showForwardModal = ref(false)
 const showDeleteForAllModal = ref(false)
 const showDeleteForMeModal = ref(false)
+
+// System message menu
+const showSystemMsgMenu = ref(false)
+const systemMsgMenuX = ref(0)
+const systemMsgMenuY = ref(0)
+const selectedSystemMsg = ref(null)
 const rememberDeleteForAll = ref(false)
 const rememberDeleteForMe = ref(false)
 const showMediaViewerModal = ref(false)
 const viewerSrc = ref('')
 const viewerType = ref('image')
+
+// Reply, selection, and pinning
+const replyingTo = ref(null)
+const selectMode = ref(false)
+const selectedMessages = ref([])
+const pinnedMessage = ref(null)
+const bulkForwardMode = ref(false)
 
 const scrollPositions = {}
 
@@ -361,7 +492,7 @@ function restoreScrollPosition(userId) {
   })
 }
 
-function goBack() { saveScrollPosition(); selectedUserId.value = null; chatUser.value = null; currentChatUserId.value = null }
+function goBack() { saveScrollPosition(); selectedUserId.value = null; chatUser.value = null; currentChatUserId.value = null; replyingTo.value = null; selectMode.value = false; selectedMessages.value = []; pinnedMessage.value = null }
 function handleResize() { isMobile.value = window.innerWidth <= 900 }
 function getAvatarUrl(a) { return a || '/default-avatar.svg' }
 function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
@@ -388,6 +519,57 @@ function formatDateSeparator(d) {
   if (msgDate.getTime() === today.getTime()) return 'Сегодня'
   if (msgDate.getTime() === yesterday.getTime()) return 'Вчера'
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+}
+
+function formatSystemMessage(msg) {
+  const isMe = msg.senderId === authStore.user?.id
+  const name = isMe ? 'Вы' : chatUser.value?.name
+  if (msg.content.startsWith('pinned_message:')) {
+    return `${name} ${isMe ? 'закрепили' : 'закрепил(а)'} сообщение`
+  }
+  if (msg.content === 'unpinned_message') {
+    return `${name} ${isMe ? 'открепили' : 'открепил(а)'} сообщение`
+  }
+  return msg.content
+}
+
+function handleSystemMessageClick(msg) {
+  if (msg.content.startsWith('pinned_message:')) {
+    const pinnedMsgId = msg.content.split(':')[1]
+    if (pinnedMsgId) {
+      scrollToMessage(pinnedMsgId)
+    }
+  }
+}
+
+function openSystemMsgMenu(e, msg) {
+  selectedSystemMsg.value = msg
+  systemMsgMenuX.value = Math.min(e.clientX, window.innerWidth - 200)
+  systemMsgMenuY.value = Math.min(e.clientY, window.innerHeight - 120)
+  showSystemMsgMenu.value = true
+}
+
+function closeSystemMsgMenu() {
+  showSystemMsgMenu.value = false
+  selectedSystemMsg.value = null
+}
+
+async function deleteSystemMsgForMe() {
+  if (!selectedSystemMsg.value) return
+  try {
+    await api.delete(`/messages/${selectedSystemMsg.value.id}`)
+    messages.value = messages.value.filter(m => m.id !== selectedSystemMsg.value.id)
+  } catch (err) { notifications.error(err.message) }
+  closeSystemMsgMenu()
+}
+
+async function deleteSystemMsgForAll() {
+  if (!selectedSystemMsg.value) return
+  try {
+    await api.delete(`/messages/${selectedSystemMsg.value.id}?forAll=true`)
+    messages.value = messages.value.filter(m => m.id !== selectedSystemMsg.value.id)
+  } catch (err) { notifications.error(err.message) }
+  closeSystemMsgMenu()
 }
 function shouldShowDateSeparator(index) {
   if (index === 0) return true
@@ -738,19 +920,28 @@ async function selectDialog(userId) {
   currentChatUserId.value = userId
   chatLoading.value = true
   messages.value = []
+  replyingTo.value = null
+  selectMode.value = false
+  selectedMessages.value = []
+  pinnedMessage.value = null
   try { 
     const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)])
     chatUser.value = userRes.data
     messages.value = msgRes.data
     restoreScrollPosition(userId)
-    await api.post(`/messages/${userId}/read`) 
+    await api.post(`/messages/${userId}/read`)
+    fetchPinnedMessage()
   } catch (err) { notifications.error(err.message) } finally { chatLoading.value = false } 
 }
 async function pollMessages() { 
   if (!selectedUserId.value) return
   try { 
     const res = await api.get(`/messages/${selectedUserId.value}`)
-    if (res.data.length !== messages.value.length) { 
+    const newIds = res.data.map(m => m.id).join(',')
+    const oldIds = messages.value.map(m => m.id).join(',')
+    
+    // Only update if messages actually changed
+    if (newIds !== oldIds) { 
       const container = messagesContainer.value
       const wasAtBottom = container && (container.scrollHeight - container.scrollTop - container.clientHeight < 100)
       
@@ -765,10 +956,15 @@ async function pollMessages() {
       }
       
       await api.post(`/messages/${selectedUserId.value}/read`) 
-    } 
+    }
   } catch {} 
 }
-async function sendMessage() { if (!canSend.value || !selectedUserId.value) return; try { const formData = new FormData(); if (newMessage.value.trim()) formData.append('content', newMessage.value.trim()); if (mediaFile.value) { formData.append('media', mediaFile.value); formData.append('mediaType', mediaType.value) }; const res = await api.post(`/messages/${selectedUserId.value}`, formData); messages.value.push(res.data); newMessage.value = ''; clearMedia(); scrollToBottom(); fetchDialogs() } catch (err) { notifications.error(err.message) } }
+
+async function pollPinnedMessage() {
+  if (!selectedUserId.value) return
+  fetchPinnedMessage()
+}
+async function sendMessage() { if (!canSend.value || !selectedUserId.value) return; try { const formData = new FormData(); if (newMessage.value.trim()) formData.append('content', newMessage.value.trim()); if (mediaFile.value) { formData.append('media', mediaFile.value); formData.append('mediaType', mediaType.value) }; if (replyingTo.value) formData.append('replyToId', replyingTo.value.id); const res = await api.post(`/messages/${selectedUserId.value}`, formData); messages.value.push(res.data); newMessage.value = ''; clearMedia(); replyingTo.value = null; scrollToBottom(); fetchDialogs() } catch (err) { notifications.error(err.message) } }
 
 async function unblockUser() {
   if (!chatUser.value) return
@@ -781,8 +977,84 @@ async function unblockUser() {
 
 function openMsgMenu(e, msg) { selectedMsg.value = msg; msgMenuX.value = Math.min(e.clientX, window.innerWidth - 200); msgMenuY.value = Math.min(e.clientY, window.innerHeight - 150); showMsgMenu.value = true }
 function closeMsgMenu() { showMsgMenu.value = false; selectedMsg.value = null }
-function forwardMessage() { showMsgMenu.value = false; showForwardModal.value = true }
-async function doForward(toUserId) { if (!selectedMsg.value) return; try { await api.post('/messages/forward', { messageId: selectedMsg.value.id, toUserId }); showForwardModal.value = false; selectedMsg.value = null } catch (err) { notifications.error(err.message) } }
+
+// Dialog menu functions
+function openDialogMenu(e, dialog) {
+  selectedDialog.value = dialog
+  dialogMenuX.value = Math.min(e.clientX, window.innerWidth - 200)
+  dialogMenuY.value = Math.min(e.clientY, window.innerHeight - 180)
+  showDialogMenu.value = true
+}
+
+function closeDialogMenu() {
+  showDialogMenu.value = false
+  selectedDialog.value = null
+}
+
+async function toggleDialogPin() {
+  if (!selectedDialog.value) return
+  try {
+    const res = await api.post(`/messages/dialogs/${selectedDialog.value.user.id}/pin`)
+    const idx = dialogs.value.findIndex(d => d.user.id === selectedDialog.value.user.id)
+    if (idx !== -1) {
+      dialogs.value[idx].isPinned = res.data.isPinned
+    }
+    fetchDialogs()
+  } catch (err) { notifications.error(err.message) }
+  closeDialogMenu()
+}
+
+async function toggleDialogMute() {
+  if (!selectedDialog.value) return
+  try {
+    const res = await api.post(`/messages/dialogs/${selectedDialog.value.user.id}/mute`)
+    const idx = dialogs.value.findIndex(d => d.user.id === selectedDialog.value.user.id)
+    if (idx !== -1) {
+      dialogs.value[idx].isMuted = res.data.isMuted
+    }
+  } catch (err) { notifications.error(err.message) }
+  closeDialogMenu()
+}
+
+function confirmDeleteDialog() {
+  showDialogMenu.value = false
+  showDeleteDialogModal.value = true
+}
+
+function confirmDeleteDialogForAll() {
+  showDialogMenu.value = false
+  showDeleteDialogForAllModal.value = true
+}
+
+async function deleteDialog(forAll = false) {
+  if (!selectedDialog.value) return
+  try {
+    await api.delete(`/messages/dialogs/${selectedDialog.value.user.id}${forAll ? '?forAll=true' : ''}`)
+    dialogs.value = dialogs.value.filter(d => d.user.id !== selectedDialog.value.user.id)
+    if (selectedUserId.value === selectedDialog.value.user.id) {
+      goBack()
+    }
+    showDeleteDialogModal.value = false
+    showDeleteDialogForAllModal.value = false
+    selectedDialog.value = null
+  } catch (err) { notifications.error(err.message) }
+}
+function forwardMessage() { showMsgMenu.value = false; bulkForwardMode.value = false; showForwardModal.value = true }
+async function doForward(toUserId) { 
+  try { 
+    if (bulkForwardMode.value && selectedMessages.value.length) {
+      for (const msgId of selectedMessages.value) {
+        await api.post('/messages/forward', { messageId: msgId, toUserId })
+      }
+      cancelSelectMode()
+      bulkForwardMode.value = false
+    } else if (selectedMsg.value) {
+      await api.post('/messages/forward', { messageId: selectedMsg.value.id, toUserId })
+      selectedMsg.value = null
+    }
+    showForwardModal.value = false
+  } catch (err) { notifications.error(err.message) } 
+}
 function confirmDeleteForAll() { 
   showMsgMenu.value = false
   if (rememberDeleteForAll.value) { deleteForAll(); return }
@@ -813,7 +1085,143 @@ async function deleteForMe() {
 }
 function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = type; showMediaViewerModal.value = true }
 
-function handleClickOutside(e) { if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu() }
+// Reply functions
+function startReply() {
+  if (!selectedMsg.value) return
+  const msg = selectedMsg.value
+  replyingTo.value = {
+    id: msg.id,
+    content: msg.content,
+    senderId: msg.senderId,
+    senderName: msg.senderId === authStore.user?.id ? 'Вы' : chatUser.value?.name
+  }
+  showMsgMenu.value = false
+  selectedMsg.value = null
+  nextTick(() => msgInput.value?.focus())
+}
+
+function cancelReply() {
+  replyingTo.value = null
+}
+
+// Selection functions
+function startSelectMode() {
+  selectMode.value = true
+  if (selectedMsg.value) {
+    selectedMessages.value = [selectedMsg.value.id]
+  }
+  showMsgMenu.value = false
+  selectedMsg.value = null
+}
+
+function cancelSelectMode() {
+  selectMode.value = false
+  selectedMessages.value = []
+}
+
+function toggleMessageSelection(msgId) {
+  const idx = selectedMessages.value.indexOf(msgId)
+  if (idx === -1) {
+    selectedMessages.value.push(msgId)
+  } else {
+    selectedMessages.value.splice(idx, 1)
+  }
+}
+
+function bulkForward() {
+  if (!selectedMessages.value.length) return
+  bulkForwardMode.value = true
+  showForwardModal.value = true
+}
+
+// Check if all selected messages are own (can delete for all)
+const canBulkDeleteForAll = computed(() => {
+  if (!selectedMessages.value.length) return false
+  return selectedMessages.value.every(msgId => {
+    const msg = messages.value.find(m => m.id === msgId)
+    return msg && msg.senderId === authStore.user?.id
+  })
+})
+
+async function bulkDeleteForAll() {
+  if (!selectedMessages.value.length) return
+  try {
+    for (const msgId of selectedMessages.value) {
+      await api.delete(`/messages/${msgId}?forAll=true`)
+    }
+    messages.value = messages.value.filter(m => !selectedMessages.value.includes(m.id))
+    cancelSelectMode()
+  } catch (err) { notifications.error(err.message) }
+}
+
+async function bulkDeleteForMe() {
+  if (!selectedMessages.value.length) return
+  try {
+    for (const msgId of selectedMessages.value) {
+      await api.delete(`/messages/${msgId}`)
+    }
+    messages.value = messages.value.filter(m => !selectedMessages.value.includes(m.id))
+    cancelSelectMode()
+  } catch (err) { notifications.error(err.message) }
+}
+
+// Pinning functions
+async function fetchPinnedMessage() {
+  if (!selectedUserId.value) return
+  try {
+    const res = await api.get(`/messages/${selectedUserId.value}/pinned`)
+    pinnedMessage.value = res.data
+  } catch { pinnedMessage.value = null }
+}
+
+async function pinMessage() {
+  if (!selectedMsg.value) return
+  const msgId = pinnedMessage.value?.id === selectedMsg.value.id ? null : selectedMsg.value.id
+  try {
+    await api.post(`/messages/${selectedUserId.value}/pin`, { messageId: msgId })
+    if (msgId) {
+      pinnedMessage.value = {
+        ...selectedMsg.value,
+        senderName: selectedMsg.value.senderId === authStore.user?.id ? 'Вы' : chatUser.value?.name
+      }
+    } else {
+      pinnedMessage.value = null
+    }
+    // Refresh messages to get system message
+    const res = await api.get(`/messages/${selectedUserId.value}`)
+    messages.value = res.data
+    scrollToBottom()
+  } catch (err) { notifications.error(err.message) }
+  showMsgMenu.value = false
+  selectedMsg.value = null
+}
+
+async function unpinMessage() {
+  try {
+    await api.post(`/messages/${selectedUserId.value}/pin`, { messageId: null })
+    pinnedMessage.value = null
+  } catch (err) { notifications.error(err.message) }
+}
+
+function scrollToPinned() {
+  if (!pinnedMessage.value) return
+  scrollToMessage(pinnedMessage.value.id)
+}
+
+function scrollToMessage(msgId) {
+  const el = document.getElementById('msg-' + msgId)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('highlight')
+    setTimeout(() => el.classList.remove('highlight'), 2000)
+  }
+}
+
+function handleClickOutside(e) { 
+  if (showMsgMenu.value && !e.target.closest('.msg-menu')) closeMsgMenu()
+  if (showDialogMenu.value && !e.target.closest('.msg-menu')) closeDialogMenu()
+  if (showSystemMsgMenu.value && !e.target.closest('.msg-menu')) closeSystemMsgMenu()
+}
 
 // Socket event handlers
 function onNewMessage(msg) {
@@ -839,13 +1247,20 @@ function onMessageRead(data) {
   }
 }
 
+function onMessagePin(data) {
+  // Refresh pinned message when other user pins/unpins
+  if (selectedUserId.value) {
+    fetchPinnedMessage()
+  }
+}
+
 onMounted(() => { 
   fetchDialogs()
   // Keep polling as fallback for reliability
   pollInterval = setInterval(() => { 
     pollMessages()
     fetchDialogs() 
-  }, 2)
+  }, 500)
   if (route.params.id) selectDialog(route.params.id)
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', handleResize)
@@ -853,6 +1268,7 @@ onMounted(() => {
   // Socket listeners
   on('message:new', onNewMessage)
   on('message:read', onMessageRead)
+  on('message:pin', onMessagePin)
 })
 
 onUnmounted(() => { 
@@ -866,6 +1282,7 @@ onUnmounted(() => {
   // Remove socket listeners
   off('message:new', onNewMessage)
   off('message:read', onMessageRead)
+  off('message:pin', onMessagePin)
 })
 watch(() => route.params.id, id => { if (id) selectDialog(id) })
 </script>
@@ -888,8 +1305,13 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .online-indicator { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; background: #3b82f6; border: 3px solid var(--bg-primary); border-radius: 50%; }
 .dialog-content { flex: 1; min-width: 0; }
 .dialog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.dialog-name { font-weight: 600; font-size: 15px; }
+.dialog-name-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; }
+.dialog-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dialog-name-wrap .muted-icon { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+.dialog-icons { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.dialog-icons .pinned-icon { width: 14px; height: 14px; color: var(--text-muted); }
 .dialog-time { font-size: 12px; color: var(--text-muted); }
+.dialog-item.pinned { background: rgba(255,255,255,0.02); }
 .dialog-bottom { display: flex; align-items: center; gap: 8px; }
 .dialog-preview { flex: 1; font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dialog-preview .you { color: var(--text-muted); }
@@ -910,7 +1332,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .user-info { display: flex; flex-direction: column; }
 .user-name { font-weight: 600; font-size: 16px; }
 .user-status { font-size: 13px; color: var(--text-muted); }
-.chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; background: url('/chat-pattern.svg') repeat; background-size: 400px 400px; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; background: url('/chat-pattern.svg') repeat; background-size: 400px 400px; position: relative; }
 .message { display: flex; gap: 8px; max-width: 70%; animation: messageIn 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes messageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .message.own { align-self: flex-end; flex-direction: row-reverse; }
@@ -929,6 +1351,32 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .forwarded-name { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500; }
 .date-separator { display: flex; justify-content: center; padding: 16px 0; }
 .date-separator span { font-size: 13px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 12px; }
+.system-message { display: flex; justify-content: center; padding: 8px 0; }
+.system-message.clickable { cursor: pointer; }
+.system-message-content.glass-pill { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  font-size: 13px; 
+  color: var(--text-secondary); 
+  background: rgba(255, 255, 255, 0.08); 
+  backdrop-filter: blur(20px); 
+  -webkit-backdrop-filter: blur(20px); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  padding: 6px 14px; 
+  border-radius: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.system-message.clickable .glass-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: scale(1.02);
+}
+.system-message.clickable .glass-pill:active {
+  transform: scale(0.98);
+}
+.system-icon { width: 14px; height: 14px; flex-shrink: 0; }
 .floating-date { position: sticky; top: 12px; z-index: 10; display: flex; justify-content: center; pointer-events: none; margin-bottom: -40px; }
 .floating-date span { font-size: 13px; color: var(--text-muted); background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 4px 12px; border-radius: 12px; }
 .floating-date-enter-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -997,6 +1445,69 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .recording-dot { width: 12px; height: 12px; background: #ff4444; border-radius: 50%; animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .cancel-rec { margin-left: auto; color: var(--text-muted); font-size: 14px; }
+
+/* Select mode header */
+.select-mode-header { display: flex; align-items: center; gap: 12px; flex: 1; }
+.select-cancel-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); transition: all 0.2s ease; }
+.select-cancel-btn:hover { background: rgba(255,255,255,0.04); }
+.select-cancel-btn svg { width: 20px; height: 20px; }
+.select-count { font-size: 16px; font-weight: 500; flex: 1; }
+.select-actions { display: flex; gap: 8px; }
+.select-action-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); transition: all 0.2s ease; }
+.select-action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+.select-action-btn:disabled { opacity: 0.3; }
+.select-action-btn svg { width: 20px; height: 20px; }
+.select-action-btn.danger { color: #ff6666; }
+.select-action-btn.danger:hover:not(:disabled) { background: rgba(255, 100, 100, 0.1); color: #ff5555; }
+
+/* Pinned message banner */
+.pinned-banner { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: rgba(255, 255, 255, 0.04); border-bottom: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer; transition: background 0.2s ease; }
+.pinned-banner:hover { background: rgba(255, 255, 255, 0.06); }
+.pinned-banner .pin-icon { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
+.pinned-content { flex: 1; min-width: 0; }
+.pinned-label { display: block; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+.pinned-text { display: block; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unpin-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius); transition: all 0.2s ease; }
+.unpin-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.unpin-btn svg { width: 16px; height: 16px; }
+
+/* Message checkbox for selection */
+.message-checkbox { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; cursor: pointer; }
+.checkbox-inner { width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+.checkbox-inner.checked { background: white; border-color: white; }
+.checkbox-inner svg { width: 14px; height: 14px; color: #1a1a1a; }
+.message.selected .message-bubble { background: rgba(120, 90, 200, 0.5) !important; }
+.message.selected .voice-message-wrap { background: rgba(120, 90, 200, 0.5) !important; }
+.message.selected .circle-video-wrap { background: rgba(120, 90, 200, 0.5) !important; }
+
+/* Reply in message */
+.reply-in-message { display: flex; flex-direction: column; padding: 6px 10px; margin-bottom: 6px; background: rgba(255,255,255,0.1); border-left: 3px solid rgba(255, 255, 255, 0.5); border-radius: 4px; cursor: pointer; transition: background 0.2s ease; }
+.reply-in-message:hover { background: rgba(255,255,255,0.15); }
+.reply-sender { font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.8); }
+.reply-text { font-size: 13px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+/* Reply preview above input */
+.reply-preview { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: rgba(255, 255, 255, 0.06); border-left: 3px solid rgba(255, 255, 255, 0.4); margin: 0 12px; border-radius: 8px; }
+.reply-preview-content { flex: 1; min-width: 0; }
+.reply-preview-name { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.reply-preview-text { display: block; font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-cancel { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius); transition: all 0.2s ease; flex-shrink: 0; }
+.reply-cancel:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.reply-cancel svg { width: 16px; height: 16px; }
+
+/* Message highlight animation */
+.message.highlight .message-bubble,
+.message.highlight .voice-message-wrap,
+.message.highlight .circle-video-wrap { animation: highlightPulse 2s ease; }
+@keyframes highlightPulse { 0%, 100% { box-shadow: none; } 25%, 75% { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5); } }
+
+/* Message list transitions */
+.messages-wrapper { display: flex; flex-direction: column; gap: 6px; }
+.message-list-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.message-list-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.message-list-enter-from { opacity: 0; transform: translateY(20px); }
+.message-list-leave-to { opacity: 0; transform: scale(0.9); }
+.message-list-move { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
 .voice-rec-left { display: flex; align-items: center; gap: 10px; }
 .voice-rec-dot { width: 10px; height: 10px; background: #ff4466; border-radius: 50%; animation: pulse 1s infinite; }
