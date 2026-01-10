@@ -36,5 +36,12 @@ export const useNotificationsStore = defineStore('notifications', () => {
     })
   }
 
-  return { items, add, remove, success, error, friendRequest }
+  function friendAccepted(user) {
+    add(`${user.name} принял(а) вашу заявку в друзья`, 'friend', { 
+      avatar: user.avatar, 
+      name: user.name 
+    })
+  }
+
+  return { items, add, remove, success, error, friendRequest, friendAccepted }
 })

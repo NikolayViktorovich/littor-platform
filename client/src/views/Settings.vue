@@ -110,6 +110,13 @@
 
               <template v-else-if="activeSection === 'privacy'">
                 <div class="settings-group">
+                  <div class="toggle-item">
+                    <div class="toggle-item-text">
+                      <span>{{ t('privateProfile') }}</span>
+                      <span class="toggle-hint">{{ t('privateProfileDesc') }}</span>
+                    </div>
+                    <label class="toggle"><input type="checkbox" v-model="settings.isPrivate"><span class="toggle-slider"></span></label>
+                  </div>
                   <div class="custom-select-item" @click="toggleDropdown('lastSeen', $event)">
                     <span>{{ t('whoSeesLastSeen') }}</span>
                     <div class="custom-select-value">
@@ -284,6 +291,7 @@ const settings = reactive({
   lastSeenVisibility: 'everyone',
   whoCanMessage: 'everyone',
   profileVisibility: 'everyone',
+  isPrivate: false,
   theme: 'dark',
   animationsEnabled: true,
   language: 'ru'
@@ -444,6 +452,10 @@ onUnmounted(() => {
 .settings-group { background: var(--glass-bg); border-radius: var(--radius-lg); padding: 4px; margin-bottom: 16px; }
 .toggle-item, .select-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; gap: 12px; }
 .toggle-item span, .select-item span { font-size: 15px; color: var(--text-primary); }
+.toggle-item-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.toggle-item-text span:first-child { font-size: 15px; color: var(--text-primary); }
+.toggle-hint { font-size: 13px; color: var(--text-muted); opacity: 0.7; }
+.settings-group .toggle-item + .custom-select-item { border-top: 1px solid var(--glass-border); }
 .custom-select-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; gap: 12px; cursor: pointer; position: relative; transition: background 0.1s; border-radius: var(--radius); }
 .custom-select-item:hover { background: var(--glass-bg-hover); }
 .custom-select-item > span { font-size: 15px; color: var(--text-primary); }

@@ -84,7 +84,6 @@ onUnmounted(() => {
   min-height: 100vh;
 }
 
-/* Page transitions */
 .page-enter-active,
 .page-leave-active {
   transition: opacity 0.1s cubic-bezier(0.2, 0, 0, 1), transform 0.1s cubic-bezier(0.2, 0, 0, 1);
@@ -108,6 +107,17 @@ onUnmounted(() => {
   
   .app.has-audio-player .main-content {
     padding-top: 64px;
+  }
+  
+  .app .sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 56px !important;
+    z-index: 99999 !important;
   }
 }
 

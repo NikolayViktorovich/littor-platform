@@ -867,13 +867,15 @@ function onChatScroll() {
     }
   }
   
-  if (visibleDate) {
+  clearTimeout(floatingDateHideTimeout)
+  
+  if (visibleDate && visibleDate !== floatingDateText.value) {
     floatingDateText.value = visibleDate
-    showFloatingDate.value = true
   }
   
-  clearTimeout(floatingDateHideTimeout)
-  lastScrollTime = Date.now()
+  if (visibleDate) {
+    showFloatingDate.value = true
+  }
   
   floatingDateHideTimeout = setTimeout(() => {
     showFloatingDate.value = false
@@ -1451,6 +1453,8 @@ function cancelRecording() {
 async function fetchDialogs() { try { const res = await api.get('/messages/dialogs'); dialogs.value = res.data } catch (err) { console.log('Failed to fetch dialogs:', err) } finally { loading.value = false } }
 async function selectDialog(userId) { 
   saveScrollPosition()
+  dialogsSearchMode.value = false
+  dialogsSearchQuery.value = ''
   selectedUserId.value = userId
   currentChatUserId.value = userId
   chatLoading.value = true
@@ -1459,6 +1463,8 @@ async function selectDialog(userId) {
   selectMode.value = false
   selectedMessages.value = []
   pinnedMessage.value = null
+  chatSearchMode.value = false
+  chatSearchQuery.value = ''
   try { 
     const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)])
     chatUser.value = userRes.data
@@ -1918,8 +1924,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .dialogs-panel, .chat-panel, .chat-empty { display: flex; flex-direction: column; overflow: hidden; }
 .dialogs-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; }
 .dialogs-header h1 { font-size: 20px; font-weight: 600; }
-.dialogs-search-wrap { flex: 1; animation: searchExpand 0.15s cubic-bezier(0.2, 0, 0, 1); }
-@keyframes searchExpand { from { opacity: 0; transform: scaleX(0.95); } to { opacity: 1; transform: scaleX(1); } }
+.dialogs-search-wrap { flex: 1; }
 .dialogs-search-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-full); font-size: 15px; color: var(--text-primary); transition: all 0.1s ease; }
 .dialogs-search-input:focus { background: rgba(255,255,255,0.05); outline: none; }
 .dialogs-search-input::placeholder { color: var(--text-muted); }
@@ -1963,7 +1968,8 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .back-btn:active { transform: scale(0.9); }
 .back-btn svg { width: 20px; height: 20px; }
 .chat-user { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
-.chat-user .avatar { width: 40px; height: 40px; }
+.chat-user .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.chat-avatar-wrap { display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
 .user-info { display: flex; flex-direction: column; }
 .user-name { font-weight: 600; font-size: 15px; }
 .user-status { font-size: 13px; color: var(--text-muted); }
@@ -1971,8 +1977,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .chat-search-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
 .chat-search-btn:active { transform: scale(0.9); }
 .chat-search-btn svg { width: 20px; height: 20px; }
-.chat-search-header { display: flex; align-items: center; gap: 12px; flex: 1; animation: chatSearchExpand 0.15s cubic-bezier(0.2, 0, 0, 1); }
-@keyframes chatSearchExpand { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+.chat-search-header { display: flex; align-items: center; gap: 12px; flex: 1; }
 .chat-search-input { flex: 1; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-full); font-size: 15px; color: var(--text-primary); transition: all 0.1s ease; }
 .chat-search-input:focus { background: rgba(255,255,255,0.05); outline: none; }
 .chat-search-input::placeholder { color: var(--text-muted); }
@@ -2378,15 +2383,15 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 
-.chat-slide-enter-active { transition: opacity 0.2s ease; }
-.chat-slide-leave-active { transition: opacity 0.15s ease; }
+.chat-slide-enter-active { transition: opacity 0.1s ease; }
+.chat-slide-leave-active { transition: opacity 0.08s ease; }
 .chat-slide-enter-from { opacity: 0; }
 .chat-slide-leave-to { opacity: 0; }
 
-.dialogs-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.dialogs-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.dialogs-enter-from { opacity: 0; transform: translateX(-30px); }
-.dialogs-leave-to { opacity: 0; transform: translateX(-30px); }
+.dialogs-enter-active { transition: opacity 0.1s ease; }
+.dialogs-leave-active { transition: opacity 0.08s ease; }
+.dialogs-enter-from { opacity: 0; }
+.dialogs-leave-to { opacity: 0; }
 
 .circle-overlay-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .circle-overlay-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -2570,7 +2575,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .read-check {
-    color: #3b82f6;
+    color: var(--text-muted);
     width: 16px;
     height: 16px;
   }
@@ -2641,8 +2646,16 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .chat-user .avatar {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .chat-avatar-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .chat-avatar-wrap .online-indicator {
@@ -2712,7 +2725,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   .chat-input {
     padding: 8px 10px;
     margin: 8px;
-    margin-bottom: calc(8px + env(safe-area-inset-bottom));
+    margin-bottom: calc(64px + env(safe-area-inset-bottom));
     gap: 6px;
     background: transparent;
     border: none;
@@ -2809,6 +2822,26 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   .voice-duration,
   .voice-msg-time {
     font-size: 10px;
+  }
+  
+  .voice-recording-bar {
+    margin-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  
+  .reply-preview {
+    margin-bottom: 0;
+  }
+  
+  .msg-media-previews {
+    margin-bottom: 0;
+  }
+  
+  .msg-music-preview {
+    margin-bottom: 0;
+  }
+  
+  .chat-blocked {
+    margin-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 }
 
@@ -3216,6 +3249,67 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   background: rgba(0, 0, 0, 0.06);
 }
 
+[data-theme="light"] .pinned-banner {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .pinned-label {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .pinned-text {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .voice-duration {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .message:not(.own) .voice-duration {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .circle-timer {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .file-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .file-size {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .audio-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .audio-meta {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .reply-preview-name {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .reply-preview-text {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .reply-sender {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .reply-text {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .message:not(.own) .message-bubble p {
+  color: var(--text-primary);
+}
+
 [data-theme="light"] .select-mode-header {
   background: rgba(0, 0, 0, 0.04);
 }
@@ -3275,6 +3369,56 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 [data-theme="light"] .dialogs-search-input {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.08);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .dialogs-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .dialogs-header {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .dialogs-header h1 {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .dialog-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .dialog-preview {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .dialog-time {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .user-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .user-status {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .chat-empty h3 {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .chat-empty p {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .chat-search-input {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .chat-search-input::placeholder {
+  color: var(--text-muted);
 }
 
 [data-theme="light"] .back-btn:hover {

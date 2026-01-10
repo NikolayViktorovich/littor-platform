@@ -118,14 +118,35 @@ router.get('/:id', authMiddleware, (req, res) => {
   }
 
   const profileVisibility = userSettings.profileVisibility || 'everyone'
-  if (req.userId !== req.params.id && profileVisibility === 'contacts' && !isFriend) {
-    return res.json({
-      id: user.id,
-      name: user.name,
-      avatar: user.avatar,
-      friendStatus,
-      isPrivate: true
-    })
+  const isPrivate = userSettings.isPrivate || false
+  
+  if (req.userId !== req.params.id) {
+    if (profileVisibility === 'contacts' && !isFriend) {
+      return res.json({
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+        friendStatus,
+        isPrivate: true
+      })
+    }
+    if (isPrivate && !isFriend) {
+      return res.json({
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        avatar: user.avatar,
+        bio: user.bio,
+        cover: user.cover,
+        lastSeen,
+        friendsCount: user.friendsCount,
+        postsCount: user.postsCount,
+        friendStatus,
+        isOnline: lastSeen && (Date.now() - new Date(lastSeen).getTime()) < 300000,
+        iBlockedUser: !!iBlockedUser,
+        isPrivate: true
+      })
+    }
   }
 
   const isOnline = lastSeen && (Date.now() - new Date(lastSeen).getTime()) < 300000
@@ -147,6 +168,29 @@ router.get('/:id', authMiddleware, (req, res) => {
 })
 
 router.get('/:id/posts', authMiddleware, (req, res) => {
+  // Check if profile is private
+  if (req.userId !== req.params.id) {
+    const targetUser = db.prepare('SELECT settings FROM users WHERE id = ?').get(req.params.id)
+    let userSettings = {}
+    try {
+      if (targetUser?.settings) userSettings = JSON.parse(targetUser.settings)
+    } catch {}
+    
+    const isPrivate = userSettings.isPrivate || false
+    const profileVisibility = userSettings.profileVisibility || 'everyone'
+    
+    if (isPrivate || profileVisibility === 'contacts') {
+      const friendship = db.prepare(`
+        SELECT * FROM friendships 
+        WHERE ((userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)) AND status = 'accepted'
+      `).get(req.userId, req.params.id, req.params.id, req.userId)
+      
+      if (!friendship) {
+        return res.json([])
+      }
+    }
+  }
+
   const posts = db.prepare(`
     SELECT p.*, u.name as authorName, u.avatar as authorAvatar,
       (SELECT COUNT(*) FROM likes WHERE postId = p.id) as likesCount,
@@ -246,6 +290,24 @@ router.post('/heartbeat', authMiddleware, (req, res) => {
 })
 
 router.get('/:id/photos', authMiddleware, (req, res) => {
+  // Check if profile is private
+  if (req.userId !== req.params.id) {
+    const targetUser = db.prepare('SELECT settings FROM users WHERE id = ?').get(req.params.id)
+    let userSettings = {}
+    try {
+      if (targetUser?.settings) userSettings = JSON.parse(targetUser.settings)
+    } catch {}
+    
+    if (userSettings.isPrivate || userSettings.profileVisibility === 'contacts') {
+      const friendship = db.prepare(`
+        SELECT * FROM friendships 
+        WHERE ((userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)) AND status = 'accepted'
+      `).get(req.userId, req.params.id, req.params.id, req.userId)
+      
+      if (!friendship) return res.json([])
+    }
+  }
+
   const photos = db.prepare(`
     SELECT id, image, createdAt FROM posts 
     WHERE authorId = ? AND image IS NOT NULL 
@@ -256,6 +318,24 @@ router.get('/:id/photos', authMiddleware, (req, res) => {
 })
 
 router.get('/:id/videos', authMiddleware, (req, res) => {
+  // Check if profile is private
+  if (req.userId !== req.params.id) {
+    const targetUser = db.prepare('SELECT settings FROM users WHERE id = ?').get(req.params.id)
+    let userSettings = {}
+    try {
+      if (targetUser?.settings) userSettings = JSON.parse(targetUser.settings)
+    } catch {}
+    
+    if (userSettings.isPrivate || userSettings.profileVisibility === 'contacts') {
+      const friendship = db.prepare(`
+        SELECT * FROM friendships 
+        WHERE ((userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)) AND status = 'accepted'
+      `).get(req.userId, req.params.id, req.params.id, req.userId)
+      
+      if (!friendship) return res.json([])
+    }
+  }
+
   const videos = db.prepare(`
     SELECT id, image as video, createdAt FROM posts 
     WHERE authorId = ? AND image IS NOT NULL 

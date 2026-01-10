@@ -1046,12 +1046,10 @@ const vClickOutside = {
   height: 300px;
 }
 
-/* Post GIF */
 .post-gif {
   cursor: default;
 }
 
-/* Post Audio - compact style */
 .post-audio-wrap {
   display: flex;
   align-items: center;
@@ -1190,7 +1188,6 @@ const vClickOutside = {
   text-overflow: ellipsis;
 }
 
-/* Post File */
 .post-file-wrap {
   display: flex;
   align-items: center;
@@ -1564,7 +1561,6 @@ const vClickOutside = {
   height: 18px;
 }
 
-/* Smooth morph animations */
 @keyframes morph-in {
   0% {
     transform: scale(0.6);
@@ -1606,7 +1602,6 @@ const vClickOutside = {
   }
 }
 
-/* Media Gallery Styles */
 .post-media-gallery {
   display: grid;
   gap: 4px;
@@ -1693,7 +1688,6 @@ const vClickOutside = {
   color: white;
 }
 
-/* Post files list */
 .post-files-list {
   display: flex;
   flex-direction: column;

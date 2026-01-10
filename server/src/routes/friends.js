@@ -66,6 +66,14 @@ router.post('/accept/:id', authMiddleware, (req, res) => {
       WHERE userId = ? AND friendId = ? AND status = 'pending'
     `).run(req.params.id, req.userId)
 
+    // Create notification for the user whose request was accepted
+    const accepter = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId)
+    const notificationId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+    db.prepare(`
+      INSERT INTO notifications (id, userId, type, fromUserId, content, createdAt)
+      VALUES (?, ?, 'friend_accepted', ?, ?, datetime('now'))
+    `).run(notificationId, req.params.id, req.userId, `${accepter.name} принял(а) вашу заявку в друзья`)
+
     res.json({ success: true })
   } catch (err) {
     console.error('Error accepting friend:', err)

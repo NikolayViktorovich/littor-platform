@@ -1,5 +1,15 @@
 <template>
   <div class="feed-page">
+    <header class="feed-top-header">
+      <div class="feed-top-header-inner">
+        <div class="feed-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8a4 4 0 104 4"/>
+          </svg>
+        </div>
+        <h1>{{ t('feed') }}</h1>
+      </div>
+    </header>
     <div class="feed-content">
       <CreatePost @created="onPostCreated" />
       
@@ -200,7 +210,48 @@ onUnmounted(() => {
 .feed-page {
   min-height: 100vh;
   padding: 20px;
+  padding-top: 64px;
   padding-left: calc(var(--sidebar-width) + 20px);
+}
+
+.feed-top-header {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: 56px;
+  background: var(--bg-primary);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feed-top-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 600px;
+  width: 100%;
+  padding: 0 20px;
+}
+
+.feed-logo {
+  width: 32px;
+  height: 32px;
+  color: var(--text-primary);
+  display: none;
+}
+
+.feed-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.feed-top-header h1 {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .feed-content {
@@ -305,6 +356,29 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .feed-page {
     padding-left: 20px;
+    padding-top: 64px;
+  }
+  
+  .feed-top-header {
+    left: 0;
+    height: 52px;
+    background: rgba(16, 16, 16, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  
+  .feed-top-header-inner {
+    justify-content: center;
+    padding-top: 0;
+  }
+  
+  .feed-logo {
+    display: block;
+  }
+  
+  .feed-top-header h1 {
+    font-size: 16px;
   }
 }
 
@@ -345,5 +419,16 @@ onUnmounted(() => {
 [data-theme="light"] .spinner {
   border-color: rgba(0, 0, 0, 0.1);
   border-top-color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .feed-top-header h1 {
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  [data-theme="light"] .feed-top-header {
+    background: rgba(255, 255, 255, 0.85);
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+  }
 }
 </style>

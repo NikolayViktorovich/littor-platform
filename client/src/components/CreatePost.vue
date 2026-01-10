@@ -309,7 +309,6 @@ async function submit() {
   overflow-y: auto;
 }
 
-/* Media previews grid */
 .media-previews {
   display: flex;
   flex-wrap: wrap;
@@ -410,7 +409,6 @@ async function submit() {
   bottom: 8px;
 }
 
-/* Attachment buttons */
 .attach-buttons {
   display: flex;
   gap: 8px;

@@ -35,8 +35,6 @@
         </Transition>
       </div>
 
-      <div class="nav-divider"></div>
-
       <nav class="nav">
         <router-link to="/" class="nav-item" :class="{ active: $route.name === 'feed', pressed: pressedItem === 'feed' }" @click="handlePress('feed')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"/></svg>
@@ -95,6 +93,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useNotificationsStore } from '../stores/notifications'
 import { useSocket } from '../socket'
 import { useI18n } from '../i18n'
 import api from '../api'
@@ -103,11 +102,13 @@ const { t } = useI18n()
 const emit = defineEmits(['create'])
 const router = useRouter()
 const authStore = useAuthStore()
+const notificationsStore = useNotificationsStore()
 const { on, off } = useSocket()
 
 const counts = reactive({ messages: 0, friends: 0 })
 const prevCounts = reactive({ messages: 0, friends: 0 })
 const notificationsList = ref([])
+const shownFriendAcceptedIds = ref(new Set())
 const showMenu = ref(false)
 const showNotifications = ref(false)
 const pressedItem = ref(null)
@@ -156,7 +157,7 @@ async function fetchCounts() {
 async function fetchNotifications() {
   try {
     const res = await api.get('/notifications')
-    const serverNotifs = res.data.filter(n => !n.isRead && (n.type === 'mention' || n.type === 'post_mention')).map(n => ({
+    const serverNotifs = res.data.filter(n => !n.isRead && (n.type === 'mention' || n.type === 'post_mention' || n.type === 'friend_accepted')).map(n => ({
       id: n.id,
       type: n.type,
       text: n.content,
@@ -167,6 +168,14 @@ async function fetchNotifications() {
       postId: n.postId,
       createdAt: n.createdAt
     }))
+    
+    // Show toast for new friend_accepted notifications
+    serverNotifs.forEach(n => {
+      if (n.type === 'friend_accepted' && !shownFriendAcceptedIds.value.has(n.id)) {
+        shownFriendAcceptedIds.value.add(n.id)
+        notificationsStore.friendAccepted({ name: n.text.split(' принял')[0], avatar: n.avatar })
+      }
+    })
     
     const localNotifs = notificationsList.value.filter(n => n.type === 'friend_request')
     notificationsList.value = [...serverNotifs, ...localNotifs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -184,9 +193,11 @@ function handleNotifClick(notif) {
     router.push(`/messages/${notif.fromUserId}?msg=${notif.messageId}`)
   } else if (notif.type === 'post_mention') {
     router.push(`/?post=${notif.postId}`)
+  } else if (notif.type === 'friend_accepted') {
+    router.push(`/profile/${notif.fromUserId}`)
   }
   
-  if (notif.type === 'mention' || notif.type === 'post_mention') {
+  if (notif.type === 'mention' || notif.type === 'post_mention' || notif.type === 'friend_accepted') {
     api.post(`/notifications/${notif.id}/read`).catch(() => {})
   }
   
@@ -247,10 +258,10 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
-.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 72px; z-index: 100; padding: 12px; }
+<style>
+.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 72px; z-index: 100; padding: 8px 12px 12px 12px; }
 .sidebar-inner { height: 100%; display: flex; flex-direction: column; align-items: center; background: transparent; }
-.sidebar-top { padding: 20px 0 16px; }
+.sidebar-top { padding: 6px 0 16px; }
 .logo { width: 36px; height: 36px; color: var(--text-primary); }
 .logo svg { width: 100%; height: 100%; }
 
@@ -268,7 +279,7 @@ onUnmounted(() => {
 .notif-content p { font-size: 14px; margin-bottom: 4px; }
 .notif-time { font-size: 12px; color: var(--text-muted); }
 
-.nav-divider { width: 32px; height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0; }
+.nav-divider { display: none; }
 
 .nav { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin-top: -40px; }
 .nav-item { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius-lg); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); position: relative; }
@@ -297,17 +308,19 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .sidebar {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 56px;
+    position: fixed !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 56px !important;
     padding: 0;
     background: rgba(14, 14, 14, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 9999 !important;
   }
   
   .sidebar-inner {
@@ -359,10 +372,6 @@ onUnmounted(() => {
   
   .desktop-only { display: none; }
   .mobile-only { display: flex; }
-}
-
-[data-theme="light"] .nav-divider {
-  background: rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="light"] .nav-item.create-btn {

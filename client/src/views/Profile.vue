@@ -86,7 +86,20 @@
       <span>{{ t('userRestrictedAccess') }}</span>
     </div>
 
-    <div class="profile-content" v-if="user && !user.blockedByUser">
+    <div v-else-if="user?.isPrivate && !isOwner" class="private-account-notice glass">
+      <div class="private-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div class="private-text">
+        <p>{{ t('privateAccount') }}</p>
+        <span>{{ t('privateAccountDesc') }}</span>
+      </div>
+    </div>
+
+    <div class="profile-content" v-if="user && !user.blockedByUser && !user.isPrivate">
       <div class="tabs-container">
         <button class="tab-nav-btn prev" @click="scrollTabsLeft">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -432,6 +445,9 @@ async function pollFriendStatus() {
   try {
     const res = await api.get(`/users/${id}`)
     if (user.value) {
+      const wasPrivate = user.value.isPrivate
+      const wasFriend = user.value.friendStatus === 'friends'
+      
       user.value.friendStatus = res.data.friendStatus
       user.value.iBlockedUser = res.data.iBlockedUser
       user.value.blockedByUser = res.data.blockedByUser
@@ -444,6 +460,13 @@ async function pollFriendStatus() {
       user.value.name = res.data.name
       user.value.friendsCount = res.data.friendsCount
       user.value.postsCount = res.data.postsCount
+      user.value.isPrivate = res.data.isPrivate
+      
+      // If became friends and profile was private, reload posts
+      if (!wasFriend && res.data.friendStatus === 'friends' && wasPrivate) {
+        const postsRes = await api.get(`/users/${id}/posts`)
+        posts.value = postsRes.data
+      }
     }
   } catch {}
 }
@@ -839,8 +862,6 @@ onUnmounted(() => {
 .media-item:hover img, .media-item:hover video { transform: scale(1.05); }
 .video-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
 .play-icon svg { width: 40px; height: 40px; color: white; }
-
-/* Audio list */
 .audio-list { display: flex; flex-direction: column; gap: 4px; }
 .audio-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); cursor: pointer; transition: background 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .audio-list-item:hover { background: rgba(255, 255, 255, 0.06); }
@@ -871,8 +892,6 @@ onUnmounted(() => {
 .audio-group { }
 .audio-group .group-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
 .audio-group .group-title .count { color: var(--text-secondary); }
-
-/* Files list */
 .files-list { display: flex; flex-direction: column; gap: 4px; }
 .file-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); text-decoration: none; color: inherit; transition: background 0.2s ease; }
 .file-list-item:hover { background: rgba(255, 255, 255, 0.06); }
@@ -889,6 +908,12 @@ onUnmounted(() => {
 .blocked-message svg { width: 48px; height: 48px; color: var(--text-muted); opacity: 0.5; }
 .blocked-message p { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
 .blocked-message span { font-size: 14px; color: var(--text-muted); }
+.private-account-notice { max-width: 600px; margin: 20px auto; padding: 20px 24px; display: flex; align-items: center; gap: 16px; border-radius: var(--radius-xl); }
+.private-icon { width: 48px; height: 48px; background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.private-icon svg { width: 24px; height: 24px; color: var(--text-muted); }
+.private-text { display: flex; flex-direction: column; gap: 2px; }
+.private-text p { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.private-text span { font-size: 14px; color: var(--text-muted); opacity: 0.8; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal { width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; }

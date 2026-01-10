@@ -1,7 +1,7 @@
 <template>
   <div class="friends-page">
     <div class="friends-container">
-      <div class="friends-header glass">
+      <div class="friends-header">
         <div class="header-top">
           <h1>{{ t('friends') }}</h1>
           <button class="add-btn" :class="{ active: showSearch }" @click="showSearch = !showSearch">
@@ -306,13 +306,18 @@ onUnmounted(() => {
 }
 
 .friends-header {
-  padding: 20px 24px;
-  margin-bottom: 20px;
+  padding: 12px 24px;
+  margin-bottom: 12px;
   overflow: visible;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  text-align: center;
 }
 
 .friends-header h1 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
 }
 

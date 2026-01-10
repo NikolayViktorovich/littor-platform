@@ -306,7 +306,11 @@ const translations = {
     noCameraAccess: 'Нет доступа к камере',
     couldNotSwitchCamera: 'Не удалось переключить камеру',
     couldNotPlayTrack: 'Не удалось воспроизвести трек',
-    userUnblocked: 'Пользователь разблокирован'
+    userUnblocked: 'Пользователь разблокирован',
+    privateProfile: 'Закрытый профиль',
+    privateProfileDesc: 'Только друзья видят ваши записи и фото',
+    privateAccount: 'Закрытый аккаунт',
+    privateAccountDesc: 'Добавьте в друзья, чтобы видеть записи и фото'
   },
   en: {
     settings: 'Settings',
@@ -613,7 +617,11 @@ const translations = {
     noCameraAccess: 'No camera access',
     couldNotSwitchCamera: 'Could not switch camera',
     couldNotPlayTrack: 'Could not play track',
-    userUnblocked: 'User unblocked'
+    userUnblocked: 'User unblocked',
+    privateProfile: 'Private profile',
+    privateProfileDesc: 'Only friends can see your posts and photos',
+    privateAccount: 'Private account',
+    privateAccountDesc: 'Add as friend to see posts and photos'
   }
 }
 
