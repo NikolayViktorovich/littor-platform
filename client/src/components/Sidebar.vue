@@ -348,13 +348,13 @@ onUnmounted(() => {
   }
   
   .nav-item {
-    width: 44px;
-    height: 44px;
+    width: 52px !important;
+    height: 44px !important;
   }
   
   .nav-item svg {
-    width: 20px;
-    height: 20px;
+    width: 24px !important;
+    height: 24px !important;
   }
   
   .nav-badge {

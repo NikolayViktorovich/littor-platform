@@ -3278,6 +3278,79 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   color: var(--text-primary);
 }
 
+@media (max-width: 480px) {
+  .dialog-item {
+    padding: 8px 10px;
+    gap: 12px;
+  }
+  
+  .dialog-avatar-wrap .avatar {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .dialog-name {
+    font-size: 15px;
+  }
+  
+  .dialog-preview {
+    font-size: 13px;
+  }
+  
+  .dialog-time {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .dialog-item {
+    padding: 6px 8px;
+    gap: 10px;
+  }
+  
+  .dialog-avatar-wrap .avatar {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .dialog-name {
+    font-size: 14px;
+  }
+  
+  .dialog-preview {
+    font-size: 12px;
+  }
+  
+  .dialog-time {
+    font-size: 11px;
+  }
+  
+  .online-indicator {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 320px) {
+  .dialog-item {
+    padding: 5px 6px;
+    gap: 8px;
+  }
+  
+  .dialog-avatar-wrap .avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .dialog-name {
+    font-size: 13px;
+  }
+  
+  .dialog-preview {
+    font-size: 11px;
+  }
+}
+
 [data-theme="light"] .file-size {
   color: var(--text-muted);
 }

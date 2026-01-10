@@ -480,10 +480,17 @@ onUnmounted(() => {
   border-radius: var(--radius-full);
   padding: 4px;
   gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.liquid-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .liquid-tab {
-  padding: 10px 20px;
+  padding: 10px 16px;
   color: var(--text-muted);
   font-size: 14px;
   font-weight: 500;
@@ -494,6 +501,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex: 1;
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .liquid-tab:hover {
@@ -626,6 +635,22 @@ onUnmounted(() => {
     padding-left: 20px;
   }
   
+  .liquid-tabs {
+    flex-wrap: nowrap;
+  }
+  
+  .liquid-tab {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .tab-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+    margin-left: 6px;
+  }
+  
   .friend-item {
     flex-direction: column;
     align-items: flex-start;
@@ -643,6 +668,21 @@ onUnmounted(() => {
   .search-dropdown {
     width: 280px;
     right: -60px;
+  }
+}
+
+@media (max-width: 380px) {
+  .liquid-tab {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .tab-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 10px;
+    margin-left: 4px;
+    padding: 0 4px;
   }
 }
 
