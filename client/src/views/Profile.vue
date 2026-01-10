@@ -59,7 +59,7 @@
             <router-link v-if="!user.iBlockedUser" :to="`/messages/${user.id}`" class="btn btn-secondary">{{ t('write') }}</router-link>
             <div class="profile-more-wrap">
               <button @click="toggleProfileMenu" class="btn btn-secondary btn-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
               </button>
               <Transition name="profile-menu">
                 <div v-if="showProfileMenu" class="profile-menu-dropdown" @click.stop>
@@ -123,12 +123,12 @@
 
       <div v-if="activeTab === 'posts'" class="profile-posts">
         <CreatePost v-if="isOwner" @created="addPost" />
-        <PostCard v-for="post in posts" :key="post.id" :post="post" @delete="deletePost" @update="updatePost" @open-media="openMedia"/>
+        <PostCard v-for="post in posts" :key="post.id" :post="post" @delete="deletePost" @update="updatePost"/>
         <div v-if="!posts.length" class="empty-state glass"><p>{{ t('noPosts2') }}</p></div>
       </div>
 
       <div v-else-if="activeTab === 'archive'" class="profile-posts">
-        <PostCard v-for="post in archivedPosts" :key="post.id" :post="post" @delete="deleteArchivedPost" @update="updateArchivedPost" @open-media="openMedia"/>
+        <PostCard v-for="post in archivedPosts" :key="post.id" :post="post" @delete="deleteArchivedPost" @update="updateArchivedPost"/>
         <div v-if="!archivedPosts.length" class="empty-state glass"><p>{{ t('archiveEmpty') }}</p></div>
       </div>
 
@@ -769,8 +769,9 @@ onUnmounted(() => {
 .profile-actions { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
 .mobile-settings-btn { display: none; }
 .btn-icon { width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; }
-.btn-icon svg { width: 20px; height: 20px; }
+.btn-icon svg { width: 22px; height: 22px; }
 .profile-more-wrap { position: relative; }
+.profile-more-wrap .btn-icon svg { width: 24px; height: 24px; }
 .profile-menu-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -821,7 +822,7 @@ onUnmounted(() => {
 .tab-nav-btn svg { width: 16px; height: 16px; }
 .liquid-tabs { flex: 1; justify-content: center; display: flex; position: relative; background: var(--glass-bg); border-radius: var(--radius-full); padding: 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; gap: 4px; }
 .liquid-tabs::-webkit-scrollbar { display: none; }
-.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 14px; border-radius: var(--radius-full); transition: color 0.15s cubic-bezier(0.2, 0, 0, 1); position: relative; flex: 1; text-align: center; font-weight: 500; }
+.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 14px; border-radius: var(--radius-full); transition: color 0.15s cubic-bezier(0.2, 0, 0, 1); position: relative; flex: 1; text-align: center; font-weight: 400; }
 .liquid-tab:hover { color: var(--text-secondary); }
 .liquid-tab.active { color: var(--text-primary); background: var(--glass-bg-active); }
 .liquid-tab.active { color: var(--text-primary); }
@@ -1066,6 +1067,11 @@ onUnmounted(() => {
     border-radius: 50%;
   }
   
+  .profile-more-wrap .btn-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  
   .profile-meta.desktop-only {
     display: none !important;
   }
@@ -1105,7 +1111,7 @@ onUnmounted(() => {
     flex: 1;
     padding: 14px 8px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     border-radius: 0;
     white-space: nowrap;
     text-align: center;

@@ -1,31 +1,42 @@
 <template>
   <div class="feed-page">
-    <header class="feed-top-header">
-      <div class="feed-top-header-inner">
-        <div class="feed-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"/><path d="M12 8a4 4 0 104 4"/>
+    <header class="feed-header mobile-only">
+      <div class="user-info" @click="goToProfile">
+        <img :src="userAvatar" class="user-avatar" alt="" @error="handleAvatarError">
+        <h1 class="user-name">{{ authStore.user?.name || 'Главная' }}</h1>
+      </div>
+      
+      <div class="header-actions">
+        <button class="action-btn" @click="showCreatePostModal = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
           </svg>
-        </div>
-        <h1>{{ t('feed') }}</h1>
-        <div class="feed-header-menu-wrap">
-          <button class="feed-menu-btn" @click.stop="toggleMenu">
+        </button>
+        <div class="menu-wrap">
+          <button class="action-btn" @click="showMenu = !showMenu">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="12" r="2"/>
+              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
             </svg>
           </button>
-          <Transition name="feed-menu">
-            <div v-if="showMenu" class="feed-header-menu glass-modal" @click.stop>
-              <router-link :to="`/profile/${authStore.user?.id}`" class="feed-menu-item" @click="showMenu = false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+          <Transition name="dropdown">
+            <div v-if="showMenu" class="dropdown-menu" @click.stop>
+              <router-link :to="`/profile/${authStore.user?.id}`" class="dropdown-item" @click="showMenu = false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>
+                </svg>
                 <span>{{ t('profile') }}</span>
               </router-link>
-              <router-link to="/settings" class="feed-menu-item" @click="showMenu = false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <router-link to="/settings" class="dropdown-item" @click="showMenu = false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
                 <span>{{ t('settings') }}</span>
               </router-link>
-              <button @click="logout" class="feed-menu-item danger">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/><path d="M7 12h14m0 0l-3-3m3 3l-3 3"/></svg>
+              <button @click="logout" class="dropdown-item danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/>
+                  <path d="M7 12h14m0 0l-3-3m3 3l-3 3"/>
+                </svg>
                 <span>{{ t('logout') }}</span>
               </button>
             </div>
@@ -33,12 +44,73 @@
         </div>
       </div>
     </header>
+
+    <div class="stories-section mobile-only">
+      <div class="stories-list">
+        <div class="story-item my-story" @click="showStoriesModal = true">
+          <div class="story-avatar">
+            <img :src="userAvatar" alt="" @error="handleAvatarError">
+            <div class="add-story-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </div>
+          </div>
+          <span class="story-name">История</span>
+        </div>
+        
+        <div v-for="story in mockStories" :key="story.id" class="story-item" @click="showStoriesModal = true">
+          <div class="story-avatar has-story">
+            <img :src="story.avatar" :alt="story.name">
+          </div>
+          <span class="story-name">{{ story.name }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stories-card desktop-only">
+      <div class="stories-card-inner">
+        <div class="stories-card-list">
+          <div class="story-card my-story-card" @click="showStoriesModal = true">
+            <div class="story-card-preview">
+              <img :src="userAvatar" alt="" @error="handleAvatarError">
+            </div>
+            <div class="story-card-avatar">
+              <img :src="userAvatar" alt="" @error="handleAvatarError">
+              <div class="add-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </div>
+            </div>
+            <span class="story-card-name">История</span>
+          </div>
+          
+          <div v-for="story in mockStories" :key="story.id" class="story-card" @click="showStoriesModal = true">
+            <div class="story-card-preview">
+              <img :src="story.preview || story.avatar" alt="">
+            </div>
+            <div class="story-card-avatar has-story">
+              <img :src="story.avatar" :alt="story.name">
+            </div>
+            <span class="story-card-name">{{ story.name }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="create-post-bar desktop-only" @click="focusCreatePost" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span>Создать пост</span>
+      </div>
+    </div>
+    
     <div class="feed-content">
-      <CreatePost @created="onPostCreated" />
+      <CreatePost ref="createPostRef" @created="onPostCreated" />
       
       <div v-if="loading && !posts.length" class="loading-state">
         <div class="spinner-lg"></div>
-        <p>{{ t('loading') }}</p>
       </div>
       
       <TransitionGroup name="post" tag="div" class="posts-list">
@@ -50,7 +122,6 @@
           :hide-pin="true"
           @delete="deletePost"
           @update="updatePost"
-          @open-media="openMedia"
         />
       </TransitionGroup>
       
@@ -66,9 +137,38 @@
 
     <Teleport to="body">
       <Transition name="modal">
+        <CreatePostModal v-if="showCreatePostModal" @close="showCreatePostModal = false" @created="handlePostCreated" />
+      </Transition>
+
+      <Transition name="modal">
+        <div v-if="showStoriesModal" class="modal-overlay" @click.self="showStoriesModal = false">
+          <div class="modal glass-modal">
+            <div class="modal-header">
+              <h2>Истории</h2>
+              <button @click="showStoriesModal = false" class="close-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <div class="modal-body center-text">
+              <p>Не торопись, я пока разрабатываю это ;)</p>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
         <div v-if="showMediaViewer" class="media-viewer-overlay" @click.self="closeMedia">
-          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-          <div class="viewer-content"><img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt=""><video v-else :src="mediaViewerSrc" controls autoplay></video></div>
+          <button class="viewer-close" @click="closeMedia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+          <div class="viewer-content">
+            <img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt="">
+            <video v-else :src="mediaViewerSrc" controls autoplay></video>
+          </div>
         </div>
       </Transition>
     </Teleport>
@@ -79,6 +179,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CreatePost from '../components/CreatePost.vue'
+import CreatePostModal from '../components/CreatePostModal.vue'
 import PostCard from '../components/PostCard.vue'
 import { useNotificationsStore } from '../stores/notifications'
 import { useAuthStore } from '../stores/auth'
@@ -92,6 +193,7 @@ const router = useRouter()
 const notifications = useNotificationsStore()
 const authStore = useAuthStore()
 const { on, off } = useSocket()
+
 const posts = ref([])
 const loading = ref(false)
 const hasMore = ref(true)
@@ -99,11 +201,23 @@ const page = ref(1)
 const loadMore = ref(null)
 const lastFetchTime = ref(null)
 const showMenu = ref(false)
+const createPostRef = ref(null)
 let observer
 
 const showMediaViewer = ref(false)
 const mediaViewerSrc = ref('')
 const mediaViewerType = ref('image')
+const showStoriesModal = ref(false)
+const showCreatePostModal = ref(false)
+
+const mockStories = ref([
+  { id: 1, name: 'тсс..', avatar: '/default-avatar.svg', preview: '/default-avatar.svg' },
+  { id: 2, name: 'скоро будет', avatar: '/default-avatar.svg', preview: '/default-avatar.svg' },
+  { id: 3, name: 'подожди...', avatar: '/default-avatar.svg', preview: '/default-avatar.svg' },
+  { id: 4, name: 'следи', avatar: '/default-avatar.svg', preview: '/default-avatar.svg' },
+])
+
+const userAvatar = computed(() => authStore.user?.avatar || '/default-avatar.svg')
 
 const sortedPosts = computed(() => {
   return [...posts.value].sort((a, b) => {
@@ -113,16 +227,20 @@ const sortedPosts = computed(() => {
   })
 })
 
-function openMedia(src, type) { mediaViewerSrc.value = src; mediaViewerType.value = type; showMediaViewer.value = true }
-function closeMedia() { showMediaViewer.value = false }
-
-function toggleMenu() { showMenu.value = !showMenu.value }
-function logout() { authStore.logout(); router.push('/login') }
-function handleClickOutside(e) {
-  if (showMenu.value && !e.target.closest('.feed-header-menu-wrap')) {
-    showMenu.value = false
+function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
+function goToProfile() { router.push(`/profile/${authStore.user?.id}`) }
+function focusCreatePost() {
+  if (createPostRef.value?.$el) {
+    const textarea = createPostRef.value.$el.querySelector('textarea')
+    if (textarea) textarea.focus()
   }
 }
+
+function openMedia(src, type) { mediaViewerSrc.value = src; mediaViewerType.value = type; showMediaViewer.value = true }
+function closeMedia() { showMediaViewer.value = false }
+function toggleMenu() { showMenu.value = !showMenu.value }
+function closeMenu(e) { if (!e.target.closest('.menu-wrap')) showMenu.value = false }
+function logout() { showMenu.value = false; authStore.logout(); router.push('/login') }
 
 function scrollToPost(postId) {
   nextTick(() => {
@@ -171,9 +289,7 @@ async function pollNewPosts() {
           posts.value.unshift(newPost)
         } else {
           const idx = posts.value.findIndex(p => p.id === newPost.id)
-          if (idx !== -1) {
-            Object.assign(posts.value[idx], newPost)
-          }
+          if (idx !== -1) Object.assign(posts.value[idx], newPost)
         }
       })
       lastFetchTime.value = new Date().toISOString()
@@ -183,16 +299,17 @@ async function pollNewPosts() {
 
 function onNewPost(post) {
   const exists = posts.value.find(p => p.id === post.id)
-  if (!exists) {
-    posts.value.unshift(post)
-  }
+  if (!exists) posts.value.unshift(post)
 }
 
 function onPostCreated(post) {
   const exists = posts.value.find(p => p.id === post.id)
-  if (!exists) {
-    posts.value.unshift(post)
-  }
+  if (!exists) posts.value.unshift(post)
+}
+
+function handlePostCreated(post) {
+  onPostCreated(post)
+  showCreatePostModal.value = false
 }
 
 async function deletePost(id) {
@@ -207,11 +324,8 @@ async function deletePost(id) {
 function updatePost(updated) {
   const idx = posts.value.findIndex(p => p.id === updated.id)
   if (idx !== -1) {
-    if (updated.isArchived) {
-      posts.value.splice(idx, 1)
-    } else {
-      Object.assign(posts.value[idx], updated)
-    }
+    if (updated.isArchived) posts.value.splice(idx, 1)
+    else Object.assign(posts.value[idx], updated)
   }
 }
 
@@ -220,157 +334,382 @@ let pollInterval = null
 onMounted(async () => {
   await fetchPosts(true)
   on('post:new', onNewPost)
-  
   pollInterval = setInterval(pollNewPosts, 3000)
+  document.addEventListener('click', closeMenu)
   
   observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) fetchPosts()
   }, { threshold: 0.1 })
   
   if (loadMore.value) observer.observe(loadMore.value)
-  
-  if (route.query.post) {
-    scrollToPost(route.query.post)
-  }
-  
-  document.addEventListener('click', handleClickOutside)
+  if (route.query.post) scrollToPost(route.query.post)
 })
 
 onUnmounted(() => {
   observer?.disconnect()
   off('post:new', onNewPost)
+  document.removeEventListener('click', closeMenu)
   if (pollInterval) clearInterval(pollInterval)
-  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
 <style scoped>
 .feed-page {
   min-height: 100vh;
-  padding: 20px;
-  padding-top: 64px;
-  padding-left: calc(var(--sidebar-width) + 20px);
+  padding-left: var(--sidebar-width);
+  padding-bottom: 20px;
 }
 
-.feed-top-header {
-  position: fixed;
+.feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  position: sticky;
   top: 0;
-  left: var(--sidebar-width);
-  right: 0;
-  height: 56px;
-  background: var(--bg-primary);
   z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--bg-primary);
 }
 
-.feed-top-header-inner {
+.user-info {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
-  max-width: 600px;
-  width: 100%;
-  padding: 0 20px;
+  cursor: pointer;
 }
 
-.feed-logo {
-  width: 32px;
-  height: 32px;
-  color: var(--text-primary);
-  display: none;
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.feed-logo svg {
-  width: 100%;
-  height: 100%;
-}
-
-.feed-top-header h1 {
-  font-size: 16px;
+.user-name {
+  font-size: 18px;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
-.feed-header-menu-wrap {
-  display: none;
-  position: relative;
-  width: 32px;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.feed-menu-btn {
-  width: 36px;
-  height: 36px;
+.action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  border-radius: var(--radius-full);
-  transition: all 0.1s;
-}
-
-.feed-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
   color: var(--text-primary);
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.feed-menu-btn svg {
-  width: 18px;
-  height: 18px;
+.action-btn:active {
+  transform: scale(0.85);
+  background: var(--glass-bg-active);
 }
 
-.feed-header-menu {
+.action-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.menu-wrap {
+  position: relative;
+}
+
+.dropdown-menu {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 200px;
-  padding: 8px;
-  z-index: 200;
+  min-width: 200px;
+  background: rgba(28, 28, 30, 0.92);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.feed-menu-item {
+.dropdown-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
   padding: 12px 14px;
-  color: var(--text-secondary);
   border-radius: var(--radius);
-  font-size: 14px;
-  transition: all 0.1s;
-  text-decoration: none;
-}
-
-.feed-menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
+  transition: background var(--transition-fast);
+  width: 100%;
+  text-align: left;
 }
 
-.feed-menu-item.danger:hover {
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-item svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.dropdown-item.danger {
   color: var(--danger);
 }
 
-.feed-menu-item svg {
+.dropdown-item.danger svg {
+  color: var(--danger);
+}
+
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.stories-section {
+  padding: 0 0 16px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.stories-list {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+  justify-content: space-around;
+}
+
+.stories-list::-webkit-scrollbar {
+  display: none;
+}
+
+.story-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.story-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  padding: 3px;
+  background: var(--glass-bg);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.story-avatar.has-story {
+  background: linear-gradient(135deg, #4a4a4a, #6a6a6a, #8a8a8a, #6a6a6a, #4a4a4a);
+}
+
+.story-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--bg-primary);
+}
+
+.my-story .story-avatar {
+  background: var(--glass-bg);
+}
+
+.add-story-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--link);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-primary);
+}
+
+.add-story-btn svg {
+  width: 12px;
+  height: 12px;
+  color: white;
+}
+
+.story-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.stories-card {
+  max-width: 600px;
+  margin: 0 auto 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.stories-card-inner {
+  padding: 16px;
+  overflow: hidden;
+}
+
+.stories-card-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.stories-card-list::-webkit-scrollbar {
+  display: none;
+}
+
+.story-card {
+  flex-shrink: 0;
+  width: 100px;
+  height: 160px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  background: var(--glass-bg);
+}
+
+.story-card-preview {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.story-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.3);
+}
+
+.story-card-avatar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 2px;
+  background: var(--glass-bg);
+}
+
+.story-card-avatar.has-story {
+  background: linear-gradient(135deg, #4a4a4a, #6a6a6a, #8a8a8a, #6a6a6a, #4a4a4a);
+}
+
+.story-card-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--bg-primary);
+}
+
+.my-story-card .story-card-avatar {
+  background: var(--glass-bg);
+}
+
+.my-story-card .add-btn {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
   width: 18px;
   height: 18px;
+  border-radius: 50%;
+  background: var(--link);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-primary);
 }
 
-.feed-menu-enter-active {
-  animation: feed-menu-in 0.15s cubic-bezier(0.2, 0, 0, 1);
+.my-story-card .add-btn svg {
+  width: 10px;
+  height: 10px;
+  color: white;
 }
 
-.feed-menu-leave-active {
-  animation: feed-menu-in 0.1s cubic-bezier(0.4, 0, 1, 1) reverse;
+.story-card-name {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@keyframes feed-menu-in {
-  from { opacity: 0; transform: scale(0.95) translateY(-8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+.create-post-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.create-post-bar:hover {
+  background: var(--glass-bg-hover);
+}
+
+.create-post-bar svg {
+  width: 20px;
+  height: 20px;
+}
+
+.create-post-bar span {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .feed-content {
   max-width: 600px;
   margin: 0 auto;
+  padding: 0 16px;
 }
 
 .posts-list {
@@ -381,18 +720,15 @@ onUnmounted(() => {
 
 .loading-state {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 60px 20px;
-  color: var(--text-secondary);
+  justify-content: center;
+  padding: 40px;
 }
 
 .spinner-lg {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: rgba(255, 255, 255, 0.5);
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -400,8 +736,8 @@ onUnmounted(() => {
 .spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: rgba(255, 255, 255, 0.5);
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -411,156 +747,237 @@ onUnmounted(() => {
 }
 
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 60px 20px;
   text-align: center;
-}
-
-.empty-icon {
-  width: 64px;
-  height: 64px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.empty-icon svg {
-  width: 32px;
-  height: 32px;
-  color: var(--text-muted);
+  padding: 40px 20px;
 }
 
 .empty-state h3 {
   font-size: 18px;
-  font-weight: 600;
+  margin-bottom: 8px;
 }
 
 .empty-state p {
   color: var(--text-secondary);
-  font-size: 14px;
 }
 
 .load-more {
   display: flex;
   justify-content: center;
+  padding: 20px;
+}
+
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: block;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 400px;
   padding: 24px;
 }
 
-.post-enter-active {
-  animation: slideUp var(--transition-slow);
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background var(--transition-fast);
+}
+
+.close-btn:hover {
+  background: var(--glass-bg-hover);
+}
+
+.close-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-body {
+  color: var(--text-secondary);
+}
+
+.center-text {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.media-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+}
+
+.viewer-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 10;
+}
+
+.viewer-close svg {
+  width: 24px;
+  height: 24px;
+}
+
+.viewer-content {
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.viewer-content img,
+.viewer-content video {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.modal-enter-active .modal,
+.modal-enter-active .glass-modal,
+.modal-leave-active .modal,
+.modal-leave-active .glass-modal {
+  transition: transform 0.15s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal,
+.modal-enter-from .glass-modal {
+  transform: scale(0.95);
+}
+
+.modal-leave-to .modal,
+.modal-leave-to .glass-modal {
+  transform: scale(0.95);
+}
+
+.post-enter-active,
 .post-leave-active {
-  animation: fadeOut var(--transition);
+  transition: all 0.15s ease;
 }
 
-@keyframes fadeOut {
-  to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
+.post-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.post-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.highlight-post {
+  animation: highlight 2s ease;
+}
+
+@keyframes highlight {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 2px var(--link); }
 }
 
 @media (max-width: 768px) {
   .feed-page {
-    padding-left: 20px;
-    padding-top: 76px;
+    padding-left: 0;
+    padding-bottom: 80px;
   }
-  
-  .feed-top-header {
-    left: 12px;
-    right: 12px;
-    top: 12px;
-    height: 52px;
-    background: rgba(28, 28, 30, 0.55);
-    backdrop-filter: blur(50px) saturate(180%);
-    -webkit-backdrop-filter: blur(50px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+  .mobile-only {
+    display: flex;
   }
-  
-  .feed-top-header-inner {
-    justify-content: space-between;
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .feed-content {
     padding: 0 12px;
-    max-width: none;
   }
-  
-  .feed-logo {
-    display: block;
-    flex-shrink: 0;
-  }
-  
-  .feed-logo svg {
-    stroke-width: 1.5;
-  }
-  
-  .feed-top-header h1 {
-    flex: 1;
-    text-align: center;
-    font-size: 16px;
-  }
-  
-  .feed-header-menu-wrap {
-    display: block;
-    flex-shrink: 0;
+
+  .user-avatar {
+    width: 40px;
+    height: 40px;
   }
 }
 
-.media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
-.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
-.viewer-close:hover { background: rgba(255,255,255,0.1); }
-.viewer-close svg { width: 24px; height: 24px; }
-.viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
-.modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
-.modal-enter-from, .modal-leave-to { opacity: 0; }
-
-@media (hover: none) and (pointer: coarse) {
-  .tab:active {
-    transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.12);
-    transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
-  }
+[data-theme="light"] .feed-header {
+  background: var(--bg-primary);
 }
 
-:deep(.highlight-post) {
-  animation: highlightPost 2s ease-out;
+[data-theme="light"] .story-avatar img {
+  border-color: var(--bg-primary);
 }
 
-@keyframes highlightPost {
-  0%, 30% { box-shadow: 0 0 0 2px rgba(91, 154, 255, 0.6); }
-  100% { box-shadow: none; }
+[data-theme="light"] .story-card-avatar img {
+  border-color: var(--bg-primary);
 }
 
-[data-theme="light"] .empty-icon {
-  background: rgba(0, 0, 0, 0.04);
+[data-theme="light"] .add-story-btn,
+[data-theme="light"] .my-story-card .add-btn {
+  border-color: var(--bg-primary);
 }
 
-[data-theme="light"] .spinner-lg {
+[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .dropdown-menu {
+  background: rgba(255, 255, 255, 0.92);
   border-color: rgba(0, 0, 0, 0.1);
-  border-top-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-[data-theme="light"] .spinner {
-  border-color: rgba(0, 0, 0, 0.1);
-  border-top-color: rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="light"] .feed-top-header h1 {
-  color: var(--text-primary);
-}
-
-@media (max-width: 768px) {
-  [data-theme="light"] .feed-top-header {
-    background: rgba(255, 255, 255, 0.6);
-    border-color: rgba(0, 0, 0, 0.1);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  }
+[data-theme="light"] .dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.06);
 }
 </style>

@@ -103,7 +103,6 @@
             </button>
           </div>
 
-          <!-- Pinned message banner -->
           <div v-if="pinnedMessage && !chatSearchMode" class="pinned-banner" @click="scrollToPinned">
             <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>
             <div class="pinned-content">
@@ -125,15 +124,13 @@
           <template v-else>
             <TransitionGroup name="message-list" tag="div" class="messages-wrapper">
             <template v-for="(msg, index) in messages" :key="msg.id">
-              <!-- System message (pin/unpin) -->
               <div v-if="msg.mediaType === 'system'" class="system-message" :class="{ clickable: msg.content.startsWith('pinned_message:') }" @click="handleSystemMessageClick(msg)" @contextmenu.prevent="openSystemMsgMenu($event, msg)">
                 <div class="system-message-content glass-pill">
                   <svg v-if="msg.content.startsWith('pinned_message') || msg.content === 'unpinned_message'" class="system-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>
                   <span>{{ formatSystemMessage(msg) }}</span>
                 </div>
               </div>
-              <!-- Regular message -->
-              <div v-else class="message" :id="'msg-' + msg.id" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice', selected: selectedMessages.includes(msg.id), 'search-highlight': searchResults.includes(msg.id) && searchResults[currentSearchIndex] === msg.id }" @contextmenu.prevent="openMsgMenu($event, msg)" @click="selectMode ? toggleMessageSelection(msg.id) : null">
+              <div v-else class="message" :id="'msg-' + msg.id" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice', selected: selectedMessages.includes(msg.id), 'search-highlight': searchResults.includes(msg.id) && searchResults[currentSearchIndex] === msg.id, 'long-press-active': longPressedMsgId === msg.id }" @contextmenu.prevent="openMsgMenu($event, msg)" @click="selectMode ? toggleMessageSelection(msg.id) : null" @touchstart="startLongPress($event, msg)" @touchend="endLongPress" @touchmove="cancelLongPress">
                 <div v-if="selectMode" class="message-checkbox" @click.stop="toggleMessageSelection(msg.id)">
                   <div class="checkbox-inner" :class="{ checked: selectedMessages.includes(msg.id) }">
                     <svg v-if="selectedMessages.includes(msg.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6l-11 11-5-5"/></svg>
@@ -143,7 +140,6 @@
                   <img :src="getAvatarUrl(chatUser?.avatar)" class="avatar avatar-sm" alt="" @error="handleAvatarError">
                 </router-link>
                 <div class="message-content">
-                  <!-- Circle video message -->
                   <div v-if="msg.mediaType === 'circle'" class="circle-message">
                     <div class="circle-video-wrap" :class="{ playing: playingCircles[msg.id] }" @click="toggleCircle($event, msg.id)">
                       <svg v-if="playingCircles[msg.id]" class="circle-playback-ring" viewBox="0 0 200 200">
@@ -163,7 +159,6 @@
                       <span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
                     </div>
                   </div>
-                  <!-- Voice message -->
                   <div v-else-if="msg.mediaType === 'voice'" class="voice-message-wrap">
                     <button class="voice-play-btn" @click="toggleVoice($event, msg.id)">
                       <svg v-if="!playingVoices[msg.id]" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
@@ -180,9 +175,7 @@
                     </div>
                     <audio :src="msg.media" :id="'voice-' + msg.id" @ended="onVoiceEnded(msg.id)" @loadedmetadata="onVoiceLoaded($event, msg.id)" @timeupdate="onVoiceTimeUpdate($event, msg.id)" hidden></audio>
                   </div>
-                  <!-- Regular message bubble -->
-                  <div v-else class="message-bubble" :class="{ 'files-only': getFileMedia(msg).length > 0 && !msg.content && getVisualMedia(msg).length === 0 }">
-                    <!-- Reply preview in message -->
+                  <div v-else class="message-bubble" :class="{ 'files-only': getFileMedia(msg).length > 0 && !msg.content && getVisualMedia(msg).length === 0, 'media-only': getVisualMedia(msg).length > 0 && !msg.content && getFileMedia(msg).length === 0 }">
                     <div v-if="msg.replyTo" class="reply-in-message" @click.stop="scrollToMessage(msg.replyTo.id)">
                       <span class="reply-sender">{{ msg.replyTo.senderName }}</span>
                       <span class="reply-text">{{ msg.replyTo.content || t('media') }}</span>
@@ -193,20 +186,45 @@
                       <span class="forwarded-name">{{ msg.forwardedFrom.name }}</span>
                     </div>
                     <span v-else-if="msg.forwarded" class="forwarded-label">{{ t('forwarded') }}</span>
-                    
-                    <!-- Visual media gallery (images, videos, gifs) -->
+
                     <div v-if="getVisualMedia(msg).length > 0" class="msg-media-gallery" :class="'media-count-' + Math.min(getVisualMedia(msg).length, 4)">
-                      <div v-for="(item, idx) in getVisualMedia(msg).slice(0, 4)" :key="item.id || idx" class="msg-gallery-item" :class="{ 'has-more': idx === 3 && getVisualMedia(msg).length > 4 }" @click="openMediaViewer(item.url, item.mediaType)">
-                        <img v-if="item.mediaType === 'image' || item.mediaType === 'gif'" :src="item.url" alt="">
-                        <video v-else-if="item.mediaType === 'video'" :src="item.url" @click.stop controls></video>
+                      <div v-for="(item, idx) in getVisualMedia(msg).slice(0, 4)" :key="item.id || idx" class="msg-gallery-item" :class="{ 'has-more': idx === 3 && getVisualMedia(msg).length > 4, 'is-gif': item.mediaType === 'gif' }" @click="item.mediaType === 'video' ? openVideoPlayer(item.url) : item.mediaType === 'gif' ? openGifViewer(item, msg) : openImageViewer(item, msg)"  :data-msg-id="msg.id">
+                        <img v-if="item.mediaType === 'image'" :src="item.url" alt="">
+                        <template v-else-if="item.mediaType === 'gif'">
+                          <img :src="item.url" alt="">
+                          <div class="gif-badge-overlay">
+                            <span class="gif-label">GIF</span>
+                            <span class="gif-size">{{ formatFileSize(item.fileSize) }}</span>
+                          </div>
+                        </template>
+                        <template v-else-if="item.mediaType === 'video'">
+                          <video 
+                            :src="item.url" 
+                            :ref="el => setVideoRef(el, item.url)"
+                            muted 
+                            loop 
+                            playsinline
+                            @loadedmetadata="e => handleVideoMeta(e, item.url)"
+                            @timeupdate="e => handleVideoTime(e, item.url)"
+                            @click.stop="openVideoPlayer(item.url)"
+                          ></video>
+                          <div class="video-inline-controls">
+                            <span class="video-time-badge">{{ formatVideoTime(videoTimes[item.url] || 0) }}</span>
+                            <span class="video-mute-badge">
+                              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                            </span>
+                          </div>
+                          <div class="video-progress-bar">
+                            <div class="video-progress-fill" :style="{ width: (videoProgress[item.url] || 0) + '%' }"></div>
+                          </div>
+                        </template>
                         <div v-if="idx === 3 && getVisualMedia(msg).length > 4" class="msg-gallery-more">+{{ getVisualMedia(msg).length - 4 }}</div>
                       </div>
+                      <span v-if="!msg.content" class="media-time-overlay">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
                     </div>
-                    
-                    <!-- File media (audio, documents) - shown as list -->
+
                     <div v-if="getFileMedia(msg).length > 0" class="msg-files-list">
                       <template v-for="(item, idx) in getFileMedia(msg)" :key="item.id || idx">
-                        <!-- Audio -->
                         <div v-if="item.mediaType === 'audio'" class="audio-message-wrap" @click="toggleAudio($event, item)">
                           <button class="audio-play-btn" @click.stop="toggleAudio($event, item)">
                             <svg v-if="!isAudioPlaying(item.url)" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
@@ -218,7 +236,6 @@
                           </div>
                           <span class="file-msg-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
                         </div>
-                        <!-- File -->
                         <div v-else class="file-message-wrap" @click="downloadFile(item.url, item.fileName)">
                           <div class="file-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
@@ -231,7 +248,6 @@
                         </div>
                       </template>
                     </div>
-                    <!-- Music track -->
                     <div v-if="msg.musicTrackId" class="msg-music-track" @click="playMsgMusic(msg)">
                       <div class="msg-music-track-artwork">
                         <img v-if="msg.musicArtwork" :src="msg.musicArtwork" alt="">
@@ -280,7 +296,6 @@
         <div v-else-if="chatUser?.iBlockedUser" class="chat-blocked">
           <button @click="unblockUser" class="unblock-btn">{{ t('unblockUser') }}</button>
         </div>
-        <!-- Reply preview above input -->
         <div v-else-if="replyingTo" class="reply-preview">
           <div class="reply-preview-content">
             <span class="reply-preview-name">{{ replyingTo.senderName }}</span>
@@ -290,7 +305,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
-        <!-- Media preview cards above input -->
         <div v-if="mediaFiles.length > 0 && !chatUser?.blockedByUser && !chatUser?.iBlockedUser" class="msg-media-previews">
           <div v-for="item in mediaFiles" :key="item.id" class="msg-media-preview-item">
             <div class="msg-preview-thumb">
@@ -528,6 +542,186 @@
         </Transition>
 
         <Transition name="modal">
+          <div v-if="showVideoPlayer" class="video-player-overlay" @click.self="closeVideoPlayer">
+            <div class="viewer-floating-top">
+              <button class="viewer-glass-btn" @click="closeVideoPlayer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div class="viewer-glass-pill">
+                <span>{{ formatVideoTime(fullVideoCurrentTime) }} / {{ formatVideoTime(fullVideoDuration) }}</span>
+              </div>
+              <button class="viewer-glass-btn" @click="downloadMedia(videoPlayerSrc, 'video')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              </button>
+            </div>
+            
+            <video 
+              ref="fullscreenVideoRef"
+              :src="videoPlayerSrc"
+              class="video-player-video"
+              @loadedmetadata="onFullVideoMeta"
+              @timeupdate="onFullVideoTime"
+              @ended="onFullVideoEnded"
+              @click="toggleFullVideoPlay"
+              playsinline
+            ></video>
+
+            <div class="video-floating-bottom" :class="{ hidden: controlsHidden }">
+              <div class="video-progress-glass" @click="seekFullVideo" @mousedown="startSeek" @touchstart="startSeek">
+                <div class="video-progress-bg"></div>
+                <div class="video-progress-buffered" :style="{ width: bufferedProgress + '%' }"></div>
+                <div class="video-progress-fill" :style="{ width: fullVideoProgress + '%' }"></div>
+                <div class="video-progress-handle" :style="{ left: fullVideoProgress + '%' }"></div>
+              </div>
+              
+              <div class="video-controls-row">
+                <button class="viewer-glass-btn small" @click="skipVideo(-10)">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 3C17.15 3 21.08 6.03 22.47 10.22L20.1 11C19.05 7.81 16.04 5.5 12.5 5.5C10.54 5.5 8.77 6.22 7.38 7.38L10 10H3V3L5.6 5.6C7.45 4 9.85 3 12.5 3M10 12V22H8V14H6V12H10M18 14V20C18 21.11 17.11 22 16 22H14C12.9 22 12 21.1 12 20V14C12 12.9 12.9 12 14 12H16C17.11 12 18 12.9 18 14M14 14V20H16V14H14Z"/></svg>
+                </button>
+                <button class="viewer-glass-btn play-btn" @click="toggleFullVideoPlay">
+                  <svg v-if="!fullVideoPlaying" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                </button>
+                <button class="viewer-glass-btn small" @click="skipVideo(10)">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 3C6.85 3 2.92 6.03 1.53 10.22L3.9 11C4.95 7.81 7.96 5.5 11.5 5.5C13.46 5.5 15.23 6.22 16.62 7.38L14 10H21V3L18.4 5.6C16.55 4 14.15 3 11.5 3M10 12V22H8V14H6V12H10M18 14V20C18 21.11 17.11 22 16 22H14C12.9 22 12 21.1 12 20V14C12 12.9 12.9 12 14 12H16C17.11 12 18 12.9 18 14M14 14V20H16V14H14Z"/></svg>
+                </button>
+                <button class="viewer-glass-btn speed-btn" @click="cyclePlaybackSpeed">
+                  <span>{{ playbackSpeed }}x</span>
+                </button>
+                <button class="viewer-glass-btn" @click="toggleFullscreen">
+                  <svg v-if="!isFullscreen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
+          <div v-if="showImageViewer" class="media-viewer-overlay" @click.self="closeImageViewer">
+            <div class="viewer-floating-top">
+              <button class="viewer-glass-btn" @click="closeImageViewer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div class="viewer-glass-pill">
+                <span>{{ currentMediaIndex + 1 }} / {{ totalMediaCount }}</span>
+              </div>
+              <div class="viewer-glass-btn-group">
+                <button class="viewer-glass-btn" @click="showViewerMenu = !showViewerMenu">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+                <Transition name="dropdown">
+                  <div v-if="showViewerMenu" class="viewer-glass-dropdown">
+                    <button class="viewer-dropdown-item" @click="scrollToMediaInChat">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 10l-5 5 5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+                      <span>В чате</span>
+                    </button>
+                    <button class="viewer-dropdown-item" @click="downloadMedia(currentImageUrl, 'image')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                      <span>Сохранить</span>
+                    </button>
+                    <button class="viewer-dropdown-item" @click="replyToMediaMessage">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17l-5-5 5-5"/><path d="M4 12h16"/></svg>
+                      <span>Ответить</span>
+                    </button>
+                    <button class="viewer-dropdown-item danger" @click="deleteMediaMessageForAll">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                      <span>Удалить</span>
+                    </button>
+                  </div>
+                </Transition>
+              </div>
+            </div>
+            
+            <div class="media-viewer-content" @wheel="handleImageWheel">
+              <img 
+                :src="currentImageUrl" 
+                :style="{ transform: `scale(${imageZoom}) translate(${imageOffset.x}px, ${imageOffset.y}px)` }"
+                @mousedown="startImageDrag"
+                @touchstart="startImageTouchDrag"
+                @dblclick="resetImageZoom"
+                draggable="false"
+              >
+            </div>
+            
+            <div class="viewer-floating-bottom">
+              <button class="viewer-glass-btn" @click="shareMedia">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+              </button>
+              <div class="viewer-glass-info">
+                <span class="viewer-info-name">{{ currentMediaSender }}</span>
+                <span class="viewer-info-date">{{ currentMediaDate }}</span>
+              </div>
+              <button class="viewer-glass-btn" @click="downloadMedia(currentImageUrl, 'image')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              </button>
+              <button class="viewer-glass-btn danger" @click="deleteMediaMessageForAll">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+              </button>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
+          <div v-if="showGifViewer" class="media-viewer-overlay" @click.self="closeGifViewer">
+            <div class="viewer-floating-top">
+              <button class="viewer-glass-btn" @click="closeGifViewer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div class="viewer-glass-pill gif-pill">
+                <span class="gif-label">GIF</span>
+                <span class="gif-size">{{ formatFileSize(currentGifSize) }}</span>
+              </div>
+              <div class="viewer-glass-btn-group">
+                <button class="viewer-glass-btn" @click="showGifMenu = !showGifMenu">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+                <Transition name="dropdown">
+                  <div v-if="showGifMenu" class="viewer-glass-dropdown">
+                    <button class="viewer-dropdown-item" @click="scrollToMediaInChat">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 10l-5 5 5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+                      <span>В чате</span>
+                    </button>
+                    <button class="viewer-dropdown-item" @click="downloadMedia(currentGifUrl, 'gif')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                      <span>Сохранить GIF</span>
+                    </button>
+                    <button class="viewer-dropdown-item" @click="replyToMediaMessage">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17l-5-5 5-5"/><path d="M4 12h16"/></svg>
+                      <span>Ответить</span>
+                    </button>
+                    <button class="viewer-dropdown-item danger" @click="deleteMediaMessageForAll">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                      <span>Удалить</span>
+                    </button>
+                  </div>
+                </Transition>
+              </div>
+            </div>
+            
+            <div class="media-viewer-content">
+              <img :src="currentGifUrl" alt="GIF">
+            </div>
+            
+            <div class="viewer-floating-bottom">
+              <button class="viewer-glass-btn" @click="shareMedia">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+              </button>
+              <div class="viewer-glass-info">
+                <span class="viewer-info-name">{{ currentMediaSender }}</span>
+                <span class="viewer-info-date">{{ currentMediaDate }}</span>
+              </div>
+              <button class="viewer-glass-btn" @click="downloadMedia(currentGifUrl, 'gif')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              </button>
+              <button class="viewer-glass-btn danger" @click="deleteMediaMessageForAll">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+              </button>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="modal">
           <MusicPicker v-if="showMusicPicker" @close="showMusicPicker = false" @select="onMusicSelect" />
         </Transition>
       </Teleport>
@@ -627,6 +821,41 @@ const showMediaViewerModal = ref(false)
 const viewerSrc = ref('')
 const viewerType = ref('image')
 
+const showVideoPlayer = ref(false)
+const videoPlayerSrc = ref('')
+const fullscreenVideoRef = ref(null)
+const fullVideoPlaying = ref(false)
+const fullVideoCurrentTime = ref(0)
+const fullVideoDuration = ref(0)
+const fullVideoProgress = ref(0)
+const bufferedProgress = ref(0)
+const videoRefs = ref({})
+const videoTimes = ref({})
+const videoProgress = ref({})
+const videoDurations = ref({})
+const playbackSpeed = ref(1)
+const isFullscreen = ref(false)
+const controlsHidden = ref(false)
+let controlsTimeout = null
+
+const showImageViewer = ref(false)
+const currentImageUrl = ref('')
+const imageZoom = ref(1)
+const imageOffset = ref({ x: 0, y: 0 })
+const showViewerMenu = ref(false)
+const currentMediaIndex = ref(0)
+const totalMediaCount = ref(1)
+const currentMediaSender = ref('')
+const currentMediaDate = ref('')
+const currentMediaMsgId = ref(null)
+let isDraggingImage = false
+let dragStart = { x: 0, y: 0 }
+
+const showGifViewer = ref(false)
+const currentGifUrl = ref('')
+const currentGifSize = ref(0)
+const showGifMenu = ref(false)
+
 const replyingTo = ref(null)
 const selectMode = ref(false)
 const selectedMessages = ref([])
@@ -634,6 +863,10 @@ const pinnedMessage = ref(null)
 const bulkForwardMode = ref(false)
 const showMusicPicker = ref(false)
 const selectedMusic = ref(null)
+
+const longPressedMsgId = ref(null)
+let longPressTimer = null
+let longPressStartEvent = null
 
 const dialogsSearchMode = ref(false)
 const dialogsSearchQuery = ref('')
@@ -1643,6 +1876,35 @@ function openMsgMenu(e, msg) {
   msgMenuY.value = Math.min(Math.max(e.clientY, 10), window.innerHeight - menuHeight - 10)
   showMsgMenu.value = true
 }
+
+function startLongPress(e, msg) {
+  if (selectMode.value) return
+  longPressStartEvent = e
+  longPressedMsgId.value = msg.id
+  longPressTimer = setTimeout(() => {
+    if (longPressedMsgId.value === msg.id) {
+      if (navigator.vibrate) navigator.vibrate(30)
+      const touch = e.touches[0]
+      openMsgMenu({ clientX: touch.clientX, clientY: touch.clientY }, msg)
+    }
+  }, 400)
+}
+
+function endLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+  longPressedMsgId.value = null
+}
+
+function cancelLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+  longPressedMsgId.value = null
+}
 function closeMsgMenu() { showMsgMenu.value = false; selectedMsg.value = null }
 
 function openDialogMenu(e, dialog) {
@@ -1752,6 +2014,364 @@ async function deleteForMe() {
   } catch (err) { notifications.error(err.message) } 
 }
 function openMediaViewer(src, type) { viewerSrc.value = src; viewerType.value = type; showMediaViewerModal.value = true }
+
+function setVideoRef(el, url) {
+  if (el) {
+    videoRefs.value[url] = el
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          el.play().catch(() => {})
+        } else {
+          el.pause()
+        }
+      })
+    }, { threshold: 0.5 })
+    observer.observe(el)
+  }
+}
+
+function handleVideoMeta(e, url) {
+  videoDurations.value[url] = e.target.duration
+}
+
+function handleVideoTime(e, url) {
+  videoTimes.value[url] = e.target.currentTime
+  if (videoDurations.value[url]) {
+    videoProgress.value[url] = (e.target.currentTime / videoDurations.value[url]) * 100
+  }
+}
+
+function formatVideoTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function openVideoPlayer(src) {
+  videoPlayerSrc.value = src
+  showVideoPlayer.value = true
+  fullVideoPlaying.value = false
+  fullVideoCurrentTime.value = 0
+  fullVideoProgress.value = 0
+  playbackSpeed.value = 1
+  controlsHidden.value = false
+  nextTick(() => {
+    if (fullscreenVideoRef.value) {
+      fullscreenVideoRef.value.playbackRate = 1
+      fullscreenVideoRef.value.play()
+      fullVideoPlaying.value = true
+      resetControlsTimeout()
+    }
+  })
+}
+
+function closeVideoPlayer() {
+  if (fullscreenVideoRef.value) {
+    fullscreenVideoRef.value.pause()
+  }
+  showVideoPlayer.value = false
+  fullVideoPlaying.value = false
+  if (document.fullscreenElement) {
+    document.exitFullscreen()
+  }
+  isFullscreen.value = false
+}
+
+function toggleFullVideoPlay() {
+  if (!fullscreenVideoRef.value) return
+  if (fullVideoPlaying.value) {
+    fullscreenVideoRef.value.pause()
+    fullVideoPlaying.value = false
+  } else {
+    fullscreenVideoRef.value.play()
+    fullVideoPlaying.value = true
+  }
+  resetControlsTimeout()
+}
+
+function onFullVideoMeta() {
+  if (fullscreenVideoRef.value) {
+    fullVideoDuration.value = fullscreenVideoRef.value.duration
+  }
+}
+
+function onFullVideoTime() {
+  if (fullscreenVideoRef.value) {
+    fullVideoCurrentTime.value = fullscreenVideoRef.value.currentTime
+    fullVideoProgress.value = (fullscreenVideoRef.value.currentTime / fullscreenVideoRef.value.duration) * 100
+    if (fullscreenVideoRef.value.buffered.length > 0) {
+      bufferedProgress.value = (fullscreenVideoRef.value.buffered.end(0) / fullscreenVideoRef.value.duration) * 100
+    }
+  }
+}
+
+function onFullVideoEnded() {
+  fullVideoPlaying.value = false
+  controlsHidden.value = false
+}
+
+function seekFullVideo(e) {
+  if (!fullscreenVideoRef.value) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const percent = (e.clientX - rect.left) / rect.width
+  fullscreenVideoRef.value.currentTime = percent * fullscreenVideoRef.value.duration
+  resetControlsTimeout()
+}
+
+function startSeek(e) {
+  e.preventDefault()
+  resetControlsTimeout()
+}
+
+function skipVideo(seconds) {
+  if (!fullscreenVideoRef.value) return
+  fullscreenVideoRef.value.currentTime = Math.max(0, Math.min(fullscreenVideoRef.value.duration, fullscreenVideoRef.value.currentTime + seconds))
+  resetControlsTimeout()
+}
+
+function cyclePlaybackSpeed() {
+  const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
+  const currentIndex = speeds.indexOf(playbackSpeed.value)
+  const nextIndex = (currentIndex + 1) % speeds.length
+  playbackSpeed.value = speeds[nextIndex]
+  if (fullscreenVideoRef.value) {
+    fullscreenVideoRef.value.playbackRate = playbackSpeed.value
+  }
+  resetControlsTimeout()
+}
+
+function toggleFullscreen() {
+  const container = document.querySelector('.video-player-overlay')
+  if (!document.fullscreenElement) {
+    container?.requestFullscreen()
+    isFullscreen.value = true
+  } else {
+    document.exitFullscreen()
+    isFullscreen.value = false
+  }
+  resetControlsTimeout()
+}
+
+function resetControlsTimeout() {
+  controlsHidden.value = false
+  if (controlsTimeout) clearTimeout(controlsTimeout)
+  if (fullVideoPlaying.value) {
+    controlsTimeout = setTimeout(() => {
+      controlsHidden.value = true
+    }, 3000)
+  }
+}
+
+function openImageViewer(item, msg) {
+  currentImageUrl.value = item.url
+  imageZoom.value = 1
+  imageOffset.value = { x: 0, y: 0 }
+  showViewerMenu.value = false
+
+  const allImages = messages.value.flatMap(m => 
+    (m.mediaItems || []).filter(i => i.mediaType === 'image').map(i => ({ ...i, msg: m }))
+  )
+  const idx = allImages.findIndex(i => i.url === item.url)
+  currentMediaIndex.value = idx >= 0 ? idx : 0
+  totalMediaCount.value = allImages.length || 1
+  
+  if (msg) {
+    currentMediaMsgId.value = msg.id
+    const sender = msg.senderId === authStore.user?.id ? authStore.user : selectedDialog.value?.user
+    currentMediaSender.value = sender?.name || 'Пользователь'
+    currentMediaDate.value = formatMediaDate(msg.createdAt)
+  }
+  
+  showImageViewer.value = true
+}
+
+function closeImageViewer() {
+  showImageViewer.value = false
+  showViewerMenu.value = false
+}
+
+function formatMediaDate(date) {
+  if (!date) return ''
+  const d = new Date(date)
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+}
+
+function zoomImage(delta) {
+  imageZoom.value = Math.max(0.5, Math.min(4, imageZoom.value + delta))
+  if (imageZoom.value === 1) {
+    imageOffset.value = { x: 0, y: 0 }
+  }
+}
+
+function resetImageZoom() {
+  imageZoom.value = 1
+  imageOffset.value = { x: 0, y: 0 }
+}
+
+function handleImageWheel(e) {
+  e.preventDefault()
+  const delta = e.deltaY > 0 ? -0.1 : 0.1
+  zoomImage(delta)
+}
+
+function startImageDrag(e) {
+  if (imageZoom.value <= 1) return
+  isDraggingImage = true
+  dragStart = { x: e.clientX - imageOffset.value.x, y: e.clientY - imageOffset.value.y }
+  
+  const onMove = (e) => {
+    if (!isDraggingImage) return
+    imageOffset.value = {
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    }
+  }
+  
+  const onUp = () => {
+    isDraggingImage = false
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+  }
+  
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+}
+
+function startImageTouchDrag(e) {
+  if (imageZoom.value <= 1) return
+  const touch = e.touches[0]
+  isDraggingImage = true
+  dragStart = { x: touch.clientX - imageOffset.value.x, y: touch.clientY - imageOffset.value.y }
+  
+  const onMove = (e) => {
+    if (!isDraggingImage) return
+    const touch = e.touches[0]
+    imageOffset.value = {
+      x: touch.clientX - dragStart.x,
+      y: touch.clientY - dragStart.y
+    }
+  }
+  
+  const onUp = () => {
+    isDraggingImage = false
+    document.removeEventListener('touchmove', onMove)
+    document.removeEventListener('touchend', onUp)
+  }
+  
+  document.addEventListener('touchmove', onMove)
+  document.addEventListener('touchend', onUp)
+}
+
+function openGifViewer(item, msg) {
+  currentGifUrl.value = item.url
+  currentGifSize.value = item.fileSize || 0
+  showGifMenu.value = false
+  
+  if (msg) {
+    currentMediaMsgId.value = msg.id
+    const sender = msg.senderId === authStore.user?.id ? authStore.user : selectedDialog.value?.user
+    currentMediaSender.value = sender?.name || 'Пользователь'
+    currentMediaDate.value = formatMediaDate(msg.createdAt)
+  }
+  
+  showGifViewer.value = true
+}
+
+function closeGifViewer() {
+  showGifViewer.value = false
+  showGifMenu.value = false
+}
+
+function scrollToMediaInChat() {
+  showImageViewer.value = false
+  showGifViewer.value = false
+  showViewerMenu.value = false
+  showGifMenu.value = false
+  
+  if (currentMediaMsgId.value) {
+    nextTick(() => {
+      const el = document.querySelector(`[data-msg-id="${currentMediaMsgId.value}"]`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('highlight')
+        setTimeout(() => el.classList.remove('highlight'), 1500)
+      }
+    })
+  }
+}
+
+function replyToMediaMessage() {
+  showImageViewer.value = false
+  showGifViewer.value = false
+  showViewerMenu.value = false
+  showGifMenu.value = false
+  
+  const msg = messages.value.find(m => m.id === currentMediaMsgId.value)
+  if (msg) {
+    replyingTo.value = msg
+  }
+}
+
+function deleteMediaMessage() {
+  showImageViewer.value = false
+  showGifViewer.value = false
+  showViewerMenu.value = false
+  showGifMenu.value = false
+  
+  const msg = messages.value.find(m => m.id === currentMediaMsgId.value)
+  if (msg) {
+    selectedMsg = msg
+    confirmDeleteForMe()
+  }
+}
+
+async function deleteMediaMessageForAll() {
+  showImageViewer.value = false
+  showGifViewer.value = false
+  showViewerMenu.value = false
+  showGifMenu.value = false
+  
+  if (!currentMediaMsgId.value) return
+  
+  try {
+    await api.delete(`/messages/${currentMediaMsgId.value}`, { params: { forAll: true } })
+    messages.value = messages.value.filter(m => m.id !== currentMediaMsgId.value)
+    notifications.success('Сообщение удалено')
+  } catch (err) {
+    notifications.error('Ошибка удаления')
+  }
+}
+
+function shareMedia() {
+  const url = currentImageUrl.value || currentGifUrl.value
+  if (navigator.share) {
+    navigator.share({ url })
+  } else {
+    navigator.clipboard.writeText(url)
+    notifications.success('Ссылка скопирована')
+  }
+}
+
+async function downloadMedia(url, type) {
+  try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    const ext = type === 'video' ? 'mp4' : type === 'gif' ? 'gif' : 'jpg'
+    a.download = `littor_${Date.now()}.${ext}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(blobUrl)
+    notifications.success('Файл скачан')
+  } catch (err) {
+    notifications.error('Ошибка скачивания')
+  }
+}
 
 function startReply() {
   if (!selectedMsg.value) return
@@ -2039,7 +2659,8 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .scroll-to-bottom-btn svg { width: 20px; height: 20px; color: white; }
 .scroll-btn-enter-active, .scroll-btn-leave-active { transition: all 0.15s ease; }
 .scroll-btn-enter-from, .scroll-btn-leave-to { opacity: 0; transform: scale(0.8) translateY(10px); }
-.message { display: flex; gap: 8px; max-width: 70%; animation: messageIn 0.15s cubic-bezier(0.2, 0, 0, 1); }
+.message { display: flex; gap: 8px; max-width: 70%; animation: messageIn 0.15s cubic-bezier(0.2, 0, 0, 1); transition: transform 0.15s ease; }
+.message.long-press-active { transform: scale(0.95); }
 .message.search-highlight .message-bubble,
 .message.search-highlight .voice-message-wrap,
 .message.search-highlight .circle-video-wrap,
@@ -2062,6 +2683,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message.own .message-bubble { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 .message.own .message-bubble.files-only { background: transparent; padding: 0; }
 .message:not(.own) .message-bubble.files-only { background: transparent; padding: 0; }
+.message.own .message-bubble.media-only { background: transparent; padding: 0; }
+.message:not(.own) .message-bubble.media-only { background: transparent; padding: 0; }
+.message-bubble.media-only .message-text-wrap { display: none; }
 .forwarded-label { display: block; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px; font-style: italic; }
 .forwarded-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
 .forwarded-text { font-size: 12px; color: rgba(255,255,255,0.5); }
@@ -2198,6 +2822,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message.selected .message-bubble { background: rgba(120, 90, 200, 0.5) !important; }
 .message.selected .message-bubble:has(.audio-message-wrap),
 .message.selected .message-bubble:has(.file-message-wrap) { background: transparent !important; }
+.message.selected .message-bubble.media-only { background: transparent !important; }
+.message.selected .message-bubble.media-only .msg-media-gallery img,
+.message.selected .message-bubble.media-only .msg-media-gallery video { filter: brightness(0.7); }
 .message.selected .voice-message-wrap { background: rgba(120, 90, 200, 0.5) !important; }
 .message.selected .circle-video-wrap { background: rgba(120, 90, 200, 0.5) !important; }
 .message.selected .audio-message-wrap { filter: brightness(0.7); }
@@ -2917,6 +3544,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 6px;
+  position: relative;
 }
 .msg-media-gallery.media-count-1 { grid-template-columns: 1fr; }
 .msg-media-gallery.media-count-2 { grid-template-columns: 1fr 1fr; }
@@ -2938,7 +3566,495 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   height: 100%;
   object-fit: cover;
 }
-.msg-gallery-item video { cursor: default; }
+.msg-gallery-item video { cursor: pointer; }
+
+.video-inline-controls {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+}
+
+.video-time-badge,
+.video-mute-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.video-mute-badge {
+  padding: 4px 6px;
+}
+
+.video-mute-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.video-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 5;
+}
+
+.video-progress-fill {
+  height: 100%;
+  background: #3390ec;
+  transition: width 0.1s linear;
+}
+
+.gif-badge-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+}
+
+.gif-label {
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.gif-size {
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.video-player-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.video-player-video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.viewer-floating-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.viewer-floating-top > * {
+  pointer-events: auto;
+}
+
+.viewer-glass-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.viewer-glass-btn:active {
+  transform: scale(0.85);
+  background: rgba(50, 50, 50, 0.85);
+}
+
+.viewer-glass-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.viewer-glass-btn.small {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+.viewer-glass-btn.small svg {
+  width: 20px;
+  height: 20px;
+}
+
+.viewer-glass-btn.play-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+}
+
+.viewer-glass-btn.play-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.viewer-glass-btn.speed-btn {
+  width: auto;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.viewer-glass-btn.danger svg {
+  color: #ff5555;
+}
+
+.viewer-glass-pill {
+  padding: 10px 18px;
+  border-radius: 22px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.viewer-glass-pill.gif-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.viewer-glass-pill .gif-label {
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.viewer-glass-pill .gif-size {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.viewer-glass-btn-group {
+  position: relative;
+}
+
+.viewer-glass-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(30, 30, 30, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.viewer-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: white;
+  font-size: 15px;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.viewer-dropdown-item:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.viewer-dropdown-item svg {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.viewer-dropdown-item.danger {
+  color: #ff5555;
+}
+
+.viewer-dropdown-item.danger svg {
+  color: #ff5555;
+}
+
+.viewer-floating-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.viewer-floating-bottom > * {
+  pointer-events: auto;
+}
+
+.viewer-glass-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 20px;
+  border-radius: 18px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.viewer-info-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.viewer-info-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.video-floating-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.video-floating-bottom.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.video-progress-glass {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.video-progress-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.video-progress-buffered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+}
+
+.video-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: white;
+  border-radius: 3px;
+}
+
+.video-progress-handle {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.video-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-radius: 28px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  align-self: center;
+}
+
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.media-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.media-viewer-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 80px 16px;
+  width: 100%;
+}
+
+.media-viewer-content img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .viewer-glass-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+  }
+  
+  .viewer-glass-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .viewer-glass-btn.small {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+  }
+  
+  .viewer-glass-btn.small svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .viewer-glass-btn.play-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+  }
+  
+  .viewer-glass-btn.play-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .viewer-glass-pill {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  
+  .viewer-glass-info {
+    padding: 8px 16px;
+  }
+  
+  .viewer-info-name {
+    font-size: 13px;
+  }
+  
+  .viewer-info-date {
+    font-size: 11px;
+  }
+  
+  .video-controls-row {
+    gap: 8px;
+    padding: 6px 12px;
+  }
+  
+  .media-viewer-content {
+    padding: 70px 12px;
+  }
+}
 .msg-gallery-file {
   width: 100%;
   height: 100%;
@@ -2961,6 +4077,29 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   justify-content: center;
   font-size: 22px;
   font-weight: 600;
+  color: white;
+}
+
+.media-time-overlay {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 10px;
+  font-size: 11px;
+  color: white;
+  z-index: 5;
+}
+
+.media-time-overlay .read-status {
+  width: 14px;
+  height: 8px;
   color: white;
 }
 
@@ -3512,6 +4651,10 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 
 [data-theme="light"] .message.selected .message-bubble:has(.audio-message-wrap),
 [data-theme="light"] .message.selected .message-bubble:has(.file-message-wrap) {
+  background: transparent !important;
+}
+
+[data-theme="light"] .message.selected .message-bubble.media-only {
   background: transparent !important;
 }
 

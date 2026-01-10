@@ -209,7 +209,6 @@ async function playTrack(track) {
       artwork: track.artwork
     })
     
-    // Add to history
     api.post('/music/history', {
       trackId: track.id,
       title: track.title,

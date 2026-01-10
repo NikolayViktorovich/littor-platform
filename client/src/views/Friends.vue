@@ -492,7 +492,7 @@ onUnmounted(() => {
   padding: 10px 16px;
   color: var(--text-muted);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   border-radius: var(--radius-full);
   transition: color 0.1s cubic-bezier(0.2, 0, 0, 1);
   position: relative;
@@ -631,11 +631,40 @@ onUnmounted(() => {
   
   .liquid-tabs {
     flex-wrap: nowrap;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    gap: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 0 -24px;
+    padding: 0 24px;
   }
   
   .liquid-tab {
-    padding: 10px 14px;
-    font-size: 13px;
+    padding: 14px 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-muted);
+    position: relative;
+  }
+  
+  .liquid-tab.active {
+    background: transparent;
+    color: var(--text-primary);
+  }
+  
+  .liquid-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px 3px 0 0;
   }
   
   .tab-badge {
@@ -668,8 +697,9 @@ onUnmounted(() => {
 
 @media (max-width: 380px) {
   .liquid-tab {
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: 10px 8px;
+    font-size: 14px;
+    font-weight: 400;
   }
   
   .tab-badge {
@@ -741,5 +771,20 @@ onUnmounted(() => {
 
 [data-theme="light"] .friend-info:hover .friend-name {
   color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  [data-theme="light"] .liquid-tabs {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+    background: transparent;
+  }
+  
+  [data-theme="light"] .liquid-tab {
+    background: transparent;
+  }
+  
+  [data-theme="light"] .liquid-tab.active {
+    background: transparent;
+  }
 }
 </style>

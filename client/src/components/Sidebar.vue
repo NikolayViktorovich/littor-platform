@@ -167,7 +167,6 @@ async function fetchNotifications() {
       createdAt: n.createdAt
     }))
     
-    // Show toast for new friend_accepted notifications
     serverNotifs.forEach(n => {
       if (n.type === 'friend_accepted' && !shownFriendAcceptedIds.value.has(n.id)) {
         shownFriendAcceptedIds.value.add(n.id)

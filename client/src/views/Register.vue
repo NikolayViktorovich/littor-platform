@@ -20,7 +20,6 @@
           </svg>
         </button>
 
-        <!-- Step 1: Registration form -->
         <template v-if="step === 'register'">
           <div class="auth-logo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
@@ -99,7 +98,6 @@
           </button>
         </template>
 
-        <!-- Step 2: Email verification -->
         <template v-else-if="step === 'verify'">
           <div class="verify-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -147,7 +145,6 @@
           </p>
         </template>
 
-        <!-- Step 3: Success -->
         <template v-else-if="step === 'success'">
           <div class="success-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -166,7 +163,6 @@
 
       <span class="help-link" @click="showHelp = true">{{ t('help') }}</span>
 
-      <!-- Help Modal -->
       <Teleport to="body">
         <Transition name="modal">
           <div v-if="showHelp" class="modal-overlay" @click.self="showHelp = false">

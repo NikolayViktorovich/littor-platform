@@ -355,13 +355,11 @@ function applyTheme(theme) {
   if (theme === 'system') {
     actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   }
-  
-  // Add transition class for smooth theme change
+
   document.documentElement.classList.add('theme-transitioning')
   document.documentElement.setAttribute('data-theme', actualTheme)
   localStorage.setItem('theme', theme)
   
-  // Remove transition class after animation
   setTimeout(() => {
     document.documentElement.classList.remove('theme-transitioning')
   }, 300)

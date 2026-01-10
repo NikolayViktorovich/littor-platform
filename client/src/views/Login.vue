@@ -20,7 +20,6 @@
           </svg>
         </button>
 
-        <!-- Step 1: Email -->
         <template v-if="step === 'email'">
           <div class="auth-logo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
@@ -53,7 +52,6 @@
           </button>
         </template>
 
-        <!-- Step 2: Password -->
         <template v-else>
           <h1 class="auth-title title-left">{{ t('confirmLoginTitle') }}</h1>
           <p class="auth-subtitle subtitle-left">{{ t('enterPasswordDesc') }}</p>
@@ -104,7 +102,6 @@
 
       <span class="help-link" @click="showHelp = true">{{ t('help') }}</span>
 
-      <!-- Help Modal -->
       <Teleport to="body">
         <Transition name="modal">
           <div v-if="showHelp" class="modal-overlay" @click.self="showHelp = false">
@@ -171,7 +168,6 @@
         </Transition>
       </Teleport>
 
-      <!-- Forgot Password Modal -->
       <Teleport to="body">
         <Transition name="modal">
           <div v-if="showForgotModal" class="modal-overlay" @click.self="closeForgotModal">
@@ -182,7 +178,6 @@
                 </svg>
               </button>
 
-              <!-- Step 1: Enter email -->
               <template v-if="forgotStep === 'email'">
                 <div class="forgot-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -212,7 +207,6 @@
                 </p>
               </template>
 
-              <!-- Step 2: Enter code -->
               <template v-else-if="forgotStep === 'code'">
                 <div class="forgot-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -258,7 +252,6 @@
                 </p>
               </template>
 
-              <!-- Step 3: New password -->
               <template v-else-if="forgotStep === 'newPassword'">
                 <div class="forgot-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -304,7 +297,6 @@
                 </form>
               </template>
 
-              <!-- Step 4: Success -->
               <template v-else-if="forgotStep === 'success'">
                 <div class="forgot-icon success">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -323,7 +315,6 @@
         </Transition>
       </Teleport>
 
-      <!-- Email Verification Modal (for unverified accounts) -->
       <Teleport to="body">
         <Transition name="modal">
           <div v-if="showVerifyModal" class="modal-overlay" @click.self="showVerifyModal = false">

@@ -18,9 +18,7 @@
       <div class="post-menu-wrap">
         <button @click.stop="toggleMenu" class="post-menu-btn">
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="6" r="1.5"/>
-            <circle cx="12" cy="12" r="1.5"/>
-            <circle cx="12" cy="18" r="1.5"/>
+            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
           </svg>
         </button>
         
@@ -67,11 +65,15 @@
 
     <p v-if="post.content" class="post-content" v-html="formatContent(post.content)"></p>
     
-    <!-- Multiple media - visual gallery (images, videos, gifs) -->
     <div v-if="visualMedia.length > 0" class="post-media-gallery" :class="'media-count-' + Math.min(visualMedia.length, 4)">
-      <div v-for="(item, index) in visualMedia.slice(0, 4)" :key="item.id" class="media-gallery-item" :class="{ 'has-more': index === 3 && visualMedia.length > 4 }" @click="openMediaGallery(index)">
+      <div v-for="(item, index) in visualMedia.slice(0, 4)" :key="item.id" class="media-gallery-item" :class="{ 'has-more': index === 3 && visualMedia.length > 4, 'is-video': item.mediaType === 'video' }" @click="openMediaGallery(index)">
         <img v-if="item.mediaType === 'image' || item.mediaType === 'gif'" :src="item.url" alt="">
-        <video v-else-if="item.mediaType === 'video'" :src="item.url" @click.stop controls></video>
+        <template v-else-if="item.mediaType === 'video'">
+          <video :src="item.url" muted></video>
+          <div class="video-play-overlay">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+          </div>
+        </template>
         <div v-if="index === 3 && visualMedia.length > 4" class="more-overlay">+{{ visualMedia.length - 4 }}</div>
       </div>
     </div>
@@ -269,6 +271,159 @@
         </form>
       </div>
     </Transition>
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showImageViewer" class="media-viewer-overlay" @click.self="closeImageViewer">
+          <div class="viewer-floating-top">
+            <button class="viewer-glass-btn" @click="closeImageViewer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="viewer-glass-pill">
+              <span>{{ currentMediaIndex + 1 }} / {{ totalMediaCount }}</span>
+            </div>
+            <div class="viewer-glass-btn-group">
+              <button class="viewer-glass-btn" @click="showViewerMenu = !showViewerMenu">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+              </button>
+              <Transition name="dropdown">
+                <div v-if="showViewerMenu" class="viewer-glass-dropdown">
+                  <button class="viewer-dropdown-item" @click="downloadCurrentMedia('image')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Сохранить</span>
+                  </button>
+                  <button class="viewer-dropdown-item" @click="shareCurrentMedia">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                    <span>Поделиться</span>
+                  </button>
+                </div>
+              </Transition>
+            </div>
+          </div>
+          
+          <div class="media-viewer-content">
+            <img :src="currentImageUrl" alt="">
+          </div>
+          
+          <div class="viewer-floating-bottom">
+            <button class="viewer-glass-btn" @click="shareCurrentMedia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            </button>
+            <div class="viewer-glass-info">
+              <span class="viewer-info-name">{{ post.author.name }}</span>
+              <span class="viewer-info-date">{{ formatViewerDate(post.createdAt) }}</span>
+            </div>
+            <button class="viewer-glass-btn" @click="downloadCurrentMedia('image')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            </button>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div v-if="showGifViewer" class="media-viewer-overlay" @click.self="closeGifViewer">
+          <div class="viewer-floating-top">
+            <button class="viewer-glass-btn" @click="closeGifViewer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="viewer-glass-pill gif-pill">
+              <span class="gif-label">GIF</span>
+              <span class="gif-size">{{ formatFileSize(currentGifSize) }}</span>
+            </div>
+            <div class="viewer-glass-btn-group">
+              <button class="viewer-glass-btn" @click="showGifMenu = !showGifMenu">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+              </button>
+              <Transition name="dropdown">
+                <div v-if="showGifMenu" class="viewer-glass-dropdown">
+                  <button class="viewer-dropdown-item" @click="downloadCurrentMedia('gif')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Сохранить GIF</span>
+                  </button>
+                  <button class="viewer-dropdown-item" @click="shareCurrentMedia">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                    <span>Поделиться</span>
+                  </button>
+                </div>
+              </Transition>
+            </div>
+          </div>
+          
+          <div class="media-viewer-content">
+            <img :src="currentGifUrl" alt="GIF">
+          </div>
+          
+          <div class="viewer-floating-bottom">
+            <button class="viewer-glass-btn" @click="shareCurrentMedia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            </button>
+            <div class="viewer-glass-info">
+              <span class="viewer-info-name">{{ post.author.name }}</span>
+              <span class="viewer-info-date">{{ formatViewerDate(post.createdAt) }}</span>
+            </div>
+            <button class="viewer-glass-btn" @click="downloadCurrentMedia('gif')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            </button>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div v-if="showVideoPlayer" class="video-player-overlay" @click.self="closeVideoPlayer">
+          <div class="viewer-floating-top">
+            <button class="viewer-glass-btn" @click="closeVideoPlayer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="viewer-glass-pill">
+              <span>{{ formatVideoTime(fullVideoCurrentTime) }} / {{ formatVideoTime(fullVideoDuration) }}</span>
+            </div>
+            <button class="viewer-glass-btn" @click="downloadCurrentMedia('video')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            </button>
+          </div>
+          
+          <video 
+            ref="fullscreenVideoRef"
+            :src="videoPlayerSrc"
+            class="video-player-video"
+            @loadedmetadata="onFullVideoMeta"
+            @timeupdate="onFullVideoTime"
+            @ended="onFullVideoEnded"
+            @click="toggleFullVideoPlay"
+            playsinline
+          ></video>
+          
+          <div class="video-floating-bottom" :class="{ hidden: controlsHidden }">
+            <div class="video-progress-glass" @click="seekFullVideo">
+              <div class="video-progress-bg"></div>
+              <div class="video-progress-buffered" :style="{ width: bufferedProgress + '%' }"></div>
+              <div class="video-progress-fill" :style="{ width: fullVideoProgress + '%' }"></div>
+              <div class="video-progress-handle" :style="{ left: fullVideoProgress + '%' }"></div>
+            </div>
+            
+            <div class="video-controls-row">
+              <button class="viewer-glass-btn small" @click="skipVideo(-10)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 3C17.15 3 21.08 6.03 22.47 10.22L20.1 11C19.05 7.81 16.04 5.5 12.5 5.5C10.54 5.5 8.77 6.22 7.38 7.38L10 10H3V3L5.6 5.6C7.45 4 9.85 3 12.5 3M10 12V22H8V14H6V12H10M18 14V20C18 21.11 17.11 22 16 22H14C12.9 22 12 21.1 12 20V14C12 12.9 12.9 12 14 12H16C17.11 12 18 12.9 18 14M14 14V20H16V14H14Z"/></svg>
+              </button>
+              <button class="viewer-glass-btn play-btn" @click="toggleFullVideoPlay">
+                <svg v-if="!fullVideoPlaying" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+                <svg v-else viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              </button>
+              <button class="viewer-glass-btn small" @click="skipVideo(10)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 3C6.85 3 2.92 6.03 1.53 10.22L3.9 11C4.95 7.81 7.96 5.5 11.5 5.5C13.46 5.5 15.23 6.22 16.62 7.38L14 10H21V3L18.4 5.6C16.55 4 14.15 3 11.5 3M10 12V22H8V14H6V12H10M18 14V20C18 21.11 17.11 22 16 22H14C12.9 22 12 21.1 12 20V14C12 12.9 12.9 12 14 12H16C17.11 12 18 12.9 18 14M14 14V20H16V14H14Z"/></svg>
+              </button>
+              <button class="viewer-glass-btn speed-btn" @click="cyclePlaybackSpeed">
+                <span>{{ playbackSpeed }}x</span>
+              </button>
+              <button class="viewer-glass-btn" @click="toggleFullscreen">
+                <svg v-if="!isFullscreen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </article>
 </template>
 
@@ -312,6 +467,28 @@ const audioEl = ref(null)
 const isAudioPlaying = ref(false)
 const audioDuration = ref('0:00')
 const audioProgress = ref(0)
+const showImageViewer = ref(false)
+const showGifViewer = ref(false)
+const showVideoPlayer = ref(false)
+const currentImageUrl = ref('')
+const currentGifUrl = ref('')
+const currentGifSize = ref(0)
+const videoPlayerSrc = ref('')
+const currentMediaIndex = ref(0)
+const totalMediaCount = ref(1)
+const showViewerMenu = ref(false)
+const showGifMenu = ref(false)
+
+const fullscreenVideoRef = ref(null)
+const fullVideoPlaying = ref(false)
+const fullVideoCurrentTime = ref(0)
+const fullVideoDuration = ref(0)
+const fullVideoProgress = ref(0)
+const bufferedProgress = ref(0)
+const playbackSpeed = ref(1)
+const isFullscreen = ref(false)
+const controlsHidden = ref(false)
+let controlsTimeout = null
 
 const isPostAudioPlaying = computed(() => {
   return audioPlayerStore.currentTrack?.url === props.post.image && audioPlayerStore.isPlaying
@@ -547,15 +724,190 @@ function downloadMediaFile(item) {
 
 function openMedia() {
   if (isVideo.value) return
-  emit('open-media', props.post.image, 'image', 0, [{ src: props.post.image, type: 'image' }])
+  openImageViewer(props.post.image, 0, 1)
 }
 
 function openMediaGallery(index) {
   const items = visualMedia.value
   const item = items[index]
   if (!item) return
-  if (item.mediaType === 'video') return
-  emit('open-media', item.url, item.mediaType, index, items.map(m => ({ src: m.url, type: m.mediaType })))
+  
+  if (item.mediaType === 'video') {
+    openVideoPlayerFunc(item.url)
+    return
+  }
+  
+  if (item.mediaType === 'gif') {
+    openGifViewerFunc(item.url, item.fileSize || 0)
+    return
+  }
+
+  const imageItems = items.filter(m => m.mediaType === 'image')
+  const imageIndex = imageItems.findIndex(m => m.url === item.url)
+  openImageViewer(item.url, imageIndex >= 0 ? imageIndex : 0, imageItems.length || 1)
+}
+
+function openImageViewer(url, index, total) {
+  currentImageUrl.value = url
+  currentMediaIndex.value = index
+  totalMediaCount.value = total
+  showImageViewer.value = true
+  showViewerMenu.value = false
+}
+
+function closeImageViewer() {
+  showImageViewer.value = false
+  showViewerMenu.value = false
+}
+
+function openGifViewerFunc(url, size) {
+  currentGifUrl.value = url
+  currentGifSize.value = size
+  showGifViewer.value = true
+  showGifMenu.value = false
+}
+
+function closeGifViewer() {
+  showGifViewer.value = false
+  showGifMenu.value = false
+}
+
+function openVideoPlayerFunc(url) {
+  videoPlayerSrc.value = url
+  showVideoPlayer.value = true
+  fullVideoPlaying.value = false
+  controlsHidden.value = false
+  playbackSpeed.value = 1
+}
+
+function closeVideoPlayer() {
+  showVideoPlayer.value = false
+  if (fullscreenVideoRef.value) {
+    fullscreenVideoRef.value.pause()
+  }
+  fullVideoPlaying.value = false
+}
+
+function toggleFullVideoPlay() {
+  if (!fullscreenVideoRef.value) return
+  if (fullVideoPlaying.value) {
+    fullscreenVideoRef.value.pause()
+    fullVideoPlaying.value = false
+  } else {
+    fullscreenVideoRef.value.play()
+    fullVideoPlaying.value = true
+    resetControlsTimeout()
+  }
+}
+
+function onFullVideoMeta() {
+  if (!fullscreenVideoRef.value) return
+  fullVideoDuration.value = fullscreenVideoRef.value.duration
+}
+
+function onFullVideoTime() {
+  if (!fullscreenVideoRef.value) return
+  fullVideoCurrentTime.value = fullscreenVideoRef.value.currentTime
+  fullVideoProgress.value = (fullVideoCurrentTime.value / fullVideoDuration.value) * 100
+  
+  const video = fullscreenVideoRef.value
+  if (video.buffered.length > 0) {
+    bufferedProgress.value = (video.buffered.end(video.buffered.length - 1) / video.duration) * 100
+  }
+}
+
+function onFullVideoEnded() {
+  fullVideoPlaying.value = false
+  controlsHidden.value = false
+}
+
+function seekFullVideo(e) {
+  if (!fullscreenVideoRef.value) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const percent = (e.clientX - rect.left) / rect.width
+  fullscreenVideoRef.value.currentTime = percent * fullVideoDuration.value
+}
+
+function skipVideo(seconds) {
+  if (!fullscreenVideoRef.value) return
+  fullscreenVideoRef.value.currentTime = Math.max(0, Math.min(fullVideoDuration.value, fullscreenVideoRef.value.currentTime + seconds))
+  resetControlsTimeout()
+}
+
+function cyclePlaybackSpeed() {
+  const speeds = [0.5, 1, 1.5, 2]
+  const currentIndex = speeds.indexOf(playbackSpeed.value)
+  playbackSpeed.value = speeds[(currentIndex + 1) % speeds.length]
+  if (fullscreenVideoRef.value) {
+    fullscreenVideoRef.value.playbackRate = playbackSpeed.value
+  }
+  resetControlsTimeout()
+}
+
+function toggleFullscreen() {
+  const container = document.querySelector('.video-player-overlay')
+  if (!document.fullscreenElement) {
+    container?.requestFullscreen()
+    isFullscreen.value = true
+  } else {
+    document.exitFullscreen()
+    isFullscreen.value = false
+  }
+  resetControlsTimeout()
+}
+
+function resetControlsTimeout() {
+  controlsHidden.value = false
+  if (controlsTimeout) clearTimeout(controlsTimeout)
+  if (fullVideoPlaying.value) {
+    controlsTimeout = setTimeout(() => {
+      controlsHidden.value = true
+    }, 3000)
+  }
+}
+
+function formatVideoTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function formatViewerDate(date) {
+  const d = new Date(date)
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+async function downloadCurrentMedia(type) {
+  const url = type === 'image' ? currentImageUrl.value : type === 'gif' ? currentGifUrl.value : videoPlayerSrc.value
+  try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    const ext = type === 'video' ? 'mp4' : type === 'gif' ? 'gif' : 'jpg'
+    a.download = `littor_${Date.now()}.${ext}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(blobUrl)
+  } catch (err) {
+    console.error('Download failed:', err)
+  }
+  showViewerMenu.value = false
+  showGifMenu.value = false
+}
+
+function shareCurrentMedia() {
+  const url = currentImageUrl.value || currentGifUrl.value || videoPlayerSrc.value
+  if (navigator.share) {
+    navigator.share({ url })
+  } else {
+    navigator.clipboard.writeText(url)
+  }
+  showViewerMenu.value = false
+  showGifMenu.value = false
 }
 
 function getAvatarUrl(avatar) {
@@ -1647,7 +1999,25 @@ const vClickOutside = {
   object-fit: cover;
 }
 .media-gallery-item video {
-  cursor: default;
+  cursor: pointer;
+}
+.media-gallery-item.is-video {
+  cursor: pointer;
+}
+.video-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+.video-play-overlay svg {
+  width: 48px;
+  height: 48px;
+  color: white;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
 }
 .gallery-audio-item,
 .gallery-file-item {
@@ -1777,5 +2147,394 @@ const vClickOutside = {
 
 [data-theme="light"] .comment-form input {
   background: rgba(0, 0, 0, 0.04);
+}
+
+.media-viewer-overlay,
+.video-player-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.viewer-floating-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.viewer-floating-top > * {
+  pointer-events: auto;
+}
+
+.viewer-glass-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.viewer-glass-btn:active {
+  transform: scale(0.85);
+  background: rgba(50, 50, 50, 0.85);
+}
+
+.viewer-glass-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.viewer-glass-btn.small {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+.viewer-glass-btn.small svg {
+  width: 20px;
+  height: 20px;
+}
+
+.viewer-glass-btn.play-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+}
+
+.viewer-glass-btn.play-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.viewer-glass-btn.speed-btn {
+  width: auto;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.viewer-glass-pill {
+  padding: 10px 18px;
+  border-radius: 22px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.viewer-glass-pill.gif-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.viewer-glass-pill .gif-label {
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.viewer-glass-pill .gif-size {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.viewer-glass-btn-group {
+  position: relative;
+}
+
+.viewer-glass-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(30, 30, 30, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.viewer-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: white;
+  font-size: 15px;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.viewer-dropdown-item:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.viewer-dropdown-item svg {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.viewer-floating-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.viewer-floating-bottom > * {
+  pointer-events: auto;
+}
+
+.viewer-glass-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 20px;
+  border-radius: 18px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.viewer-info-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.viewer-info-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.media-viewer-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 80px 16px;
+  width: 100%;
+}
+
+.media-viewer-content img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  border-radius: 12px;
+}
+
+.video-player-video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.video-floating-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.video-floating-bottom.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.video-progress-glass {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.video-progress-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.video-progress-buffered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+}
+
+.video-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: white;
+  border-radius: 3px;
+}
+
+.video-progress-handle {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.video-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-radius: 28px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  align-self: center;
+}
+
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .viewer-glass-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+  }
+  
+  .viewer-glass-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .viewer-glass-btn.small {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+  }
+  
+  .viewer-glass-btn.small svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .viewer-glass-btn.play-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+  }
+  
+  .viewer-glass-btn.play-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .viewer-glass-pill {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  
+  .viewer-glass-info {
+    padding: 8px 16px;
+  }
+  
+  .viewer-info-name {
+    font-size: 13px;
+  }
+  
+  .viewer-info-date {
+    font-size: 11px;
+  }
+  
+  .video-controls-row {
+    gap: 8px;
+    padding: 6px 12px;
+  }
+  
+  .media-viewer-content {
+    padding: 70px 12px;
+  }
 }
 </style>
