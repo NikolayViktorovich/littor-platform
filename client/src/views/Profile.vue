@@ -826,11 +826,11 @@ onUnmounted(() => {
 .tab-nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 .tab-nav-btn:active { transform: scale(0.9); }
 .tab-nav-btn svg { width: 16px; height: 16px; }
-.liquid-tabs { flex: 1; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.liquid-tabs { flex: 1; justify-content: center; display: flex; position: relative; background: var(--glass-bg); border-radius: var(--radius-full); padding: 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; gap: 4px; }
 .liquid-tabs::-webkit-scrollbar { display: none; }
-.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); position: relative; flex: 1; text-align: center; }
+.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 14px; border-radius: var(--radius-full); transition: color 0.15s cubic-bezier(0.2, 0, 0, 1); position: relative; flex: 1; text-align: center; font-weight: 500; }
 .liquid-tab:hover { color: var(--text-secondary); }
-.liquid-tab.active { color: #fff; background: rgba(255,255,255,0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
+.liquid-tab.active { color: var(--text-primary); background: var(--glass-bg-active); }
 .liquid-tab.active { color: var(--text-primary); }
 .profile-posts { display: flex; flex-direction: column; gap: 16px; }
 .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -858,10 +858,10 @@ onUnmounted(() => {
 .audio-add-btn:hover, .audio-remove-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
 .audio-add-btn svg, .audio-remove-btn svg { width: 16px; height: 16px; }
 .audio-section { display: flex; flex-direction: column; gap: 16px; }
-.audio-tabs { display: flex; gap: 8px; padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-full); }
-.audio-tab { flex: 1; padding: 10px 16px; font-size: 14px; color: var(--text-muted); border-radius: var(--radius-full); text-align: center; transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); }
+.audio-tabs { display: flex; gap: 4px; padding: 4px; background: var(--glass-bg); border-radius: var(--radius-full); }
+.audio-tab { flex: 1; padding: 10px 16px; font-size: 14px; color: var(--text-muted); border-radius: var(--radius-full); text-align: center; transition: color 0.1s cubic-bezier(0.2, 0, 0, 1); font-weight: 500; }
 .audio-tab:hover { color: var(--text-secondary); }
-.audio-tab.active { color: #fff; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
+.audio-tab.active { color: var(--text-primary); background: var(--glass-bg-active); }
 .audio-search { margin-bottom: 8px; }
 .audio-search .search-input-wrap { display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-full); padding: 12px 16px; }
 .audio-search .search-input-wrap svg { width: 20px; height: 20px; color: var(--text-muted); flex-shrink: 0; }
@@ -965,7 +965,7 @@ onUnmounted(() => {
   .liquid-tabs {
     flex: 1;
     border-radius: var(--radius-full);
-    background: rgba(255,255,255,0.03);
+    background: var(--glass-bg);
     padding: 4px;
     gap: 4px;
     justify-content: flex-start;
@@ -981,34 +981,32 @@ onUnmounted(() => {
   }
   
   .liquid-tab.active {
-    background: rgba(255,255,255,0.08);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2);
+    background: var(--glass-bg-active);
   }
   
   .audio-tabs {
     margin: 0 -20px 16px;
-    padding: 0;
-    border-radius: 0;
-    background: rgba(255,255,255,0.02);
+    padding: 4px;
+    border-radius: var(--radius-full);
+    background: var(--glass-bg);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    gap: 4px;
   }
   
   .audio-tabs::-webkit-scrollbar { display: none; }
   
   .audio-tab {
-    padding: 12px 16px;
+    padding: 10px 16px;
     font-size: 13px;
-    border-radius: 0;
+    border-radius: var(--radius-full);
     white-space: nowrap;
     flex-shrink: 0;
   }
   
   .audio-tab.active {
-    background: transparent;
-    box-shadow: none;
-    border-bottom: 2px solid rgba(255,255,255,0.8);
+    background: var(--glass-bg-active);
   }
   
   .cover-edit {
@@ -1135,20 +1133,19 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .liquid-tabs {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--glass-bg);
 }
 
 [data-theme="light"] .liquid-tab.active {
-  background: rgba(0, 0, 0, 0.06);
-  box-shadow: none;
+  background: var(--glass-bg-active);
 }
 
 [data-theme="light"] .audio-tabs {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--glass-bg);
 }
 
 [data-theme="light"] .audio-tab.active {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--glass-bg-active);
 }
 
 [data-theme="light"] .audio-search .search-input-wrap {

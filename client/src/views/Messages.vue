@@ -2580,18 +2580,22 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .chat-panel {
-    background: transparent;
+    background: var(--bg-primary);
     border: none;
     border-radius: 0;
     height: 100vh;
+    height: 100dvh;
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
   }
   
   .app.has-audio-player .chat-panel {
     top: 64px;
     height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
   }
   
   .chat-header {

@@ -138,19 +138,19 @@
                 <div class="settings-group">
                   <div class="theme-selector">
                     <span class="group-label">{{ t('theme') }}</span>
-                    <div class="theme-options">
-                      <button class="theme-option" :class="{ active: settings.theme === 'dark' }" @click="setTheme('dark')">
-                        <div class="theme-preview dark"></div>
-                        <span>{{ t('dark') }}</span>
-                      </button>
-                      <button class="theme-option" :class="{ active: settings.theme === 'light' }" @click="setTheme('light')">
-                        <div class="theme-preview light"></div>
-                        <span>{{ t('light') }}</span>
-                      </button>
-                      <button class="theme-option" :class="{ active: settings.theme === 'system' }" @click="setTheme('system')">
-                        <div class="theme-preview system"></div>
-                        <span>{{ t('system') }}</span>
-                      </button>
+                    <div class="theme-switcher">
+                      <div class="theme-switcher-track">
+                        <div class="theme-switcher-indicator" :class="settings.theme"></div>
+                        <button class="theme-switcher-btn" :class="{ active: settings.theme === 'dark' }" @click="setTheme('dark')" :title="t('dark')">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        </button>
+                        <button class="theme-switcher-btn" :class="{ active: settings.theme === 'light' }" @click="setTheme('light')" :title="t('light')">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        </button>
+                        <button class="theme-switcher-btn" :class="{ active: settings.theme === 'system' }" @click="setTheme('system')" :title="t('system')">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -347,8 +347,16 @@ function applyTheme(theme) {
   if (theme === 'system') {
     actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   }
+  
+  // Add transition class for smooth theme change
+  document.documentElement.classList.add('theme-transitioning')
   document.documentElement.setAttribute('data-theme', actualTheme)
   localStorage.setItem('theme', theme)
+  
+  // Remove transition class after animation
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-transitioning')
+  }, 300)
 }
 
 function applyAnimations() {
@@ -458,16 +466,16 @@ onUnmounted(() => {
 .select-item select:focus { outline: none; border-color: var(--glass-border-light); }
 .theme-selector { padding: 16px; }
 .group-label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-.theme-options { display: flex; gap: 12px; }
-.theme-option { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; border-radius: var(--radius-lg); background: var(--glass-bg); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); }
-.theme-option:hover { background: var(--glass-bg-hover); }
-.theme-option.active { background: rgba(91, 154, 255, 0.15); }
-.theme-preview { width: 48px; height: 48px; border-radius: var(--radius); border: 1px solid var(--glass-border); }
-.theme-preview.dark { background: linear-gradient(135deg, #1a1a1a 50%, #2a2a2a 50%); }
-.theme-preview.light { background: linear-gradient(135deg, #f5f5f5 50%, #e0e0e0 50%); }
-.theme-preview.system { background: linear-gradient(135deg, #1a1a1a 25%, #f5f5f5 25%, #f5f5f5 50%, #2a2a2a 50%, #2a2a2a 75%, #e0e0e0 75%); }
-.theme-option span { font-size: 13px; color: var(--text-secondary); }
-.theme-option.active span { color: var(--text-primary); }
+.theme-switcher { display: flex; justify-content: center; }
+.theme-switcher-track { display: flex; align-items: center; gap: 4px; padding: 4px; background: var(--glass-bg); border-radius: var(--radius-full); position: relative; }
+.theme-switcher-indicator { position: absolute; width: 40px; height: 40px; background: var(--glass-bg-active); border-radius: var(--radius-full); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; }
+.theme-switcher-indicator.dark { transform: translateX(0); }
+.theme-switcher-indicator.light { transform: translateX(44px); }
+.theme-switcher-indicator.system { transform: translateX(88px); }
+.theme-switcher-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-full); color: var(--text-muted); transition: color 0.15s cubic-bezier(0.2, 0, 0, 1); position: relative; z-index: 1; }
+.theme-switcher-btn:hover { color: var(--text-secondary); }
+.theme-switcher-btn.active { color: var(--text-primary); }
+.theme-switcher-btn svg { width: 20px; height: 20px; }
 .language-list { display: flex; flex-direction: column; gap: 4px; }
 .language-item { display: flex; align-items: center; padding: 14px 16px; border-radius: var(--radius-lg); transition: background 0.1s cubic-bezier(0.2, 0, 0, 1); text-align: left; }
 .language-item:hover { background: var(--glass-bg-hover); }

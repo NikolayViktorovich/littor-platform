@@ -48,6 +48,21 @@
   --accent-hover: #262626;
 }
 
+/* Theme transition animation */
+html {
+  transition: background-color 0.3s ease;
+}
+
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              color 0.2s ease,
+              box-shadow 0.3s ease !important;
+}
+
 [data-theme="light"] body {
   background: var(--bg-primary);
 }
@@ -137,45 +152,37 @@ svg { stroke-linecap: round; stroke-linejoin: round; }
 
 .liquid-tabs {
   display: inline-flex;
-  background: transparent;
+  background: var(--glass-bg);
   border: none;
-  border-radius: 0;
-  padding: 0;
-  gap: 0;
-  border-bottom: 1px solid var(--glass-border);
-  width: 100%;
+  border-radius: var(--radius-full);
+  padding: 4px;
+  gap: 4px;
+  width: auto;
+  position: relative;
 }
 
 .liquid-tabs::before { display: none; }
 
 .liquid-tab {
-  flex: 1;
-  padding: 16px 20px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 15px;
-  border-radius: 0;
-  transition: color var(--transition-fast);
+  padding: 10px 20px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: var(--radius-full);
+  transition: color 0.15s cubic-bezier(0.2, 0, 0, 1);
   position: relative;
   text-align: center;
+  z-index: 1;
 }
 
-.liquid-tab:hover { color: var(--text-primary); }
+.liquid-tab:hover { color: var(--text-secondary); }
 
 .liquid-tab.active {
   color: var(--text-primary);
-  background: transparent;
+  background: var(--glass-bg-active);
 }
 
-.liquid-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--text-primary);
-}
+.liquid-tab.active::after { display: none; }
 
 .btn {
   display: inline-flex;
@@ -297,6 +304,12 @@ svg { stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 768px) {
   :root { --sidebar-width: 0px; }
   .container { padding: 0 16px; }
+  
+  /* Mobile animation optimizations */
+  * {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
 }
 
 button, a, .tap-target, [role="button"] {
@@ -305,9 +318,22 @@ button, a, .tap-target, [role="button"] {
 }
 
 @media (hover: none) and (pointer: coarse) {
+  /* Faster mobile transitions */
+  :root {
+    --transition-fast: 0.08s cubic-bezier(0.2, 0, 0, 1);
+    --transition: 0.1s cubic-bezier(0.2, 0, 0, 1);
+    --transition-slow: 0.12s cubic-bezier(0.2, 0, 0, 1);
+  }
+  
   button:active, .btn:active, .tap-target:active, [role="button"]:active {
     opacity: 0.7;
     transition: opacity 0.05s ease;
+  }
+  
+  /* Reduce motion for performance */
+  .skeleton {
+    animation: none;
+    background: var(--glass-bg-hover);
   }
 }
 
@@ -330,6 +356,10 @@ button, a, .tap-target, [role="button"] {
   border-color: var(--glass-border);
 }
 
+[data-theme="light"] .liquid-tab.active {
+  background: var(--glass-bg-active);
+}
+
 [data-theme="light"] .liquid-tab.active::after {
-  background: var(--text-primary);
+  display: none;
 }

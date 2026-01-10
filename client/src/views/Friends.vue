@@ -469,27 +469,21 @@ onUnmounted(() => {
 }
 
 .liquid-tabs {
-  display: inline-flex;
-  position: relative;
-  background: rgba(255,255,255,0.03);
-  border-radius: var(--radius-full);
-  padding: 4px;
-}
-
-.liquid-tabs {
   display: flex;
   position: relative;
-  background: rgba(255,255,255,0.03);
+  background: var(--glass-bg);
   border-radius: var(--radius-full);
   padding: 4px;
+  gap: 4px;
 }
 
 .liquid-tab {
   padding: 10px 20px;
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 500;
   border-radius: var(--radius-full);
-  transition: all 0.1s ease;
+  transition: color 0.1s cubic-bezier(0.2, 0, 0, 1);
   position: relative;
   display: flex;
   align-items: center;
@@ -502,9 +496,8 @@ onUnmounted(() => {
 }
 
 .liquid-tab.active {
-  color: #fff;
-  background: rgba(255,255,255,0.08);
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2);
+  color: var(--text-primary);
+  background: var(--glass-bg-active);
 }
 
 .tab-badge {
@@ -686,13 +679,12 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .liquid-tabs {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--glass-bg);
 }
 
 [data-theme="light"] .liquid-tab.active {
   color: var(--text-primary);
-  background: rgba(0, 0, 0, 0.06);
-  box-shadow: none;
+  background: var(--glass-bg-active);
 }
 
 [data-theme="light"] .tab-badge {
