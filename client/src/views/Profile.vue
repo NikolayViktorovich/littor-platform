@@ -1145,6 +1145,46 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.85);
 }
 
+[data-theme="light"] .profile-info {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .back-btn {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .back-btn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .avatar-edit {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .avatar-edit:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .avatar-edit svg {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .cover-edit {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .cover-edit:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .cover-edit svg {
+  color: var(--text-secondary);
+}
+
 [data-theme="light"] .profile-menu-dropdown {
   background: rgba(255, 255, 255, 0.95);
 }

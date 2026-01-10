@@ -3137,7 +3137,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .dialogs-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
 }
 
 [data-theme="light"] .dialog-item:hover {
@@ -3149,33 +3149,57 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .chat-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
+}
+
+[data-theme="light"] .chat-messages {
+  background: url('/chat-pattern-light.svg') repeat;
+  background-size: 400px 400px;
 }
 
 [data-theme="light"] .chat-empty {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
 }
 
 [data-theme="light"] .chat-header {
+  background: #ffffff;
   border-color: rgba(0, 0, 0, 0.06);
 }
 
 [data-theme="light"] .chat-input {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="light"] .chat-input input {
   background: rgba(0, 0, 0, 0.04);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .chat-input input::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .input-actions button,
+[data-theme="light"] .attach-btn,
+[data-theme="light"] .emoji-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .input-actions button:hover,
+[data-theme="light"] .attach-btn:hover,
+[data-theme="light"] .emoji-btn:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="light"] .message:not(.own) .message-bubble {
-  background: rgba(0, 0, 0, 0.06);
+  background: #e8e8ed;
   color: var(--text-primary);
 }
 
 [data-theme="light"] .message.own .message-bubble {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  background: rgba(30, 30, 30, 0.95);
   color: white;
 }
 
@@ -3190,7 +3214,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .reply-in-message {
-  background: rgba(0, 0, 0, 0.06);
+  background: #dcdce2;
   border-left-color: rgba(0, 0, 0, 0.2);
 }
 
@@ -3200,11 +3224,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .voice-message-wrap {
-  background: rgba(0, 0, 0, 0.06);
+  background: #e8e8ed;
 }
 
 [data-theme="light"] .message.own .voice-message-wrap {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  background: rgba(30, 30, 30, 0.95);
 }
 
 [data-theme="light"] .circle-video-wrap {
@@ -3356,11 +3380,27 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .audio-name {
-  color: var(--text-primary);
+  color: white !important;
 }
 
 [data-theme="light"] .audio-meta {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+[data-theme="light"] .message.own .message-bubble:has(.audio-message-wrap) {
+  background: transparent !important;
+}
+
+[data-theme="light"] .message.own .message-bubble:has(.file-message-wrap) {
+  background: transparent !important;
+}
+
+[data-theme="light"] .file-name {
+  color: white !important;
+}
+
+[data-theme="light"] .file-size {
+  color: rgba(255, 255, 255, 0.6) !important;
 }
 
 [data-theme="light"] .reply-preview-name {
@@ -3396,31 +3436,15 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .msg-media-previews {
-  background: rgba(0, 0, 0, 0.03);
+  background: #e8e8ed;
 }
 
 [data-theme="light"] .msg-music-preview {
-  background: rgba(0, 0, 0, 0.03);
+  background: #e8e8ed;
 }
 
 [data-theme="light"] .voice-recording-bar {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-[data-theme="light"] .file-message-wrap {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-[data-theme="light"] .message.own .file-message-wrap {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-[data-theme="light"] .audio-message-wrap {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-[data-theme="light"] .message.own .audio-message-wrap {
-  background: rgba(255, 255, 255, 0.15);
+  background: #ffffff;
 }
 
 [data-theme="light"] .message-time {
@@ -3510,14 +3534,6 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   background: rgba(0, 0, 0, 0.04);
 }
 
-[data-theme="light"] .send-btn {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .send-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
 [data-theme="light"] .message.highlight .message-bubble,
 [data-theme="light"] .message.highlight .voice-message-wrap,
 [data-theme="light"] .message.highlight .circle-video-wrap {
@@ -3528,5 +3544,63 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   0% { background-color: rgba(99, 102, 241, 0); }
   15% { background-color: rgba(99, 102, 241, 0.15); }
   100% { background-color: rgba(99, 102, 241, 0); }
+}
+
+[data-theme="light"] .voice-btn {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .voice-btn:hover {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .action-btn {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .action-btn:hover {
+  color: var(--text-primary) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .input-actions-left button,
+[data-theme="light"] .input-actions-right button {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .input-actions-left button:hover,
+[data-theme="light"] .input-actions-right button:hover {
+  color: var(--text-primary) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .voice-recording-bar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .voice-recording-bar .recording-indicator {
+  color: #ef4444;
+}
+
+[data-theme="light"] .voice-recording-bar .recording-time {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .voice-recording-bar button {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .voice-recording-bar button:hover {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .send-btn {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .send-btn:hover:not(:disabled) {
+  color: var(--text-primary) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
 }
 </style>
