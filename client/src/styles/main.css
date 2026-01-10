@@ -1,20 +1,20 @@
 :root {
-  --bg-primary: #101010;
-  --bg-secondary: #181818;
-  --bg-elevated: #1e1e1e;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #121212;
+  --bg-elevated: #1a1a1a;
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-bg-hover: rgba(255, 255, 255, 0.08);
   --glass-bg-active: rgba(255, 255, 255, 0.12);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-border-light: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-light: rgba(255, 255, 255, 0.12);
   --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   --glass-shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --text-primary: #f5f5f5;
-  --text-secondary: #999999;
-  --text-muted: #666666;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #6a6a6a;
   --accent: #ffffff;
   --accent-hover: #e0e0e0;
-  --success: #00ba7c;
+  --success: #1db954;
   --danger: #f4212e;
   --warning: #ffad1f;
   --link: #1d9bf0;
@@ -143,10 +143,12 @@ svg { stroke-linecap: round; stroke-linejoin: round; }
 }
 
 .glass-modal {
-  background: var(--bg-elevated);
-  border: 1px solid var(--glass-border);
+  background: rgba(28, 28, 30, 0.65);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
 }
 
 .liquid-tabs {
@@ -441,8 +443,11 @@ button, a, .tap-target, [role="button"] {
 }
 
 [data-theme="light"] .glass-modal {
-  background: var(--bg-elevated);
-  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
 }
 
 [data-theme="light"] .btn-primary {

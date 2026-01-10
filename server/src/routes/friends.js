@@ -66,7 +66,6 @@ router.post('/accept/:id', authMiddleware, (req, res) => {
       WHERE userId = ? AND friendId = ? AND status = 'pending'
     `).run(req.params.id, req.userId)
 
-    // Create notification for the user whose request was accepted
     const accepter = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId)
     const notificationId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
     db.prepare(`

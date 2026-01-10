@@ -115,7 +115,7 @@
             </button>
           </div>
 
-        <div class="chat-messages" ref="messagesContainer" @scroll="onChatScroll">
+        <div class="chat-messages" ref="messagesContainer" @scroll="onChatScroll" :class="{ 'messages-hidden': !messagesReady }">
           <Transition name="floating-date">
             <div v-if="showFloatingDate" class="floating-date">
               <span>{{ floatingDateText }}</span>
@@ -125,9 +125,6 @@
           <template v-else>
             <TransitionGroup name="message-list" tag="div" class="messages-wrapper">
             <template v-for="(msg, index) in messages" :key="msg.id">
-              <div v-if="shouldShowDateSeparator(index)" class="date-separator">
-                <span>{{ formatDateSeparator(msg.createdAt) }}</span>
-              </div>
               <!-- System message (pin/unpin) -->
               <div v-if="msg.mediaType === 'system'" class="system-message" :class="{ clickable: msg.content.startsWith('pinned_message:') }" @click="handleSystemMessageClick(msg)" @contextmenu.prevent="openSystemMsgMenu($event, msg)">
                 <div class="system-message-content glass-pill">
@@ -256,6 +253,12 @@
             </template>
             </TransitionGroup>
           </template>
+          
+          <Transition name="scroll-btn">
+            <button v-if="showScrollToBottom" @click="scrollToBottomSmooth" class="scroll-to-bottom-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+            </button>
+          </Transition>
         </div>
 
         <div v-if="isRecording" class="voice-recording-bar">
@@ -560,6 +563,8 @@ const selectedUserId = ref(null)
 const chatUser = ref(null)
 const messages = ref([])
 const chatLoading = ref(false)
+const messagesReady = ref(true)
+const showScrollToBottom = ref(false)
 const newMessage = ref('')
 const messagesContainer = ref(null)
 const msgInput = ref(null)
@@ -722,13 +727,13 @@ function saveScrollPosition() {
 }
 
 function restoreScrollPosition(userId) {
-  nextTick(() => {
+  setTimeout(() => {
     if (messagesContainer.value) {
       isProgrammaticScroll = true
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
       setTimeout(() => { isProgrammaticScroll = false }, 100)
     }
-  })
+  }, 50)
 }
 
 function goBack() { saveScrollPosition(); selectedUserId.value = null; chatUser.value = null; currentChatUserId.value = null; replyingTo.value = null; selectMode.value = false; selectedMessages.value = []; pinnedMessage.value = null; closeChatSearch() }
@@ -844,8 +849,11 @@ function onChatScroll() {
   const container = messagesContainer.value
   
   const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50
+  showScrollToBottom.value = !isAtBottom && container.scrollHeight - container.scrollTop - container.clientHeight > 300
+  
   if (isAtBottom) {
     showFloatingDate.value = false
+    clearTimeout(floatingDateHideTimeout)
     return
   }
   
@@ -867,19 +875,21 @@ function onChatScroll() {
     }
   }
   
-  clearTimeout(floatingDateHideTimeout)
-  
-  if (visibleDate && visibleDate !== floatingDateText.value) {
-    floatingDateText.value = visibleDate
-  }
-  
   if (visibleDate) {
+    floatingDateText.value = visibleDate
     showFloatingDate.value = true
+    
+    clearTimeout(floatingDateHideTimeout)
+    floatingDateHideTimeout = setTimeout(() => {
+      showFloatingDate.value = false
+    }, 1500)
   }
-  
-  floatingDateHideTimeout = setTimeout(() => {
-    showFloatingDate.value = false
-  }, 1500)
+}
+
+function scrollToBottomSmooth() {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTo({ top: messagesContainer.value.scrollHeight, behavior: 'smooth' })
+  }
 }
 
 function toggleVideo(e) { const v = e.target.querySelector('video') || e.target; v.paused ? v.play() : v.pause() }
@@ -1458,6 +1468,9 @@ async function selectDialog(userId) {
   selectedUserId.value = userId
   currentChatUserId.value = userId
   chatLoading.value = true
+  messagesReady.value = false
+  showScrollToBottom.value = false
+  showFloatingDate.value = false
   messages.value = []
   replyingTo.value = null
   selectMode.value = false
@@ -1469,10 +1482,25 @@ async function selectDialog(userId) {
     const [userRes, msgRes] = await Promise.all([api.get(`/users/${userId}`), api.get(`/messages/${userId}`)])
     chatUser.value = userRes.data
     messages.value = msgRes.data.map(parseMessageMedia)
-    restoreScrollPosition(userId)
+    chatLoading.value = false
+    
+    const scrollToEnd = () => {
+      if (messagesContainer.value) {
+        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      }
+    }
+    
+    await nextTick()
+    scrollToEnd()
+    messagesReady.value = true
+
+    setTimeout(scrollToEnd, 0)
+    setTimeout(scrollToEnd, 50)
+    setTimeout(scrollToEnd, 150)
+    
     await api.post(`/messages/${userId}/read`)
     fetchPinnedMessage()
-  } catch (err) { notifications.error(err.message) } finally { chatLoading.value = false } 
+  } catch (err) { notifications.error(err.message); chatLoading.value = false; messagesReady.value = true } 
 }
 async function pollMessages() { 
   if (!selectedUserId.value) return
@@ -1788,6 +1816,11 @@ async function bulkDeleteForAll() {
     }
     messages.value = messages.value.filter(m => !selectedMessages.value.includes(m.id))
     cancelSelectMode()
+    nextTick(() => {
+      if (messagesContainer.value) {
+        messagesContainer.value.scrollTo({ top: messagesContainer.value.scrollHeight, behavior: 'smooth' })
+      }
+    })
   } catch (err) { notifications.error(err.message) }
 }
 
@@ -1799,6 +1832,11 @@ async function bulkDeleteForMe() {
     }
     messages.value = messages.value.filter(m => !selectedMessages.value.includes(m.id))
     cancelSelectMode()
+    nextTick(() => {
+      if (messagesContainer.value) {
+        messagesContainer.value.scrollTo({ top: messagesContainer.value.scrollHeight, behavior: 'smooth' })
+      }
+    })
   } catch (err) { notifications.error(err.message) }
 }
 
@@ -1994,9 +2032,24 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .chat-search-close:active { transform: scale(0.9); }
 .chat-search-close svg { width: 18px; height: 18px; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; background: url('/chat-pattern.svg') repeat; background-size: 400px 400px; position: relative; }
+.chat-messages.messages-hidden .messages-wrapper { visibility: hidden; }
+.scroll-to-bottom-btn { position: sticky; bottom: 16px; align-self: flex-end; margin-top: auto; width: 44px; height: 44px; background: rgba(30, 30, 30, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 50; transition: all 0.15s ease; flex-shrink: 0; }
+.scroll-to-bottom-btn:hover { background: rgba(50, 50, 50, 0.7); transform: scale(1.05); }
+.scroll-to-bottom-btn:active { transform: scale(0.95); }
+.scroll-to-bottom-btn svg { width: 20px; height: 20px; color: white; }
+.scroll-btn-enter-active, .scroll-btn-leave-active { transition: all 0.15s ease; }
+.scroll-btn-enter-from, .scroll-btn-leave-to { opacity: 0; transform: scale(0.8) translateY(10px); }
 .message { display: flex; gap: 8px; max-width: 70%; animation: messageIn 0.15s cubic-bezier(0.2, 0, 0, 1); }
-.message.search-highlight .message-bubble { box-shadow: 0 0 0 2px rgba(255, 200, 0, 0.7); animation: highlightPulse 0.4s ease; }
-@keyframes highlightPulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(255, 200, 0, 0.7); } 50% { box-shadow: 0 0 0 4px rgba(255, 200, 0, 0.4); } }
+.message.search-highlight .message-bubble,
+.message.search-highlight .voice-message-wrap,
+.message.search-highlight .circle-video-wrap,
+.message.search-highlight .audio-message-wrap,
+.message.search-highlight .file-message-wrap { animation: highlightDarken 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.message.search-highlight .msg-media-grid img,
+.message.search-highlight .msg-media-grid video { animation: highlightDarkenMedia 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes highlightDarken { 0% { filter: brightness(1); } 20% { filter: brightness(0.7); } 100% { filter: brightness(1); } }
+@keyframes highlightDarkenMedia { 0% { filter: brightness(1); } 20% { filter: brightness(0.7); } 100% { filter: brightness(1); } }
+.message.search-highlight.own .message-bubble { animation: highlightDarken 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes messageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .message.own { align-self: flex-end; flex-direction: row-reverse; }
 .msg-avatar { flex-shrink: 0; align-self: flex-end; }
@@ -2042,7 +2095,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   transform: scale(0.98);
 }
 .system-icon { width: 14px; height: 14px; flex-shrink: 0; }
-.floating-date { position: sticky; top: 12px; z-index: 10; display: flex; justify-content: center; pointer-events: none; margin-bottom: -40px; }
+.floating-date { position: absolute; top: 12px; left: 0; right: 0; z-index: 10; display: flex; justify-content: center; pointer-events: none; }
 .floating-date span { font-size: 13px; color: var(--text-muted); background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 4px 12px; border-radius: 12px; }
 .floating-date-enter-active { transition: all 0.15s cubic-bezier(0.2, 0, 0, 1); }
 .floating-date-leave-active { transition: all 0.2s cubic-bezier(0.4, 0, 1, 1); }
@@ -2143,8 +2196,14 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .checkbox-inner.checked { background: white; border-color: white; }
 .checkbox-inner svg { width: 14px; height: 14px; color: #1a1a1a; }
 .message.selected .message-bubble { background: rgba(120, 90, 200, 0.5) !important; }
+.message.selected .message-bubble:has(.audio-message-wrap),
+.message.selected .message-bubble:has(.file-message-wrap) { background: transparent !important; }
 .message.selected .voice-message-wrap { background: rgba(120, 90, 200, 0.5) !important; }
 .message.selected .circle-video-wrap { background: rgba(120, 90, 200, 0.5) !important; }
+.message.selected .audio-message-wrap { filter: brightness(0.7); }
+.message.selected .file-message-wrap { filter: brightness(0.7); }
+.message.selected .msg-media-grid img,
+.message.selected .msg-media-grid video { filter: brightness(0.7); }
 
 .reply-in-message { display: flex; flex-direction: column; padding: 6px 10px; margin-bottom: 6px; background: rgba(255,255,255,0.1); border-left: 3px solid rgba(255, 255, 255, 0.5); border-radius: 4px; cursor: pointer; transition: background 0.1s ease; }
 .reply-in-message:hover { background: rgba(255,255,255,0.15); }
@@ -2161,21 +2220,17 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 
 .message.highlight .message-bubble,
 .message.highlight .voice-message-wrap,
-.message.highlight .circle-video-wrap { 
-  animation: highlightFade 1.2s cubic-bezier(0.4, 0, 0.2, 1); 
+.message.highlight .circle-video-wrap,
+.message.highlight .audio-message-wrap,
+.message.highlight .file-message-wrap { 
+  animation: highlightDarken 1.5s cubic-bezier(0.4, 0, 0.2, 1); 
 }
-@keyframes highlightFade { 
-  0% { background-color: rgba(128, 128, 128, 0); } 
-  15% { background-color: rgba(128, 128, 128, 0.25); } 
-  100% { background-color: rgba(128, 128, 128, 0); } 
+.message.highlight .msg-media-grid img,
+.message.highlight .msg-media-grid video {
+  animation: highlightDarkenMedia 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .message.highlight.own .message-bubble {
-  animation: highlightFadeOwn 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-@keyframes highlightFadeOwn {
-  0% { filter: brightness(1); }
-  15% { filter: brightness(1.3); }
-  100% { filter: brightness(1); }
+  animation: highlightDarken 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .messages-wrapper { display: flex; flex-direction: column; gap: 6px; }
@@ -2678,6 +2733,17 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     -webkit-overflow-scrolling: touch;
   }
   
+  .scroll-to-bottom-btn {
+    width: 40px;
+    height: 40px;
+    bottom: 12px;
+  }
+  
+  .scroll-to-bottom-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  
   .message {
     max-width: 80%;
   }
@@ -3157,6 +3223,19 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   background-size: 400px 400px;
 }
 
+[data-theme="light"] .scroll-to-bottom-btn {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .scroll-to-bottom-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .scroll-to-bottom-btn svg {
+  color: var(--text-secondary);
+}
+
 [data-theme="light"] .chat-empty {
   background: #ffffff;
 }
@@ -3431,6 +3510,11 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   background: rgba(99, 102, 241, 0.15);
 }
 
+[data-theme="light"] .message.selected .message-bubble:has(.audio-message-wrap),
+[data-theme="light"] .message.selected .message-bubble:has(.file-message-wrap) {
+  background: transparent !important;
+}
+
 [data-theme="light"] .message.own.selected .message-bubble {
   filter: brightness(1.1);
 }
@@ -3537,13 +3621,13 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 [data-theme="light"] .message.highlight .message-bubble,
 [data-theme="light"] .message.highlight .voice-message-wrap,
 [data-theme="light"] .message.highlight .circle-video-wrap {
-  animation: highlightFadeLight 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: highlightDarken 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes highlightFadeLight {
-  0% { background-color: rgba(99, 102, 241, 0); }
-  15% { background-color: rgba(99, 102, 241, 0.15); }
-  100% { background-color: rgba(99, 102, 241, 0); }
+[data-theme="light"] .message.search-highlight .message-bubble,
+[data-theme="light"] .message.search-highlight .voice-message-wrap,
+[data-theme="light"] .message.search-highlight .circle-video-wrap {
+  animation: highlightDarken 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 [data-theme="light"] .voice-btn {

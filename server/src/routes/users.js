@@ -168,7 +168,6 @@ router.get('/:id', authMiddleware, (req, res) => {
 })
 
 router.get('/:id/posts', authMiddleware, (req, res) => {
-  // Check if profile is private
   if (req.userId !== req.params.id) {
     const targetUser = db.prepare('SELECT settings FROM users WHERE id = ?').get(req.params.id)
     let userSettings = {}
@@ -280,6 +279,11 @@ router.post('/cover', authMiddleware, upload.single('cover'), (req, res) => {
   res.json({ cover })
 })
 
+router.delete('/cover', authMiddleware, (req, res) => {
+  db.prepare('UPDATE users SET cover = NULL WHERE id = ?').run(req.userId)
+  res.json({ success: true })
+})
+
 router.post('/heartbeat', authMiddleware, (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '')
   db.prepare('UPDATE users SET lastSeen = ? WHERE id = ?')
@@ -290,7 +294,6 @@ router.post('/heartbeat', authMiddleware, (req, res) => {
 })
 
 router.get('/:id/photos', authMiddleware, (req, res) => {
-  // Check if profile is private
   if (req.userId !== req.params.id) {
     const targetUser = db.prepare('SELECT settings FROM users WHERE id = ?').get(req.params.id)
     let userSettings = {}
@@ -318,7 +321,6 @@ router.get('/:id/photos', authMiddleware, (req, res) => {
 })
 
 router.get('/:id/videos', authMiddleware, (req, res) => {
-  // Check if profile is private
   if (req.userId !== req.params.id) {
     const targetUser = db.prepare('SELECT settings FROM users WHERE id = ?').get(req.params.id)
     let userSettings = {}

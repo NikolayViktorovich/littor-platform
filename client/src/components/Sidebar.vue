@@ -45,13 +45,13 @@
           <span v-if="counts.friends" class="nav-badge">{{ counts.friends }}</span>
         </router-link>
 
-        <button class="nav-item create-btn" :class="{ pressed: pressedItem === 'create' }" @click="handleCreate" :title="t('createNewPost')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
-
         <router-link to="/messages" class="nav-item" :class="{ active: $route.name === 'messages' || $route.name === 'chat', pressed: pressedItem === 'messages' }" @click="handlePress('messages')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           <span v-if="counts.messages" class="nav-badge">{{ counts.messages }}</span>
+        </router-link>
+
+        <router-link to="/music" class="nav-item" :class="{ active: $route.name === 'music', pressed: pressedItem === 'music' }" @click="handlePress('music')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         </router-link>
 
         <router-link :to="`/profile/${authStore.user?.id}`" class="nav-item desktop-only" :class="{ active: $route.name === 'profile', pressed: pressedItem === 'profile' }" @click="handlePress('profile')">
@@ -99,7 +99,6 @@ import { useI18n } from '../i18n'
 import api from '../api'
 
 const { t } = useI18n()
-const emit = defineEmits(['create'])
 const router = useRouter()
 const authStore = useAuthStore()
 const notificationsStore = useNotificationsStore()
@@ -116,7 +115,6 @@ let pollInterval = null
 let heartbeatInterval = null
 
 function handlePress(item) { pressedItem.value = item; setTimeout(() => pressedItem.value = null, 150) }
-function handleCreate() { handlePress('create'); emit('create') }
 function handleMenu() { handlePress('menu'); showMenu.value = !showMenu.value; showNotifications.value = false }
 function toggleNotifications() { handlePress('bell'); showNotifications.value = !showNotifications.value; showMenu.value = false }
 
@@ -288,8 +286,6 @@ onUnmounted(() => {
 .nav-item.active svg { transform: scale(1.1); }
 .nav-item svg { width: 26px; height: 26px; transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .nav-item.pressed { transform: scale(0.85); }
-.nav-item.create-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
-.nav-item.create-btn:hover { background: rgba(255, 255, 255, 0.08); }
 .nav-badge { position: absolute; top: 6px; right: 6px; min-width: 16px; height: 16px; padding: 0 4px; background: #ff3b5c; color: white; font-size: 10px; font-weight: 600; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; }
 .sidebar-bottom { padding: 40px 0 20px; position: relative; }
 .user-menu { position: absolute; bottom: 0; left: 72px; width: 200px; padding: 8px; }
@@ -372,15 +368,6 @@ onUnmounted(() => {
   
   .desktop-only { display: none; }
   .mobile-only { display: flex; }
-}
-
-[data-theme="light"] .nav-item.create-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .nav-item.create-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="light"] .menu-item:hover {

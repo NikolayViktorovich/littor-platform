@@ -68,7 +68,9 @@ const translations = {
     myFriends: 'Мои друзья',
     allUsers: 'Все пользователи',
     noRequests: 'Нет заявок',
-    noFriends: 'Нет друзей',
+    noFriends: 'У вас пока нет друзей',
+    noIncomingRequests: 'Нет входящих заявок',
+    noOutgoingRequests: 'Нет исходящих заявок',
     accept: 'Принять',
     decline: 'Отклонить',
     addFriend: 'Добавить в друзья',
@@ -310,7 +312,14 @@ const translations = {
     privateProfile: 'Закрытый профиль',
     privateProfileDesc: 'Только друзья видят ваши записи и фото',
     privateAccount: 'Закрытый аккаунт',
-    privateAccountDesc: 'Добавьте в друзья, чтобы видеть записи и фото'
+    privateAccountDesc: 'Добавьте в друзья, чтобы видеть записи и фото',
+    allTracks: 'Все песни',
+    history: 'История',
+    noSearchResults: 'Ничего не найдено',
+    libraryEmpty: 'Библиотека пуста',
+    historyEmpty: 'История пуста',
+    addToLibrary: 'Добавить в библиотеку',
+    removeFromLibrary: 'Удалить из библиотеки'
   },
   en: {
     settings: 'Settings',
@@ -379,7 +388,9 @@ const translations = {
     myFriends: 'My friends',
     allUsers: 'All users',
     noRequests: 'No requests',
-    noFriends: 'No friends',
+    noFriends: 'You have no friends yet',
+    noIncomingRequests: 'No incoming requests',
+    noOutgoingRequests: 'No outgoing requests',
     accept: 'Accept',
     decline: 'Decline',
     addFriend: 'Add friend',
@@ -621,7 +632,14 @@ const translations = {
     privateProfile: 'Private profile',
     privateProfileDesc: 'Only friends can see your posts and photos',
     privateAccount: 'Private account',
-    privateAccountDesc: 'Add as friend to see posts and photos'
+    privateAccountDesc: 'Add as friend to see posts and photos',
+    allTracks: 'All tracks',
+    history: 'History',
+    noSearchResults: 'Nothing found',
+    libraryEmpty: 'Library is empty',
+    historyEmpty: 'History is empty',
+    addToLibrary: 'Add to library',
+    removeFromLibrary: 'Remove from library'
   }
 }
 

@@ -1,6 +1,6 @@
 <template>
   <div class="app" :class="{ 'with-sidebar': authStore.isAuthenticated, 'has-audio-player': hasActivePlayer }">
-    <Sidebar v-if="authStore.isAuthenticated" @create="showCreateModal = true" />
+    <Sidebar v-if="authStore.isAuthenticated" />
     
     <main class="main-content">
       <router-view v-slot="{ Component }">
@@ -12,42 +12,27 @@
     
     <MessageToast v-if="authStore.isAuthenticated" />
     <GlobalAudioPlayer />
-    
-    <Teleport to="body">
-      <Transition name="modal">
-        <CreatePostModal v-if="showCreateModal" @close="showCreateModal = false" @created="handlePostCreated" />
-      </Transition>
-    </Teleport>
+    <Notifications />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useAudioPlayerStore } from './stores/audioPlayer'
 import Sidebar from './components/Sidebar.vue'
-import CreatePostModal from './components/CreatePostModal.vue'
 import MessageToast from './components/MessageToast.vue'
 import GlobalAudioPlayer from './components/GlobalAudioPlayer.vue'
+import Notifications from './components/Notifications.vue'
 
 const authStore = useAuthStore()
 const audioPlayerStore = useAudioPlayerStore()
-const router = useRouter()
-const showCreateModal = ref(false)
 const isMobile = ref(window.innerWidth <= 768)
 
 const hasActivePlayer = computed(() => audioPlayerStore.currentTrack !== null && isMobile.value)
 
 function handleResize() {
   isMobile.value = window.innerWidth <= 768
-}
-
-function handlePostCreated() {
-  showCreateModal.value = false
-  if (router.currentRoute.value.name !== 'feed') {
-    router.push('/')
-  }
 }
 
 function initTheme() {

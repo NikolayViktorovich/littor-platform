@@ -70,40 +70,39 @@
         </div>
       </div>
 
-      <div class="friends-content glass">
-        <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-        </div>
-        
-        <div v-else-if="!list.length" class="empty-state">
-          <p>{{ activeTab === 'friends' ? t('noFriends') : t('noRequests') }}</p>
-        </div>
-        
-        <TransitionGroup v-else name="list" tag="div" class="friends-list">
-          <div v-for="user in list" :key="user.id" class="friend-item">
-            <router-link :to="`/profile/${user.id}`" class="friend-info">
-              <img :src="getAvatarUrl(user.avatar)" class="avatar" alt="" @error="handleAvatarError">
-              <div class="friend-details">
-                <span class="friend-name">{{ user.name }}</span>
-              </div>
-            </router-link>
-            
-            <div class="friend-actions">
-              <template v-if="activeTab === 'friends'">
-                <router-link :to="`/messages/${user.id}`" class="btn btn-secondary btn-sm">{{ t('write') }}</router-link>
-                <button @click="removeFriend(user.id)" class="btn btn-ghost btn-sm">{{ t('remove') }}</button>
-              </template>
-              <template v-else-if="activeTab === 'incoming'">
-                <button @click="acceptRequest(user.id)" class="btn btn-primary btn-sm">{{ t('accept') }}</button>
-                <button @click="declineRequest(user.id)" class="btn btn-ghost btn-sm">{{ t('decline') }}</button>
-              </template>
-              <template v-else>
-                <button @click="cancelRequest(user.id)" class="btn btn-secondary btn-sm">{{ t('cancel') }}</button>
-              </template>
-            </div>
-          </div>
-        </TransitionGroup>
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
       </div>
+      
+      <div v-else-if="!list.length" class="empty-state">
+        <p>{{ activeTab === 'friends' ? t('noFriends') : activeTab === 'incoming' ? t('noIncomingRequests') : t('noOutgoingRequests') }}</p>
+      </div>
+      
+      <TransitionGroup v-else name="list" tag="div" class="friends-list">
+        <div v-for="user in list" :key="user.id" class="friend-card glass">
+          <router-link :to="`/profile/${user.id}`" class="friend-info">
+            <img :src="getAvatarUrl(user.avatar)" class="avatar" alt="" @error="handleAvatarError">
+            <div class="friend-details">
+              <span class="friend-name">{{ user.name }}</span>
+              <span v-if="user.username" class="friend-username">@{{ user.username }}</span>
+            </div>
+          </router-link>
+          
+          <div class="friend-actions">
+            <template v-if="activeTab === 'friends'">
+              <router-link :to="`/messages/${user.id}`" class="btn btn-secondary btn-sm">{{ t('write') }}</router-link>
+              <button @click="removeFriend(user.id)" class="btn btn-ghost btn-sm">{{ t('remove') }}</button>
+            </template>
+            <template v-else-if="activeTab === 'incoming'">
+              <button @click="acceptRequest(user.id)" class="btn btn-primary btn-sm">{{ t('accept') }}</button>
+              <button @click="declineRequest(user.id)" class="btn btn-ghost btn-sm">{{ t('decline') }}</button>
+            </template>
+            <template v-else>
+              <button @click="cancelRequest(user.id)" class="btn btn-secondary btn-sm">{{ t('cancel') }}</button>
+            </template>
+          </div>
+        </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>
@@ -527,11 +526,6 @@ onUnmounted(() => {
   margin-left: 8px;
 }
 
-.friends-content {
-  padding: 16px;
-  min-height: 300px;
-}
-
 .loading-state,
 .empty-state {
   display: flex;
@@ -539,8 +533,9 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 60px 20px;
-  color: var(--text-secondary);
+  padding: 80px 20px;
+  color: var(--text-muted);
+  font-size: 15px;
 }
 
 .spinner {
@@ -575,20 +570,19 @@ onUnmounted(() => {
 .friends-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.friend-item {
+.friend-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-radius: var(--radius-lg);
-  transition: background var(--transition);
+  padding: 16px 20px;
+  border-radius: var(--radius-xl);
 }
 
-.friend-item:hover {
-  background: rgba(255, 255, 255, 0.03);
+.friend-card:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .friend-info {
@@ -651,10 +645,11 @@ onUnmounted(() => {
     margin-left: 6px;
   }
   
-  .friend-item {
+  .friend-card {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
+    padding: 14px 16px;
   }
   
   .friend-actions {
@@ -740,7 +735,7 @@ onUnmounted(() => {
   background: rgba(0, 0, 0, 0.04);
 }
 
-[data-theme="light"] .friend-item:hover {
+[data-theme="light"] .friend-card:hover {
   background: rgba(0, 0, 0, 0.03);
 }
 

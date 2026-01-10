@@ -5,8 +5,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
 
-      <div class="profile-cover" :style="coverStyle">
+      <div class="profile-cover" :style="coverStyle" :class="{ 'cover-removing': coverRemoving }">
         <div class="cover-gradient"></div>
+        <Transition name="cover-btn">
+          <button v-if="isOwner && user?.cover" @click="deleteCover" class="cover-delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </Transition>
         <label v-if="isOwner" class="cover-edit">
           <input type="file" accept="image/*" @change="selectCover" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -34,7 +39,7 @@
           <div class="online-status" v-if="user && !isOwner">
             <span class="status">{{ user.isOnline ? t('online') : formatLastSeen(user.lastSeen) }}</span>
           </div>
-          <div class="profile-meta">
+          <div class="profile-meta desktop-only">
             <span class="meta-item">{{ user?.friendsCount || 0 }} {{ t('friendsCount') }}</span>
             <span class="meta-item">{{ user?.postsCount || 0 }} {{ t('posts') }}</span>
           </div>
@@ -101,18 +106,17 @@
 
     <div class="profile-content" v-if="user && !user.blockedByUser && !user.isPrivate">
       <div class="tabs-container">
-        <button class="tab-nav-btn prev" @click="scrollTabsLeft">
+        <button v-if="showTabArrows" class="tab-nav-btn prev" @click="scrollTabsLeft">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <div class="liquid-tabs" ref="tabsContainer">
           <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')">{{ t('posts') }}</button>
           <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')">{{ t('photos') }}</button>
           <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')">{{ t('videos') }}</button>
-          <button class="liquid-tab" :class="{ active: activeTab === 'audio' }" @click="setTab('audio')">{{ t('audio') }}</button>
           <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')">{{ t('friends') }}</button>
           <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')">{{ t('archive') }}</button>
         </div>
-        <button class="tab-nav-btn next" @click="scrollTabsRight">
+        <button v-if="showTabArrows" class="tab-nav-btn next" @click="scrollTabsRight">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       </div>
@@ -141,87 +145,6 @@
           <div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
         </div>
         <div v-if="!videos.length" class="empty-state glass"><p>{{ t('noVideos') }}</p></div>
-      </div>
-
-      <div v-else-if="activeTab === 'audio'" class="audio-section">
-        <div class="audio-tabs">
-          <button class="audio-tab" :class="{ active: audioTab === 'all' }" @click="audioTab = 'all'; loadAllTracks()">{{ t('allSongs') }}</button>
-          <button class="audio-tab" :class="{ active: audioTab === 'library' }" @click="audioTab = 'library'">{{ t('myMusic') }}</button>
-          <button class="audio-tab" :class="{ active: audioTab === 'recent' }" @click="audioTab = 'recent'">{{ t('recent') }}</button>
-        </div>
-
-        <div v-if="audioTab === 'all'" class="audio-search">
-          <div class="search-input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-            <input v-model="audioSearchQuery" @input="handleAudioSearch" :placeholder="t('searchMusic')">
-          </div>
-        </div>
-
-        <div v-if="audioLoading" class="loading-state"><div class="spinner"></div></div>
-        <template v-else>
-          <div v-if="audioTab === 'all'" class="audio-list">
-            <div v-if="!allTracks.length" class="empty-state glass"><p>{{ audioSearchQuery ? t('nothingFound') : t('enterSearchQuery') }}</p></div>
-            <div v-for="track in allTracks" :key="track.id" class="audio-list-item" @click="playTrack(track)">
-              <div class="audio-item-artwork">
-                <img v-if="track.artwork" :src="track.artwork" alt="">
-                <div v-else class="artwork-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
-                <div class="play-overlay" :class="{ visible: isTrackPlaying(track) }">
-                  <svg v-if="isTrackPlaying(track)" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                  <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                </div>
-              </div>
-              <div class="audio-item-info">
-                <span class="audio-item-name">{{ track.title }}</span>
-                <span class="audio-item-artist">{{ track.artist }}</span>
-              </div>
-              <button v-if="!isInLibrary(track)" class="audio-add-btn" @click.stop="addToLibrary(track)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <div v-else-if="audioTab === 'library'" class="audio-list">
-            <div v-if="!audioLibrary.length" class="empty-state glass"><p>{{ t('noSavedTracks') }}</p></div>
-            <div v-for="track in audioLibrary" :key="track.id" class="audio-list-item" @click="playTrack(track)">
-              <div class="audio-item-artwork">
-                <img v-if="track.artwork" :src="track.artwork" alt="">
-                <div v-else class="artwork-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
-                <div class="play-overlay" :class="{ visible: isTrackPlaying(track) }">
-                  <svg v-if="isTrackPlaying(track)" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                  <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                </div>
-              </div>
-              <div class="audio-item-info">
-                <span class="audio-item-name">{{ track.title }}</span>
-                <span class="audio-item-artist">{{ track.artist }}</span>
-              </div>
-              <button v-if="isOwner" class="audio-remove-btn" @click.stop="removeFromLibrary(track)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <div v-else-if="audioTab === 'recent'" class="audio-list">
-            <div v-if="!audioHistory.length" class="empty-state glass"><p>{{ t('noRecentTracks') }}</p></div>
-            <div v-for="track in audioHistory" :key="track.id" class="audio-list-item" @click="playTrack(track)">
-              <div class="audio-item-artwork">
-                <img v-if="track.artwork" :src="track.artwork" alt="">
-                <div v-else class="artwork-placeholder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
-                <div class="play-overlay" :class="{ visible: isTrackPlaying(track) }">
-                  <svg v-if="isTrackPlaying(track)" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                  <svg v-else viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                </div>
-              </div>
-              <div class="audio-item-info">
-                <span class="audio-item-name">{{ track.title }}</span>
-                <span class="audio-item-artist">{{ track.artist }}</span>
-              </div>
-              <button v-if="!isInLibrary(track)" class="audio-add-btn" @click.stop="addToLibrary(track)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-              </button>
-            </div>
-          </div>
-        </template>
       </div>
 
       <div v-else-if="activeTab === 'friends'" class="friends-section">
@@ -358,6 +281,13 @@ const showEditModal = ref(false)
 const showProfileMenu = ref(false)
 const editForm = reactive({ name: '', bio: '', username: '' })
 const tabsContainer = ref(null)
+const showTabArrows = ref(false)
+
+function checkTabsOverflow() {
+  if (tabsContainer.value) {
+    showTabArrows.value = tabsContainer.value.scrollWidth > tabsContainer.value.clientWidth
+  }
+}
 
 function scrollTabsLeft() {
   if (tabsContainer.value) {
@@ -378,6 +308,7 @@ const coverScale = ref(1)
 const coverX = ref(0)
 const coverY = ref(0)
 const showCoverPreviewMode = ref(false)
+const coverRemoving = ref(false)
 let isDragging = false, dragStartX = 0, dragStartY = 0, startX = 0, startY = 0
 
 const showMediaViewer = ref(false)
@@ -462,7 +393,6 @@ async function pollFriendStatus() {
       user.value.postsCount = res.data.postsCount
       user.value.isPrivate = res.data.isPrivate
       
-      // If became friends and profile was private, reload posts
       if (!wasFriend && res.data.friendStatus === 'friends' && wasPrivate) {
         const postsRes = await api.get(`/users/${id}/posts`)
         posts.value = postsRes.data
@@ -519,9 +449,24 @@ async function uploadAvatar(e) {
 function selectCover(e) {
   const file = e.target.files[0]; if (!file) return
   coverFile.value = file
+
+  if (window.innerWidth <= 768) {
+    saveCoverDirect(file)
+    return
+  }
+  
   coverPreview.value = URL.createObjectURL(file)
   coverScale.value = 1; coverX.value = 0; coverY.value = 0
   showCoverEditor.value = true
+}
+
+async function saveCoverDirect(file) {
+  const formData = new FormData(); formData.append('cover', file)
+  try {
+    const res = await api.post('/users/cover', formData)
+    user.value.cover = res.data.cover
+    coverFile.value = null
+  } catch (err) { notifications.error(err.message) }
 }
 
 function startDrag(e) {
@@ -550,6 +495,20 @@ async function saveCover() {
     showCoverEditor.value = false
     if (coverPreview.value) URL.revokeObjectURL(coverPreview.value)
   } catch (err) { notifications.error(err.message) }
+}
+
+async function deleteCover() {
+  coverRemoving.value = true
+  try {
+    await api.delete('/users/cover')
+    setTimeout(() => {
+      user.value.cover = null
+      coverRemoving.value = false
+    }, 300)
+  } catch (err) { 
+    coverRemoving.value = false
+    notifications.error(err.message) 
+  }
 }
 
 async function saveProfile() {
@@ -764,10 +723,14 @@ onMounted(() => {
     pollPostUpdates()
     pollFriendStatus()
   }, 500)
+  
+  nextTick(() => checkTabsOverflow())
+  window.addEventListener('resize', checkTabsOverflow)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', closeProfileMenu)
+  window.removeEventListener('resize', checkTabsOverflow)
   if (pollInterval) clearInterval(pollInterval)
 })
 </script>
@@ -777,11 +740,18 @@ onUnmounted(() => {
 .profile-header { position: relative; padding: 20px; }
 .back-btn { position: absolute; top: 32px; left: 32px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10; color: var(--text-primary); background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl); }
 .back-btn svg { width: 20px; height: 20px; }
-.profile-cover { height: 200px; border-radius: var(--radius-2xl); overflow: hidden; position: relative; background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%); }
+.profile-cover { height: 200px; border-radius: var(--radius-2xl); overflow: hidden; position: relative; background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%); transition: background-image 0.3s ease; }
+.profile-cover.cover-removing { animation: coverFadeOut 0.3s ease forwards; }
+@keyframes coverFadeOut { from { opacity: 1; } to { opacity: 0.5; background-image: none; } }
 .cover-gradient { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5)); }
 .cover-edit { position: absolute; bottom: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); z-index: 20; }
 .cover-edit:hover { background: rgba(0,0,0,0.7); }
 .cover-edit svg { width: 20px; height: 20px; color: white; }
+.cover-delete { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.3); border: none; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); z-index: 20; opacity: 0.5; }
+.cover-delete:hover { background: rgba(0,0,0,0.6); opacity: 1; }
+.cover-delete svg { width: 18px; height: 18px; color: white; }
+.cover-btn-enter-active, .cover-btn-leave-active { transition: all 0.15s ease; }
+.cover-btn-enter-from, .cover-btn-leave-to { opacity: 0; transform: scale(0.8); }
 .profile-info { max-width: 700px; margin: -60px auto 0; padding: 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; background: rgba(18, 18, 18, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: var(--radius-xl); }
 .profile-avatar-wrap { position: relative; flex-shrink: 0; }
 .avatar-xl { border: 4px solid var(--bg-primary); }
@@ -969,76 +939,248 @@ onUnmounted(() => {
 .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 768px) {
-  .profile-page { padding-left: 0; }
-  .profile-info { flex-direction: column; align-items: center; text-align: center; }
-  .profile-meta { justify-content: center; }
-  .profile-actions { width: 100%; justify-content: center; }
-  .mobile-settings-btn { display: flex; }
-  .media-grid { grid-template-columns: repeat(2, 1fr); }
+  .profile-page { padding-left: 0; padding-bottom: 80px; }
+  .profile-header { padding: 0; }
+  
+  .back-btn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: none;
+    z-index: 50;
+  }
+  
+  .profile-cover { 
+    height: 180px; 
+    border-radius: 0; 
+    margin-bottom: -50px;
+  }
+  
+  .profile-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin: 0;
+    padding: 0 16px 20px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    gap: 12px;
+  }
+  
+  .profile-avatar-wrap {
+    margin-top: 0;
+  }
+  
+  .profile-avatar-wrap .avatar-xl {
+    width: 90px !important;
+    height: 90px !important;
+    border: 4px solid var(--bg-primary);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .avatar-edit {
+    width: 28px;
+    height: 28px;
+    bottom: 2px;
+    right: 2px;
+  }
+  
+  .avatar-edit svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .profile-details {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .profile-details h1 {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+  
+  .username {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  
+  .bio {
+    font-size: 14px;
+    margin-bottom: 8px;
+    padding: 0 20px;
+    line-height: 1.4;
+  }
+  
+  .online-status {
+    margin-bottom: 8px;
+  }
+  
+  .status {
+    font-size: 13px;
+  }
+
+  .profile-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 4px;
+    margin-top: 0;
+  }
+  
+  .profile-actions .btn {
+    flex: 1;
+    max-width: 160px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .mobile-settings-btn { 
+    display: flex !important;
+    flex: 0 0 auto !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .mobile-settings-btn svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  
+  .profile-more-wrap .btn-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+  }
+  
+  .profile-meta.desktop-only {
+    display: none !important;
+  }
+
+  .profile-content {
+    padding: 0 0 40px;
+  }
   
   .tabs-container {
-    margin: 0 -20px 20px;
-    padding: 0 8px;
+    margin: 0 0 16px;
+    padding: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .tab-nav-btn {
-    display: flex;
-    width: 36px;
-    height: 36px;
+    display: none;
   }
   
   .liquid-tabs {
     flex: 1;
-    border-radius: var(--radius-full);
-    background: var(--glass-bg);
-    padding: 4px;
-    gap: 4px;
-    justify-content: flex-start;
+    display: flex;
+    justify-content: space-around;
+    background: transparent;
+    padding: 0;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    border-radius: 0;
+  }
+  
+  .liquid-tabs::-webkit-scrollbar {
+    display: none;
   }
   
   .liquid-tab {
-    padding: 10px 16px;
+    flex: 1;
+    padding: 14px 8px;
     font-size: 14px;
-    border-radius: var(--radius-full);
+    font-weight: 500;
+    border-radius: 0;
     white-space: nowrap;
-    flex-shrink: 0;
-    min-width: auto;
+    text-align: center;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    position: relative;
+  }
+  
+  .liquid-tab:first-child,
+  .liquid-tab:last-child {
+    border-radius: 0;
   }
   
   .liquid-tab.active {
-    background: var(--glass-bg-active);
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
   }
   
-  .audio-tabs {
-    margin: 0 -20px 16px;
-    padding: 4px;
-    border-radius: var(--radius-full);
-    background: var(--glass-bg);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    gap: 4px;
+  .liquid-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .media-grid { 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 2px;
+    margin: 0;
   }
   
-  .audio-tabs::-webkit-scrollbar { display: none; }
-  
-  .audio-tab {
-    padding: 10px 16px;
-    font-size: 13px;
-    border-radius: var(--radius-full);
-    white-space: nowrap;
-    flex-shrink: 0;
+  .media-item {
+    border-radius: 0;
   }
   
-  .audio-tab.active {
-    background: var(--glass-bg-active);
+  .profile-posts {
+    gap: 12px;
+    padding: 0 12px;
+  }
+  
+  .friends-section {
+    gap: 16px;
+    padding: 0 12px;
+  }
+  
+  .friends-list-view {
+    gap: 2px;
+  }
+  
+  .friend-row {
+    padding: 10px 12px;
+  }
+  
+  .empty-state {
+    padding: 40px 20px;
+    margin: 0 12px;
+  }
+  
+  .private-account-notice,
+  .blocked-message {
+    margin: 20px 12px;
   }
   
   .cover-edit {
     width: 36px;
     height: 36px;
-    top: 12px;
-    bottom: auto;
+    bottom: 12px;
+    top: auto;
     right: 12px;
     background: rgba(0, 0, 0, 0.4);
     border: none;
@@ -1049,6 +1191,18 @@ onUnmounted(() => {
     transform: scale(0.95);
   }
   
+  .cover-delete {
+    width: 36px;
+    height: 36px;
+    top: 12px;
+    right: 12px;
+  }
+  
+  .cover-delete svg {
+    width: 16px;
+    height: 16px;
+  }
+  
   .cover-edit svg {
     width: 18px;
     height: 18px;
@@ -1056,21 +1210,39 @@ onUnmounted(() => {
   }
   
   .cover-editor {
-    max-width: calc(100% - 32px);
-    margin: 16px;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .cover-editor .modal-header {
+    padding: 12px 16px;
+  }
+  
+  .cover-editor .modal-header h2 {
+    font-size: 16px;
   }
   
   .cover-editor-hint {
     font-size: 12px;
-    padding: 12px 16px 4px;
+    padding: 8px 16px 4px;
   }
   
   .cover-preview-wrap {
     padding: 12px 16px;
+    flex: 1;
+    display: flex;
+    align-items: center;
   }
   
   .cover-preview-container {
-    height: 180px;
+    height: 200px;
+    width: 100%;
   }
   
   .cover-zone span {
@@ -1091,15 +1263,39 @@ onUnmounted(() => {
   .cover-editor-actions {
     padding: 12px 16px;
     gap: 8px;
+    flex-direction: column;
   }
   
   .cover-editor-actions .btn {
-    padding: 10px 14px;
-    font-size: 13px;
+    padding: 12px 16px;
+    font-size: 14px;
+    width: 100%;
   }
   
   .cover-editor-right {
     gap: 8px;
+    width: 100%;
+    display: flex;
+  }
+  
+  .cover-editor-right .btn {
+    flex: 1;
+  }
+  
+  .friends-section {
+    gap: 16px;
+  }
+  
+  .friends-list-view {
+    gap: 2px;
+  }
+  
+  .friend-row {
+    padding: 10px 12px;
+  }
+
+  .empty-state {
+    padding: 40px 20px;
   }
 }
 
@@ -1185,6 +1381,18 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
+[data-theme="light"] .cover-delete {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .cover-delete:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .cover-delete svg {
+  color: var(--text-secondary);
+}
+
 [data-theme="light"] .profile-menu-dropdown {
   background: rgba(255, 255, 255, 0.95);
 }
@@ -1239,5 +1447,24 @@ onUnmounted(() => {
 
 [data-theme="light"] .cover-editor {
   background: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 768px) {
+  [data-theme="light"] .back-btn {
+    background: rgba(255, 255, 255, 0.8);
+  }
+  
+  [data-theme="light"] .tabs-container {
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  [data-theme="light"] .liquid-tab {
+    background: transparent;
+    border: none;
+  }
+  
+  [data-theme="light"] .liquid-tab.active {
+    background: transparent;
+  }
 }
 </style>
