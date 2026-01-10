@@ -497,6 +497,10 @@ onUnmounted(() => {
     flex-shrink: 0;
   }
   
+  .feed-logo svg {
+    stroke-width: 1.5;
+  }
+  
   .feed-top-header h1 {
     flex: 1;
     text-align: center;
