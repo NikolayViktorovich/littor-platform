@@ -150,4 +150,10 @@ function handleAvatarError(e) {
     max-width: none;
   }
 }
+
+[data-theme="light"] .notification {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
 </style>

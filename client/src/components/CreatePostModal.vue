@@ -369,4 +369,56 @@ async function submit() {
 .modal-leave-to .modal-content {
   transform: translateZ(0) scale(0.97);
 }
+
+[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .modal-content {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .close-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .close-btn:hover {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .upload-area {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .upload-area:hover {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .upload-icon {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .upload-icon svg {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .add-more {
+  border-color: rgba(0, 0, 0, 0.15);
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .add-more:hover {
+  border-color: rgba(0, 0, 0, 0.3);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .text-input textarea {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .text-input textarea:focus {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.12);
+}
 </style>

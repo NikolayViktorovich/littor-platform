@@ -537,4 +537,71 @@ async function submit() {
   width: 16px;
   height: 16px;
 }
+
+[data-theme="light"] .create-trigger {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.06);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .create-trigger:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .modal-content {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .close-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .close-btn:hover {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .media-previews {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .preview-thumb {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .text-input textarea {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .text-input textarea:focus {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .attach-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .attach-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .music-preview {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .music-artwork .artwork-placeholder {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .music-remove:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
 </style>

@@ -366,4 +366,195 @@ onUnmounted(() => window.removeEventListener('resize', handleResize))
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
 }
+
+[data-theme="light"] .mobile-bar {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .bar-play svg {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bar-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .bar-artist {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .bar-close {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .modal-sheet {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .modal-handle {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .modal-artwork {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .modal-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .modal-artist {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .modal-progress-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .modal-progress-fill {
+  background: var(--text-primary);
+}
+
+[data-theme="light"] .modal-progress-thumb {
+  background: var(--text-primary);
+}
+
+[data-theme="light"] .modal-times {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .modal-ctrl {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .modal-play {
+  background: var(--text-primary);
+}
+
+[data-theme="light"] .modal-play svg {
+  color: white;
+}
+
+[data-theme="light"] .desktop-player.glass {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .mini-play {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .mini-play svg {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .mini-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .mini-progress {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .mini-bar {
+  background: var(--text-primary);
+}
+
+[data-theme="light"] .mini-close {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .mini-close:hover {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .full-title {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .full-btn {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .full-btn:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .full-artwork {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .full-artwork svg {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .full-name {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .full-artist {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .progress-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .progress-fill {
+  background: var(--text-primary);
+}
+
+[data-theme="light"] .progress-thumb {
+  background: var(--text-primary);
+}
+
+[data-theme="light"] .progress-times {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .ctrl-btn {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .ctrl-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .ctrl-play {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .ctrl-play:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .ctrl-play svg {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .vol-btn {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .vol-btn:hover {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .vol-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .vol-fill {
+  background: var(--text-primary);
+}
+
+[data-theme="light"] .vol-thumb {
+  background: var(--text-primary);
+}
 </style>

@@ -155,13 +155,6 @@
                   </div>
                 </div>
                 <div class="settings-group">
-                  <div class="custom-select-item" @click="toggleDropdown('fontSize', $event)">
-                    <span>{{ t('fontSize') }}</span>
-                    <div class="custom-select-value">
-                      <span>{{ getFontSizeLabel(settings.fontSize) }}</span>
-                      <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-                    </div>
-                  </div>
                   <div class="toggle-item">
                     <span>{{ t('animations') }}</span>
                     <label class="toggle"><input type="checkbox" v-model="settings.animationsEnabled" @change="applyAnimations"><span class="toggle-slider"></span></label>
@@ -209,14 +202,6 @@
           </button>
         </div>
       </Transition>
-      <Transition name="dropdown">
-        <div v-if="openDropdown === 'fontSize'" class="custom-dropdown" :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }" @click.stop>
-          <button v-for="opt in fontSizeOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.fontSize === opt.value }" @click="selectFontSize(opt.value)">
-            <span>{{ opt.label }}</span>
-            <svg v-if="settings.fontSize === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-          </button>
-        </div>
-      </Transition>
     </Teleport>
   </div>
 </template>
@@ -249,24 +234,11 @@ const profileOptions = computed(() => [
   { value: 'contacts', label: t('friends') }
 ])
 
-const fontSizeOptions = computed(() => [
-  { value: 'small', label: t('small') },
-  { value: 'medium', label: t('medium') },
-  { value: 'large', label: t('large') }
-])
-
 function getPrivacyLabel(value, type) {
   if (value === 'everyone') return t('everyone')
   if (value === 'contacts') return t('friends')
   if (value === 'nobody') return t('nobody')
   return t('everyone')
-}
-
-function getFontSizeLabel(value) {
-  if (value === 'small') return t('small')
-  if (value === 'medium') return t('medium')
-  if (value === 'large') return t('large')
-  return t('medium')
 }
 
 const dropdownPosition = ref({ top: 0, left: 0 })
@@ -297,12 +269,6 @@ function selectOption(key, value) {
   openDropdown.value = null
 }
 
-function selectFontSize(value) {
-  settings.fontSize = value
-  openDropdown.value = null
-  applyFontSize()
-}
-
 const sectionTitles = computed(() => ({
   devices: t('devices'),
   notifications: t('notificationsAndSounds'),
@@ -319,7 +285,6 @@ const settings = reactive({
   whoCanMessage: 'everyone',
   profileVisibility: 'everyone',
   theme: 'dark',
-  fontSize: 'medium',
   animationsEnabled: true,
   language: 'ru'
 })
@@ -386,13 +351,6 @@ function applyTheme(theme) {
   localStorage.setItem('theme', theme)
 }
 
-function applyFontSize() {
-  const sizes = { small: '14px', medium: '16px', large: '18px' }
-  const size = sizes[settings.fontSize] || '16px'
-  document.documentElement.style.setProperty('--base-font-size', size)
-  localStorage.setItem('fontSize', settings.fontSize)
-}
-
 function applyAnimations() {
   document.documentElement.classList.toggle('no-animations', !settings.animationsEnabled)
   localStorage.setItem('animationsEnabled', settings.animationsEnabled)
@@ -412,15 +370,12 @@ async function loadSettings() {
   
   const savedTheme = localStorage.getItem('theme')
   if (savedTheme) settings.theme = savedTheme
-  const savedFontSize = localStorage.getItem('fontSize')
-  if (savedFontSize) settings.fontSize = savedFontSize
   const savedAnimations = localStorage.getItem('animationsEnabled')
   if (savedAnimations !== null) settings.animationsEnabled = savedAnimations === 'true'
   const savedLanguage = localStorage.getItem('language')
   if (savedLanguage) { settings.language = savedLanguage; setLanguage(savedLanguage) }
   
   applyTheme(settings.theme)
-  applyFontSize()
   applyAnimations()
 }
 
