@@ -28,15 +28,15 @@
             </svg>
           </div>
           
-          <h1 class="auth-title">Вход в Littor</h1>
-          <p class="auth-subtitle">Выберите аккаунт для входа</p>
+          <h1 class="auth-title">{{ t('loginToLittorTitle') }}</h1>
+          <p class="auth-subtitle">{{ t('selectAccountDesc') }}</p>
           
           <form @submit.prevent="checkEmail" class="auth-form">
             <div class="input-group">
               <input 
                 v-model="form.email" 
                 type="email" 
-                placeholder="Email или телефон" 
+                :placeholder="t('emailOrPhonePlaceholder')" 
                 required
                 autocomplete="email"
               >
@@ -44,19 +44,19 @@
 
             <button type="submit" class="submit-btn" :disabled="loading || !form.email">
               <span v-if="loading" class="spinner"></span>
-              <span v-else>Продолжить</span>
+              <span v-else>{{ t('continue') }}</span>
             </button>
           </form>
 
           <button class="alt-action" @click="$router.push('/register')">
-            Создать аккаунт
+            {{ t('createAccountBtn') }}
           </button>
         </template>
 
         <!-- Step 2: Password -->
         <template v-else>
-          <h1 class="auth-title title-left">Подтвердите вход</h1>
-          <p class="auth-subtitle subtitle-left">Введите пароль для входа в аккаунт</p>
+          <h1 class="auth-title title-left">{{ t('confirmLoginTitle') }}</h1>
+          <p class="auth-subtitle subtitle-left">{{ t('enterPasswordDesc') }}</p>
           
           <div class="user-card">
             <div class="user-avatar">
@@ -75,7 +75,7 @@
               <input 
                 v-model="form.password" 
                 :type="showPassword ? 'text' : 'password'" 
-                placeholder="Введите пароль" 
+                :placeholder="t('enterPasswordPlaceholder2')" 
                 required
                 autocomplete="current-password"
                 ref="passwordInput"
@@ -92,17 +92,17 @@
               </button>
             </div>
 
-            <a href="#" class="forgot-link">Забыли пароль?</a>
+            <a href="#" class="forgot-link">{{ t('forgotPassword') }}</a>
 
             <button type="submit" class="submit-btn" :disabled="loading || !form.password">
               <span v-if="loading" class="spinner"></span>
-              <span v-else>Продолжить</span>
+              <span v-else>{{ t('continue') }}</span>
             </button>
           </form>
         </template>
       </div>
 
-      <span class="help-link" @click="showHelp = true">Помощь</span>
+      <span class="help-link" @click="showHelp = true">{{ t('help') }}</span>
 
       <!-- Help Modal -->
       <Teleport to="body">
@@ -110,7 +110,7 @@
           <div v-if="showHelp" class="modal-overlay" @click.self="showHelp = false">
             <div class="help-modal glass-modal">
               <div class="help-header">
-                <h2>Помощь</h2>
+                <h2>{{ t('helpTitle') }}</h2>
                 <button @click="showHelp = false" class="close-btn">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 6L6 18M6 6l12 12"/>
@@ -125,8 +125,8 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Не могу войти в аккаунт</span>
-                    <span class="help-desc">Проверьте правильность email и пароля. Пароль чувствителен к регистру.</span>
+                    <span class="help-title">{{ t('cantLoginTitle') }}</span>
+                    <span class="help-desc">{{ t('cantLoginDesc2') }}</span>
                   </div>
                 </div>
                 <div class="help-item" @click="openForgotPassword">
@@ -136,8 +136,8 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Забыли пароль?</span>
-                    <span class="help-desc">Восстановите доступ к аккаунту</span>
+                    <span class="help-title">{{ t('forgotPasswordTitle') }}</span>
+                    <span class="help-desc">{{ t('restoreAccessDesc') }}</span>
                   </div>
                   <svg class="help-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
@@ -148,8 +148,8 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Создание аккаунта</span>
-                    <span class="help-desc">Зарегистрируйтесь в Littor</span>
+                    <span class="help-title">{{ t('createAccountTitle') }}</span>
+                    <span class="help-desc">{{ t('registerInLittorDesc') }}</span>
                   </div>
                   <svg class="help-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
@@ -160,7 +160,7 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Связаться с поддержкой</span>
+                    <span class="help-title">{{ t('contactSupportTitle') }}</span>
                     <span class="help-desc">n.golubtsov05@bk.ru</span>
                   </div>
                   <svg class="help-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -189,26 +189,26 @@
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
                 </div>
-                <h2 class="forgot-title">Восстановление пароля</h2>
-                <p class="forgot-desc">Введите email, на который зарегистрирован аккаунт. Мы отправим код для сброса пароля.</p>
+                <h2 class="forgot-title">{{ t('passwordRecoveryTitle') }}</h2>
+                <p class="forgot-desc">{{ t('passwordRecoveryDesc2') }}</p>
                 
                 <form @submit.prevent="sendResetEmail" class="forgot-form">
                   <div class="input-group">
                     <input 
                       v-model="forgotEmail" 
                       type="email" 
-                      placeholder="Email" 
+                      :placeholder="t('email')" 
                       required
                     >
                   </div>
                   <button type="submit" class="submit-btn" :disabled="forgotLoading || !forgotEmail">
                     <span v-if="forgotLoading" class="spinner"></span>
-                    <span v-else>Отправить код</span>
+                    <span v-else>{{ t('sendCodeBtn') }}</span>
                   </button>
                 </form>
 
                 <p class="forgot-support">
-                  Нет доступа к почте? <a href="mailto:n.golubtsov05@bk.ru">Написать в поддержку</a>
+                  {{ t('noEmailAccessQ') }} <a href="mailto:n.golubtsov05@bk.ru">{{ t('writeToSupportBtn') }}</a>
                 </p>
               </template>
 
@@ -220,8 +220,8 @@
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
                 </div>
-                <h2 class="forgot-title">Введите код</h2>
-                <p class="forgot-desc">Мы отправили код на <strong>{{ forgotEmail }}</strong></p>
+                <h2 class="forgot-title">{{ t('enterCodeTitle') }}</h2>
+                <p class="forgot-desc">{{ t('codeSentToEmail') }} <strong>{{ forgotEmail }}</strong></p>
                 
                 <form @submit.prevent="verifyResetCode" class="forgot-form">
                   <div class="code-inputs">
@@ -240,21 +240,21 @@
                   </div>
                   <button type="submit" class="submit-btn" :disabled="forgotLoading || resetCode.length !== 6">
                     <span v-if="forgotLoading" class="spinner"></span>
-                    <span v-else>Подтвердить</span>
+                    <span v-else>{{ t('confirmBtn') }}</span>
                   </button>
                 </form>
 
                 <p class="forgot-support">
-                  Не пришёл код? 
+                  {{ t('noCodeReceivedQ') }} 
                   <button 
                     v-if="resendTimer === 0" 
                     @click="sendResetEmail" 
                     class="resend-link"
                     :disabled="forgotLoading"
                   >
-                    Отправить повторно
+                    {{ t('resendCodeBtn') }}
                   </button>
-                  <span v-else class="resend-timer">Повторно через {{ resendTimer }}с</span>
+                  <span v-else class="resend-timer">{{ t('resendInSec') }} {{ resendTimer }}с</span>
                 </p>
               </template>
 
@@ -265,15 +265,15 @@
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
                 </div>
-                <h2 class="forgot-title">Новый пароль</h2>
-                <p class="forgot-desc">Придумайте новый пароль для вашего аккаунта</p>
+                <h2 class="forgot-title">{{ t('newPasswordTitle2') }}</h2>
+                <p class="forgot-desc">{{ t('newPasswordDesc2') }}</p>
                 
                 <form @submit.prevent="submitNewPassword" class="forgot-form">
                   <div class="input-group">
                     <input 
                       v-model="newPassword" 
                       :type="showNewPassword ? 'text' : 'password'" 
-                      placeholder="Новый пароль" 
+                      :placeholder="t('newPassword')" 
                       required
                       minlength="6"
                     >
@@ -292,14 +292,14 @@
                     <input 
                       v-model="confirmPassword" 
                       :type="showNewPassword ? 'text' : 'password'" 
-                      placeholder="Повторите пароль" 
+                      :placeholder="t('repeatPassword')" 
                       required
                       minlength="6"
                     >
                   </div>
                   <button type="submit" class="submit-btn" :disabled="forgotLoading || !canResetPassword">
                     <span v-if="forgotLoading" class="spinner"></span>
-                    <span v-else>Сохранить пароль</span>
+                    <span v-else>{{ t('savePasswordBtn') }}</span>
                   </button>
                 </form>
               </template>
@@ -311,11 +311,11 @@
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 </div>
-                <h2 class="forgot-title">Пароль изменён</h2>
-                <p class="forgot-desc">Ваш пароль успешно изменён. Теперь вы можете войти с новым паролем.</p>
+                <h2 class="forgot-title">{{ t('passwordChangedTitle') }}</h2>
+                <p class="forgot-desc">{{ t('passwordChangedDesc2') }}</p>
                 
                 <button class="submit-btn" @click="closeForgotModal">
-                  Вернуться ко входу
+                  {{ t('backToLoginBtn') }}
                 </button>
               </template>
             </div>
@@ -340,8 +340,8 @@
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
               </div>
-              <h2 class="forgot-title">Подтвердите email</h2>
-              <p class="forgot-desc">Мы отправили код на <strong>{{ form.email }}</strong></p>
+              <h2 class="forgot-title">{{ t('confirmEmailTitle') }}</h2>
+              <p class="forgot-desc">{{ t('codeSentToEmail') }} <strong>{{ form.email }}</strong></p>
               
               <form @submit.prevent="submitVerifyEmail" class="forgot-form">
                 <div class="code-inputs">
@@ -360,21 +360,21 @@
                 </div>
                 <button type="submit" class="submit-btn" :disabled="verifyLoading || verifyCode.length !== 6">
                   <span v-if="verifyLoading" class="spinner"></span>
-                  <span v-else>Подтвердить</span>
+                  <span v-else>{{ t('confirmBtn') }}</span>
                 </button>
               </form>
 
               <p class="forgot-support">
-                Не пришёл код? 
+                {{ t('noCodeReceivedQ') }} 
                 <button 
                   v-if="verifyResendTimer === 0" 
                   @click="resendVerifyCode" 
                   class="resend-link"
                   :disabled="verifyLoading"
                 >
-                  Отправить повторно
+                  {{ t('resendCodeBtn') }}
                 </button>
-                <span v-else class="resend-timer">Повторно через {{ verifyResendTimer }}с</span>
+                <span v-else class="resend-timer">{{ t('resendInSec') }} {{ verifyResendTimer }}с</span>
               </p>
             </div>
           </div>
@@ -389,10 +389,12 @@ import { reactive, ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { useI18n } from '../i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
+const { t } = useI18n()
 
 const form = reactive({ email: '', password: '' })
 const loading = ref(false)
@@ -401,11 +403,10 @@ const step = ref('email')
 const passwordInput = ref(null)
 const showHelp = ref(false)
 
-// Forgot password state
 const showForgotModal = ref(false)
 const forgotEmail = ref('')
 const forgotLoading = ref(false)
-const forgotStep = ref('email') // email, code, newPassword, success
+const forgotStep = ref('email')
 const resetCode = ref('')
 const resetCodeInputs = ref([])
 const newPassword = ref('')
@@ -414,7 +415,6 @@ const showNewPassword = ref(false)
 const resendTimer = ref(0)
 let resendInterval = null
 
-// Email verification state (for unverified accounts)
 const showVerifyModal = ref(false)
 const verifyCode = ref('')
 const verifyCodeInputs = ref([])
@@ -473,7 +473,7 @@ async function sendResetEmail() {
     await authStore.forgotPassword(forgotEmail.value)
     forgotStep.value = 'code'
     startResendTimer()
-    notifications.success('Код отправлен на почту')
+    notifications.success(t('codeSentAgain'))
   } catch (err) {
     notifications.error(err.response?.data?.error || err.message)
   } finally {
@@ -533,7 +533,7 @@ async function submitNewPassword() {
   try {
     await authStore.resetPassword(forgotEmail.value, resetCode.value, newPassword.value)
     forgotStep.value = 'success'
-    notifications.success('Пароль успешно изменён')
+    notifications.success(t('passwordChangedTitle'))
   } catch (err) {
     notifications.error(err.response?.data?.error || err.message)
   } finally {
@@ -541,7 +541,6 @@ async function submitNewPassword() {
   }
 }
 
-// Email verification handlers (for unverified accounts)
 function startVerifyResendTimer() {
   verifyResendTimer.value = 60
   if (verifyResendInterval) clearInterval(verifyResendInterval)
@@ -592,7 +591,7 @@ async function submitVerifyEmail() {
   try {
     await authStore.verifyEmail(form.email, verifyCode.value)
     showVerifyModal.value = false
-    notifications.success('Email подтверждён!')
+    notifications.success(t('emailConfirmed'))
     router.push('/')
   } catch (err) {
     notifications.error(err.response?.data?.error || err.message)
@@ -605,7 +604,7 @@ async function resendVerifyCode() {
   verifyLoading.value = true
   try {
     await authStore.resendVerification(form.email)
-    notifications.success('Код отправлен повторно')
+    notifications.success(t('codeSentAgain'))
     startVerifyResendTimer()
   } catch (err) {
     notifications.error(err.response?.data?.error || err.message)
@@ -645,16 +644,14 @@ async function submit() {
     await authStore.login(form.email, form.password)
     router.push('/')
   } catch (err) {
-    // Check if account needs verification
     if (err.response?.data?.needsVerification) {
       showVerifyModal.value = true
       startVerifyResendTimer()
-      // Request new verification code
       try {
         await authStore.resendVerification(form.email)
-        notifications.info('Код подтверждения отправлен на почту')
+        notifications.info(t('verificationCodeSent'))
       } catch (resendErr) {
-        notifications.error('Не удалось отправить код')
+        notifications.error(t('couldNotSendCode'))
       }
     } else {
       notifications.error(err.response?.data?.error || err.message)

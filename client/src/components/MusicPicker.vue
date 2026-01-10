@@ -2,16 +2,16 @@
   <div class="music-picker-overlay" @click.self="$emit('close')">
     <div class="music-picker glass-modal">
       <div class="picker-header">
-        <h2>Выбрать музыку</h2>
+        <h2>{{ t('selectMusic') }}</h2>
         <button @click="$emit('close')" class="close-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
       <div class="picker-tabs">
-        <button class="picker-tab" :class="{ active: tab === 'search' }" @click="tab = 'search'">Поиск</button>
-        <button class="picker-tab" :class="{ active: tab === 'trending' }" @click="tab = 'trending'; loadTrending()">Популярное</button>
-        <button class="picker-tab" :class="{ active: tab === 'library' }" @click="tab = 'library'; loadLibrary()">Моя музыка</button>
+        <button class="picker-tab" :class="{ active: tab === 'search' }" @click="tab = 'search'">{{ t('search') }}</button>
+        <button class="picker-tab" :class="{ active: tab === 'trending' }" @click="tab = 'trending'; loadTrending()">{{ t('trending') }}</button>
+        <button class="picker-tab" :class="{ active: tab === 'library' }" @click="tab = 'library'; loadLibrary()">{{ t('myMusic') }}</button>
       </div>
 
       <div v-if="tab === 'search'" class="search-section">
@@ -19,7 +19,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/>
           </svg>
-          <input v-model="searchQuery" @input="handleSearch" placeholder="Поиск треков..." ref="searchInput">
+          <input v-model="searchQuery" @input="handleSearch" :placeholder="t('searchTracks')" ref="searchInput">
         </div>
       </div>
 
@@ -29,7 +29,7 @@
         </div>
         
         <div v-else-if="!tracks.length" class="empty-state">
-          <p>{{ tab === 'search' ? 'Введите запрос для поиска' : 'Нет треков' }}</p>
+          <p>{{ tab === 'search' ? t('enterSearchQuery2') : t('noTracks') }}</p>
         </div>
 
         <div v-else class="tracks-scroll">
@@ -65,8 +65,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAudioPlayerStore } from '../stores/audioPlayer'
+import { useI18n } from '../i18n'
 import api from '../api'
 
+const { t } = useI18n()
 const emit = defineEmits(['close', 'select'])
 const audioStore = useAudioPlayerStore()
 

@@ -27,6 +27,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/profile/username/:username',
+    name: 'profile-username',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/messages',
     name: 'messages',
     component: () => import('../views/Messages.vue'),
@@ -42,6 +48,12 @@ const routes = [
     path: '/friends',
     name: 'friends',
     component: () => import('../views/Friends.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('../views/Settings.vue'),
     meta: { requiresAuth: true }
   }
 ]

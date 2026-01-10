@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content glass-modal">
       <div class="modal-header">
-        <h2>Новый пост</h2>
+        <h2>{{ t('newPost') }}</h2>
         <button @click="$emit('close')" class="close-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -20,10 +20,10 @@
               <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
           </div>
-          <p class="upload-title">Добавьте фото или видео</p>
+          <p class="upload-title">{{ t('photo') }}</p>
           <label class="btn btn-secondary">
             <input type="file" accept="image/*" multiple @change="handleImages" hidden ref="fileInput">
-            Загрузить с устройства
+            {{ t('file') }}
           </label>
         </div>
 
@@ -47,7 +47,7 @@
         </div>
 
         <div class="text-input">
-          <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="3" ref="textareaRef"></textarea>
+          <textarea v-model="content" :placeholder="t('writeSomething')" rows="3" ref="textareaRef"></textarea>
           <EmojiPicker @select="insertEmoji" />
         </div>
       </div>
@@ -55,7 +55,7 @@
       <div class="modal-footer">
         <button @click="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
           <span v-if="loading" class="spinner"></span>
-          <span v-else>Опубликовать</span>
+          <span v-else>{{ t('publish') }}</span>
         </button>
       </div>
     </div>
@@ -65,9 +65,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useNotificationsStore } from '../stores/notifications'
+import { useI18n } from '../i18n'
 import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
 
+const { t } = useI18n()
 const emit = defineEmits(['close', 'created'])
 const notifications = useNotificationsStore()
 

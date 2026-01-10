@@ -5,13 +5,14 @@
       
       <div v-if="loading && !posts.length" class="loading-state">
         <div class="spinner-lg"></div>
-        <p>Загрузка...</p>
+        <p>{{ t('loading') }}</p>
       </div>
       
       <TransitionGroup name="post" tag="div" class="posts-list">
         <PostCard 
           v-for="post in sortedPosts" 
           :key="post.id" 
+          :id="'post-' + post.id"
           :post="post"
           :hide-pin="true"
           @delete="deletePost"
@@ -21,8 +22,8 @@
       </TransitionGroup>
       
       <div v-if="!loading && !posts.length" class="empty-state glass">
-        <h3>Пока нет записей</h3>
-        <p>Напишите что-нибудь первым!</p>
+        <h3>{{ t('noPosts') }}</h3>
+        <p>{{ t('writeFirst') }}</p>
       </div>
       
       <div v-if="hasMore" ref="loadMore" class="load-more">
@@ -42,13 +43,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import CreatePost from '../components/CreatePost.vue'
 import PostCard from '../components/PostCard.vue'
 import { useNotificationsStore } from '../stores/notifications'
 import { useSocket } from '../socket'
+import { useI18n } from '../i18n'
 import api from '../api'
 
+const { t } = useI18n()
+const route = useRoute()
 const notifications = useNotificationsStore()
 const { on, off } = useSocket()
 const posts = ref([])
@@ -63,19 +68,27 @@ const showMediaViewer = ref(false)
 const mediaViewerSrc = ref('')
 const mediaViewerType = ref('image')
 
-// Sort posts: pinned first, then by date
 const sortedPosts = computed(() => {
   return [...posts.value].sort((a, b) => {
-    // Pinned posts always first
     if (a.isPinned && !b.isPinned) return -1
     if (!a.isPinned && b.isPinned) return 1
-    // Then by date
     return new Date(b.createdAt) - new Date(a.createdAt)
   })
 })
 
 function openMedia(src, type) { mediaViewerSrc.value = src; mediaViewerType.value = type; showMediaViewer.value = true }
 function closeMedia() { showMediaViewer.value = false }
+
+function scrollToPost(postId) {
+  nextTick(() => {
+    const el = document.getElementById('post-' + postId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('highlight-post')
+      setTimeout(() => el.classList.remove('highlight-post'), 2000)
+    }
+  })
+}
 
 async function fetchPosts(reset = false) {
   if (loading.value) return
@@ -102,7 +115,6 @@ async function fetchPosts(reset = false) {
   }
 }
 
-// Poll for new posts since last fetch
 async function pollNewPosts() {
   if (!lastFetchTime.value) return
   try {
@@ -113,7 +125,6 @@ async function pollNewPosts() {
         if (!exists) {
           posts.value.unshift(newPost)
         } else {
-          // Update existing post
           const idx = posts.value.findIndex(p => p.id === newPost.id)
           if (idx !== -1) {
             Object.assign(posts.value[idx], newPost)
@@ -125,7 +136,6 @@ async function pollNewPosts() {
   } catch {}
 }
 
-// Socket handler for new posts from friends
 function onNewPost(post) {
   const exists = posts.value.find(p => p.id === post.id)
   if (!exists) {
@@ -162,11 +172,10 @@ function updatePost(updated) {
 
 let pollInterval = null
 
-onMounted(() => {
-  fetchPosts(true)
+onMounted(async () => {
+  await fetchPosts(true)
   on('post:new', onNewPost)
   
-  // Poll every 3 seconds for new posts
   pollInterval = setInterval(pollNewPosts, 3000)
   
   observer = new IntersectionObserver(entries => {
@@ -174,6 +183,10 @@ onMounted(() => {
   }, { threshold: 0.1 })
   
   if (loadMore.value) observer.observe(loadMore.value)
+  
+  if (route.query.post) {
+    scrollToPost(route.query.post)
+  }
 })
 
 onUnmounted(() => {
@@ -309,5 +322,14 @@ onUnmounted(() => {
     background: rgba(255, 255, 255, 0.12);
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
+}
+
+:deep(.highlight-post) {
+  animation: highlightPost 2s ease-out;
+}
+
+@keyframes highlightPost {
+  0%, 30% { box-shadow: 0 0 0 2px rgba(91, 154, 255, 0.6); }
+  100% { box-shadow: none; }
 }
 </style>

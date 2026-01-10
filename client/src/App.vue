@@ -50,7 +50,26 @@ function handlePostCreated() {
   }
 }
 
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'dark'
+  let actualTheme = savedTheme
+  if (savedTheme === 'system') {
+    actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  document.documentElement.setAttribute('data-theme', actualTheme)
+  
+  const savedFontSize = localStorage.getItem('fontSize') || 'medium'
+  const sizes = { small: '14px', medium: '16px', large: '18px' }
+  document.documentElement.style.setProperty('--base-font-size', sizes[savedFontSize] || '16px')
+  
+  const savedAnimations = localStorage.getItem('animationsEnabled')
+  if (savedAnimations === 'false') {
+    document.documentElement.classList.add('no-animations')
+  }
+}
+
 onMounted(() => {
+  initTheme()
   authStore.checkAuth()
   window.addEventListener('resize', handleResize)
 })

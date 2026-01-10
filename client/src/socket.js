@@ -32,7 +32,6 @@ function connectSocket(token) {
     isConnected.value = true
     console.log('Socket connected')
     
-    // Apply pending listeners
     pendingListeners.forEach(({ event, callback }) => {
       socket.value.on(event, callback)
     })
@@ -61,37 +60,30 @@ export function useSocket() {
     socket,
     isConnected,
     
-    // Emit events
     emit(event, data) {
       socket.value?.emit(event, data)
     },
     
-    // Listen to events
     on(event, callback) {
       if (socket.value) {
         socket.value.on(event, callback)
       } else {
-        // Queue listener for when socket connects
         pendingListeners.push({ event, callback })
       }
     },
     
-    // Remove listener
     off(event, callback) {
       if (socket.value) {
         socket.value.off(event, callback)
       }
-      // Also remove from pending
       const idx = pendingListeners.findIndex(l => l.event === event && l.callback === callback)
       if (idx !== -1) pendingListeners.splice(idx, 1)
     },
     
-    // Join post room
     joinPost(postId) {
       socket.value?.emit('post:join', postId)
     },
     
-    // Leave post room
     leavePost(postId) {
       socket.value?.emit('post:leave', postId)
     }

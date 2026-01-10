@@ -29,25 +29,26 @@
 
         <div class="profile-details">
           <h1 v-if="user">{{ user.name }}</h1>
+          <p v-if="user?.username" class="username">@{{ user.username }}</p>
           <p v-if="user?.bio" class="bio">{{ user.bio }}</p>
           <div class="online-status" v-if="user && !isOwner">
-            <span class="status">{{ user.isOnline ? 'в сети' : formatLastSeen(user.lastSeen) }}</span>
+            <span class="status">{{ user.isOnline ? t('online') : formatLastSeen(user.lastSeen) }}</span>
           </div>
           <div class="profile-meta">
-            <span class="meta-item">{{ user?.friendsCount || 0 }} друзей</span>
-            <span class="meta-item">{{ user?.postsCount || 0 }} записей</span>
+            <span class="meta-item">{{ user?.friendsCount || 0 }} {{ t('friendsCount') }}</span>
+            <span class="meta-item">{{ user?.postsCount || 0 }} {{ t('posts') }}</span>
           </div>
         </div>
 
         <div v-if="user" class="profile-actions">
           <template v-if="isOwner">
-            <button @click="showEditModal = true" class="btn btn-secondary">Редактировать</button>
+            <button @click="showEditModal = true" class="btn btn-secondary">{{ t('editProfile') }}</button>
           </template>
           <template v-else-if="!user.blockedByUser">
-            <button v-if="user.friendStatus === 'none' && !user.iBlockedUser" @click="addFriend" class="btn btn-primary">Добавить в друзья</button>
-            <button v-else-if="user.friendStatus === 'pending'" class="btn btn-secondary" disabled>Заявка отправлена</button>
-            <button v-else-if="user.friendStatus === 'incoming'" @click="acceptFriend" class="btn btn-primary">Принять заявку</button>
-            <router-link v-if="!user.iBlockedUser" :to="`/messages/${user.id}`" class="btn btn-secondary">Написать</router-link>
+            <button v-if="user.friendStatus === 'none' && !user.iBlockedUser" @click="addFriend" class="btn btn-primary">{{ t('addFriend') }}</button>
+            <button v-else-if="user.friendStatus === 'pending'" class="btn btn-secondary" disabled>{{ t('requestSent') }}</button>
+            <button v-else-if="user.friendStatus === 'incoming'" @click="acceptFriend" class="btn btn-primary">{{ t('accept') }}</button>
+            <router-link v-if="!user.iBlockedUser" :to="`/messages/${user.id}`" class="btn btn-secondary">{{ t('write') }}</router-link>
             <div class="profile-more-wrap">
               <button @click="toggleProfileMenu" class="btn btn-secondary btn-icon">
                 <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
@@ -56,15 +57,15 @@
                 <div v-if="showProfileMenu" class="profile-menu-dropdown" @click.stop>
                   <button v-if="user.friendStatus === 'friends'" class="profile-menu-item" @click="removeFriend">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>
-                    <span>Удалить из друзей</span>
+                    <span>{{ t('removeFriend') }}</span>
                   </button>
                   <button v-if="user.iBlockedUser" class="profile-menu-item" @click="unblockUser">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
-                    <span>Разблокировать</span>
+                    <span>{{ t('unblock') }}</span>
                   </button>
                   <button v-else class="profile-menu-item danger" @click="blockUser">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-6.36 3.64l12.72 12.72"/></svg>
-                    <span>Заблокировать</span>
+                    <span>{{ t('block') }}</span>
                   </button>
                 </div>
               </Transition>
@@ -78,36 +79,36 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-6.36 3.64l12.72 12.72"/>
       </svg>
-      <p>Страница недоступна</p>
-      <span>Пользователь ограничил доступ к своей странице</span>
+      <p>{{ t('pageUnavailable') }}</p>
+      <span>{{ t('userRestrictedAccess') }}</span>
     </div>
 
     <div class="profile-content" v-if="user && !user.blockedByUser">
       <div class="liquid-tabs">
-        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')">Записи</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')">Фото</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')">Видео</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'audio' }" @click="setTab('audio')">Аудио</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')">Друзья</button>
-        <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')">Архив</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')">{{ t('posts') }}</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')">{{ t('photos') }}</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')">{{ t('videos') }}</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'audio' }" @click="setTab('audio')">{{ t('audio') }}</button>
+        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')">{{ t('friends') }}</button>
+        <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')">{{ t('archive') }}</button>
       </div>
 
       <div v-if="activeTab === 'posts'" class="profile-posts">
         <CreatePost v-if="isOwner" @created="addPost" />
         <PostCard v-for="post in posts" :key="post.id" :post="post" @delete="deletePost" @update="updatePost" @open-media="openMedia"/>
-        <div v-if="!posts.length" class="empty-state glass"><p>Нет записей</p></div>
+        <div v-if="!posts.length" class="empty-state glass"><p>{{ t('noPosts2') }}</p></div>
       </div>
 
       <div v-else-if="activeTab === 'archive'" class="profile-posts">
         <PostCard v-for="post in archivedPosts" :key="post.id" :post="post" @delete="deleteArchivedPost" @update="updateArchivedPost" @open-media="openMedia"/>
-        <div v-if="!archivedPosts.length" class="empty-state glass"><p>Архив пуст</p></div>
+        <div v-if="!archivedPosts.length" class="empty-state glass"><p>{{ t('archiveEmpty') }}</p></div>
       </div>
 
       <div v-else-if="activeTab === 'photos'" class="media-grid">
         <div v-for="(photo, idx) in photos" :key="photo.id" class="media-item" @click="openMedia(photo.image, 'image', idx, photos.map(p => ({ src: p.image, type: 'image' })))">
           <img :src="photo.image" alt="">
         </div>
-        <div v-if="!photos.length" class="empty-state glass"><p>Нет фотографий</p></div>
+        <div v-if="!photos.length" class="empty-state glass"><p>{{ t('noPhotos') }}</p></div>
       </div>
 
       <div v-else-if="activeTab === 'videos'" class="media-grid">
@@ -115,27 +116,27 @@
           <video :src="video.video" muted></video>
           <div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
         </div>
-        <div v-if="!videos.length" class="empty-state glass"><p>Нет видео</p></div>
+        <div v-if="!videos.length" class="empty-state glass"><p>{{ t('noVideos') }}</p></div>
       </div>
 
       <div v-else-if="activeTab === 'audio'" class="audio-section">
         <div class="audio-tabs">
-          <button class="audio-tab" :class="{ active: audioTab === 'all' }" @click="audioTab = 'all'; loadAllTracks()">Все песни</button>
-          <button class="audio-tab" :class="{ active: audioTab === 'library' }" @click="audioTab = 'library'">Моя музыка</button>
-          <button class="audio-tab" :class="{ active: audioTab === 'recent' }" @click="audioTab = 'recent'">Недавние</button>
+          <button class="audio-tab" :class="{ active: audioTab === 'all' }" @click="audioTab = 'all'; loadAllTracks()">{{ t('allSongs') }}</button>
+          <button class="audio-tab" :class="{ active: audioTab === 'library' }" @click="audioTab = 'library'">{{ t('myMusic') }}</button>
+          <button class="audio-tab" :class="{ active: audioTab === 'recent' }" @click="audioTab = 'recent'">{{ t('recent') }}</button>
         </div>
 
         <div v-if="audioTab === 'all'" class="audio-search">
           <div class="search-input-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-            <input v-model="audioSearchQuery" @input="handleAudioSearch" placeholder="Поиск музыки...">
+            <input v-model="audioSearchQuery" @input="handleAudioSearch" :placeholder="t('searchMusic')">
           </div>
         </div>
 
         <div v-if="audioLoading" class="loading-state"><div class="spinner"></div></div>
         <template v-else>
           <div v-if="audioTab === 'all'" class="audio-list">
-            <div v-if="!allTracks.length" class="empty-state glass"><p>{{ audioSearchQuery ? 'Ничего не найдено' : 'Введите запрос для поиска' }}</p></div>
+            <div v-if="!allTracks.length" class="empty-state glass"><p>{{ audioSearchQuery ? t('nothingFound') : t('enterSearchQuery') }}</p></div>
             <div v-for="track in allTracks" :key="track.id" class="audio-list-item" @click="playTrack(track)">
               <div class="audio-item-artwork">
                 <img v-if="track.artwork" :src="track.artwork" alt="">
@@ -156,7 +157,7 @@
           </div>
 
           <div v-else-if="audioTab === 'library'" class="audio-list">
-            <div v-if="!audioLibrary.length" class="empty-state glass"><p>Нет сохраненных треков</p></div>
+            <div v-if="!audioLibrary.length" class="empty-state glass"><p>{{ t('noSavedTracks') }}</p></div>
             <div v-for="track in audioLibrary" :key="track.id" class="audio-list-item" @click="playTrack(track)">
               <div class="audio-item-artwork">
                 <img v-if="track.artwork" :src="track.artwork" alt="">
@@ -177,7 +178,7 @@
           </div>
 
           <div v-else-if="audioTab === 'recent'" class="audio-list">
-            <div v-if="!audioHistory.length" class="empty-state glass"><p>Нет недавних треков</p></div>
+            <div v-if="!audioHistory.length" class="empty-state glass"><p>{{ t('noRecentTracks') }}</p></div>
             <div v-for="track in audioHistory" :key="track.id" class="audio-list-item" @click="playTrack(track)">
               <div class="audio-item-artwork">
                 <img v-if="track.artwork" :src="track.artwork" alt="">
@@ -203,7 +204,7 @@
         <div v-if="friendsLoading" class="loading-state"><div class="spinner"></div></div>
         <template v-else>
           <div v-if="onlineFriends.length" class="friends-group">
-            <h3 class="group-title">Онлайн <span class="count">{{ onlineFriends.length }}</span></h3>
+            <h3 class="group-title">{{ t('onlineCount') }} <span class="count">{{ onlineFriends.length }}</span></h3>
             <div class="friends-list-view">
               <router-link v-for="friend in onlineFriends" :key="friend.id" :to="`/profile/${friend.id}`" class="friend-row">
                 <div class="friend-avatar-wrap">
@@ -215,8 +216,8 @@
             </div>
           </div>
           <div class="friends-group">
-            <h3 class="group-title">Все друзья <span class="count">{{ friendsList.length }}</span></h3>
-            <div v-if="!friendsList.length" class="empty-state glass"><p>Нет друзей</p></div>
+            <h3 class="group-title">{{ t('allFriends') }} <span class="count">{{ friendsList.length }}</span></h3>
+            <div v-if="!friendsList.length" class="empty-state glass"><p>{{ t('noFriends') }}</p></div>
             <div v-else class="friends-list-view">
               <router-link v-for="friend in friendsList" :key="friend.id" :to="`/profile/${friend.id}`" class="friend-row">
                 <div class="friend-avatar-wrap">
@@ -235,15 +236,16 @@
       <Transition name="modal">
         <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
           <div class="modal glass-modal">
-            <div class="modal-header"><h2>Редактировать профиль</h2>
+            <div class="modal-header"><h2>{{ t('editProfileTitle') }}</h2>
               <button @click="showEditModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             </div>
             <form @submit.prevent="saveProfile" class="modal-body">
-              <div class="form-group"><label>Имя</label><input v-model="editForm.name" required></div>
-              <div class="form-group"><label>О себе</label><textarea v-model="editForm.bio" rows="3"></textarea></div>
+              <div class="form-group"><label>{{ t('name') }}</label><input v-model="editForm.name" required></div>
+              <div class="form-group"><label>{{ t('username') }}</label><div class="username-edit-wrap"><span class="username-prefix">@</span><input v-model="editForm.username" @input="editForm.username = editForm.username.toLowerCase().replace(/[^a-z0-9_]/g, '')" required></div><span v-if="editForm.username && !/^[a-zA-Z0-9_]{3,20}$/.test(editForm.username)" class="edit-hint">{{ t('usernameHint') }}</span></div>
+              <div class="form-group"><label>{{ t('bio') }}</label><textarea v-model="editForm.bio" rows="3"></textarea></div>
               <div class="modal-actions">
-                <button type="button" @click="showEditModal = false" class="btn btn-secondary">Отмена</button>
-                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <button type="button" @click="showEditModal = false" class="btn btn-secondary">{{ t('cancel') }}</button>
+                <button type="submit" class="btn btn-primary">{{ t('save') }}</button>
               </div>
             </form>
           </div>
@@ -304,10 +306,12 @@ import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import { useAudioPlayerStore } from '../stores/audioPlayer'
 import { cache } from '../stores/cache'
+import { useI18n } from '../i18n'
 import CreatePost from '../components/CreatePost.vue'
 import PostCard from '../components/PostCard.vue'
 import api from '../api'
 
+const { t } = useI18n()
 const route = useRoute()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
@@ -328,7 +332,7 @@ let audioSearchTimeout = null
 const activeTab = ref('posts')
 const showEditModal = ref(false)
 const showProfileMenu = ref(false)
-const editForm = reactive({ name: '', bio: '' })
+const editForm = reactive({ name: '', bio: '', username: '' })
 
 const showCoverEditor = ref(false)
 const coverPreview = ref(null)
@@ -375,20 +379,32 @@ function formatLastSeen(lastSeen) {
 }
 
 async function fetchProfile() {
-  const id = route.params.id || authStore.user?.id
+  let id = route.params.id || authStore.user?.id
+  
+  if (route.params.username) {
+    try {
+      const res = await api.get(`/users/by-username/${route.params.username}`)
+      id = res.data.id
+    } catch {
+      notifications.error('Пользователь не найден')
+      return
+    }
+  }
+  
   try {
     const [userRes, postsRes] = await Promise.all([api.get(`/users/${id}`), api.get(`/users/${id}/posts`)])
     user.value = userRes.data
     posts.value = postsRes.data
     editForm.name = user.value.name
     editForm.bio = user.value.bio || ''
+    editForm.username = user.value.username || ''
   } catch (err) { notifications.error(err.message) }
 }
 
-// Poll for friend status updates
 async function pollFriendStatus() {
-  if (!user.value || isOwner.value) return
-  const id = route.params.id || authStore.user?.id
+  if (!user.value) return
+  const id = route.params.id || route.params.username ? user.value.id : authStore.user?.id
+  if (!id) return
   try {
     const res = await api.get(`/users/${id}`)
     if (user.value) {
@@ -397,6 +413,13 @@ async function pollFriendStatus() {
       user.value.blockedByUser = res.data.blockedByUser
       user.value.isOnline = res.data.isOnline
       user.value.lastSeen = res.data.lastSeen
+      user.value.avatar = res.data.avatar
+      user.value.cover = res.data.cover
+      user.value.bio = res.data.bio
+      user.value.username = res.data.username
+      user.value.name = res.data.name
+      user.value.friendsCount = res.data.friendsCount
+      user.value.postsCount = res.data.postsCount
     }
   } catch {}
 }
@@ -422,7 +445,6 @@ function deleteArchivedPost(id) {
 function updateArchivedPost(updated) {
   const idx = archivedPosts.value.findIndex(p => p.id === updated.id)
   if (idx !== -1) {
-    // Если разархивирован - убираем из архива и добавляем в посты
     if (!updated.isArchived) {
       archivedPosts.value.splice(idx, 1)
       posts.value.unshift(updated)
@@ -484,12 +506,16 @@ async function saveCover() {
 }
 
 async function saveProfile() {
+  if (editForm.username && !/^[a-zA-Z0-9_]{3,20}$/.test(editForm.username)) {
+    notifications.error('Юзернейм: 3-20 символов, только буквы, цифры и _')
+    return
+  }
   try {
     const res = await api.put('/users/profile', editForm)
     user.value = { ...user.value, ...res.data }
     authStore.updateUser(res.data)
     showEditModal.value = false
-  } catch (err) { notifications.error(err.message) }
+  } catch (err) { notifications.error(err.response?.data?.error || err.message) }
 }
 
 async function addFriend() { try { await api.post(`/friends/request/${user.value.id}`); user.value.friendStatus = 'pending' } catch (err) { notifications.error(err.message) } }
@@ -523,13 +549,10 @@ async function deletePost(id) { try { await api.delete(`/posts/${id}`); posts.va
 function updatePost(updated) { 
   const idx = posts.value.findIndex(p => p.id === updated.id)
   if (idx !== -1) {
-    // Если архивирован - убираем из списка
     if (updated.isArchived) {
       posts.value.splice(idx, 1)
     } else {
-      // Use Object.assign to maintain reactivity
       Object.assign(posts.value[idx], updated)
-      // Пересортировать: закрепленные наверху
       posts.value.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1
         if (!a.isPinned && b.isPinned) return 1
@@ -686,7 +709,7 @@ async function pollPostUpdates() {
 
 let pollInterval = null
 
-watch(() => route.params.id, () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile() }, { immediate: true })
+watch([() => route.params.id, () => route.params.username], () => { activeTab.value = 'posts'; photos.value = []; videos.value = []; friendsList.value = []; fetchProfile() }, { immediate: true })
 
 onMounted(() => {
   document.addEventListener('click', closeProfileMenu)
@@ -719,7 +742,8 @@ onUnmounted(() => {
 .avatar-edit:hover { background: rgba(255, 255, 255, 0.08); }
 .avatar-edit svg { width: 16px; height: 16px; color: var(--text-secondary); }
 .profile-details { flex: 1; min-width: 200px; }
-.profile-details h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.profile-details h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+.username { color: var(--text-muted); font-size: 15px; margin-bottom: 8px; }
 .bio { color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
 .online-status { margin-bottom: 8px; }
 .status { font-size: 14px; color: var(--text-muted); }
@@ -844,6 +868,11 @@ onUnmounted(() => {
 .modal-body { padding: 24px; }
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+.username-edit-wrap { display: flex; align-items: center; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; }
+.username-edit-wrap .username-prefix { padding-left: 14px; color: var(--text-muted); font-size: 15px; }
+.username-edit-wrap input { flex: 1; padding: 12px 14px 12px 4px; background: transparent; border: none; color: var(--text-primary); font-size: 15px; }
+.username-edit-wrap input:focus { outline: none; }
+.edit-hint { display: block; margin-top: 6px; font-size: 12px; color: #f87171; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 .cover-editor { width: 100%; max-width: 700px; }
 .cover-editor-hint { text-align: center; padding: 16px 24px 8px; color: var(--text-secondary); font-size: 14px; }

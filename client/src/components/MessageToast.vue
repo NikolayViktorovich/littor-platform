@@ -30,13 +30,10 @@ const toasts = ref([])
 let pollInterval = null
 let lastMessageIds = new Set()
 
-// Get current chat user ID if we're in a chat
 function getCurrentChatUserId() {
-  // Check if on /messages/:id route (Chat.vue)
   if (route.name === 'chat' && route.params.id) {
     return route.params.id
   }
-  // Check if in Messages.vue with selected dialog
   if (currentChatUserId.value) {
     return currentChatUserId.value
   }
@@ -53,7 +50,6 @@ async function checkNewMessages() {
       if (!lastMessageIds.has(msg.id) && msg.senderId !== authStore.user?.id) {
         lastMessageIds.add(msg.id)
         
-        // Don't show notification if we're in chat with this user
         if (activeChatUserId === msg.senderId) continue
         
         toasts.value.push({
@@ -63,7 +59,6 @@ async function checkNewMessages() {
           avatar: msg.senderAvatar,
           text: msg.content || getMediaText(msg.mediaType)
         })
-        // Auto dismiss after 5 seconds
         setTimeout(() => dismiss(msg.id), 5000)
       }
     }

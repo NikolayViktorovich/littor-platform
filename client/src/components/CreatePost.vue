@@ -3,7 +3,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 5v14M5 12h14"/>
     </svg>
-    <span>Создать пост</span>
+    <span>{{ t('createPost') }}</span>
   </button>
 
   <Teleport to="body">
@@ -11,7 +11,7 @@
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
         <div class="modal-content glass-modal">
           <div class="modal-header">
-            <h2>Новый пост</h2>
+            <h2>{{ t('newPost') }}</h2>
             <button @click="closeModal" class="close-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
@@ -20,7 +20,6 @@
           </div>
 
           <div class="modal-body">
-            <!-- Media previews -->
             <div v-if="mediaFiles.length > 0" class="media-previews">
               <div v-for="item in mediaFiles" :key="item.id" class="media-preview-item">
                 <div class="preview-thumb">
@@ -35,44 +34,43 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
               </div>
-              <button v-if="mediaFiles.length > 1" @click="clearMedia" class="clear-all-btn">Очистить</button>
+              <button v-if="mediaFiles.length > 1" @click="clearMedia" class="clear-all-btn">{{ t('clear') }}</button>
             </div>
 
             <div class="text-input">
-              <textarea v-model="content" placeholder="Напишите что-нибудь..." rows="3" ref="textareaRef"></textarea>
+              <textarea v-model="content" :placeholder="t('writeSomething')" rows="3" ref="textareaRef"></textarea>
               <EmojiPicker @select="insertEmoji" />
             </div>
 
-            <!-- Attachment buttons -->
             <div class="attach-buttons">
               <label class="attach-btn">
                 <input type="file" accept="image/*" @change="handleFile" multiple hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21"/></svg>
-                <span>Фото</span>
+                <span>{{ t('photo') }}</span>
               </label>
               <label class="attach-btn">
                 <input type="file" accept="video/*" @change="handleFile" multiple hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7zM1 5h15a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H1V5z"/></svg>
-                <span>Видео</span>
+                <span>{{ t('video') }}</span>
               </label>
               <label class="attach-btn">
                 <input type="file" accept="image/gif" @change="handleFile" multiple hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zM7 10.5v3m3-3.5v4c0 .5.5 1 1 1h1.5m2.5-5v4h2.5"/></svg>
-                <span>GIF</span>
+                <span>{{ t('gif') }}</span>
               </label>
               <button class="attach-btn" @click="showMusicPicker = true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
-                <span>Музыка</span>
+                <span>{{ t('music') }}</span>
               </button>
               <label class="attach-btn">
                 <input type="file" accept="audio/*" @change="handleFile" multiple hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
-                <span>Аудио</span>
+                <span>{{ t('audio') }}</span>
               </label>
               <label class="attach-btn">
                 <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z" @change="handleFile" multiple hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
-                <span>Файл</span>
+                <span>{{ t('file') }}</span>
               </label>
             </div>
 
@@ -96,7 +94,7 @@
           <div class="modal-footer">
             <button @click="submit" class="btn btn-primary" :disabled="!canSubmit || loading">
               <span v-if="loading" class="spinner"></span>
-              <span v-else>Опубликовать</span>
+              <span v-else>{{ t('publish') }}</span>
             </button>
           </div>
         </div>
@@ -113,10 +111,12 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { useI18n } from '../i18n'
 import EmojiPicker from './EmojiPicker.vue'
 import MusicPicker from './MusicPicker.vue'
 import api from '../api'
 
+const { t } = useI18n()
 const emit = defineEmits(['created'])
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
@@ -181,7 +181,7 @@ function handleFile(e) {
       notifications.error(`${file.name}: максимальный размер 100MB`)
       return
     }
-    if (mediaFiles.value.length >= 10) return // Max 10 files
+    if (mediaFiles.value.length >= 10) return
     
     const type = getMediaType(file)
     const preview = (type === 'image' || type === 'gif' || type === 'video') ? URL.createObjectURL(file) : null

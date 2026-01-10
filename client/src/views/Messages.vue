@@ -3,11 +3,21 @@
     <div class="messages-container" :class="{ 'show-chat': selectedUserId && isMobile }">
       <Transition name="dialogs">
         <div v-if="!selectedUserId || !isMobile" class="dialogs-panel glass">
-          <div class="dialogs-header"><h1>Чаты</h1></div>
+          <div class="dialogs-header">
+            <h1 v-if="!dialogsSearchMode">{{ t('chats') }}</h1>
+            <div v-else class="dialogs-search-wrap">
+              <input v-model="dialogsSearchQuery" type="text" :placeholder="t('searchChats')" class="dialogs-search-input" ref="dialogsSearchInput" @keydown.esc="closeDialogsSearch">
+            </div>
+            <button @click="toggleDialogsSearch" class="dialogs-search-btn">
+              <svg v-if="!dialogsSearchMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
           <div class="dialogs-list">
             <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
-            <div v-else-if="!dialogs.length" class="empty-state"><p>Нет диалогов</p></div>
-            <div v-else v-for="dialog in dialogs" :key="dialog.user.id" @click="selectDialog(dialog.user.id)" @contextmenu.prevent="openDialogMenu($event, dialog)" class="dialog-item" :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0, pinned: dialog.isPinned }">
+            <div v-else-if="!filteredDialogs.length && dialogsSearchQuery" class="empty-state"><p>{{ t('nothingFound') }}</p></div>
+            <div v-else-if="!filteredDialogs.length" class="empty-state"><p>{{ t('noDialogs') }}</p></div>
+            <div v-else v-for="dialog in filteredDialogs" :key="dialog.user.id" @click="selectDialog(dialog.user.id)" @contextmenu.prevent="openDialogMenu($event, dialog)" class="dialog-item" :class="{ active: selectedUserId === dialog.user.id, unread: dialog.unreadCount > 0, pinned: dialog.isPinned }">
               <div class="dialog-avatar-wrap">
                 <img :src="getAvatarUrl(dialog.user.avatar)" class="avatar" alt="" @error="handleAvatarError">
                 <span v-if="dialog.user.isOnline" class="online-indicator"></span>
@@ -24,7 +34,7 @@
                   </div>
                 </div>
                 <div class="dialog-bottom">
-                  <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">Вы: </span>{{ dialog.lastMessage.content || 'Медиа' }}</p>
+                  <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">{{ t('you') }}: </span>{{ dialog.lastMessage.content || t('media') }}</p>
                   <span v-if="dialog.unreadCount" class="unread-badge">{{ dialog.unreadCount }}</span>
                   <svg v-else-if="dialog.lastMessage.senderId === authStore.user?.id" class="read-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6l-11 11-5-5"/></svg>
                 </div>
@@ -35,8 +45,8 @@
       </Transition>
 
       <div v-if="!selectedUserId && !isMobile" class="chat-empty glass">
-        <h3>Ваши сообщения</h3>
-        <p>Выберите диалог, чтобы начать общение</p>
+        <h3>{{ t('yourMessages') }}</h3>
+        <p>{{ t('selectDialogToStart') }}</p>
       </div>
 
       <Transition name="chat-slide">
@@ -45,41 +55,60 @@
             <button v-if="isMobile" @click="goBack" class="back-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
-            <router-link v-if="chatUser && !selectMode" :to="`/profile/${chatUser.id}`" class="chat-user">
+            <router-link v-if="chatUser && !selectMode && !chatSearchMode" :to="`/profile/${chatUser.id}`" class="chat-user">
               <div class="chat-avatar-wrap">
                 <img :src="getAvatarUrl(chatUser.avatar)" class="avatar" alt="" @error="handleAvatarError">
                 <span v-if="chatUser.isOnline" class="online-indicator"></span>
               </div>
               <div class="user-info">
                 <span class="user-name">{{ chatUser.name }}</span>
-                <span class="user-status">{{ chatUser.isOnline ? 'в сети' : formatLastSeen(chatUser.lastSeen) }}</span>
+                <span class="user-status">{{ chatUser.isOnline ? t('online') : formatLastSeen(chatUser.lastSeen) }}</span>
               </div>
             </router-link>
             <div v-if="selectMode" class="select-mode-header">
               <button @click="cancelSelectMode" class="select-cancel-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>
-              <span class="select-count">Выбрано: {{ selectedMessages.length }}</span>
+              <span class="select-count">{{ t('selected') }}: {{ selectedMessages.length }}</span>
               <div class="select-actions">
-                <button @click="bulkForward" class="select-action-btn" :disabled="!selectedMessages.length" title="Переслать">
+                <button @click="bulkForward" class="select-action-btn" :disabled="!selectedMessages.length" :title="t('forward')">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5l7 7-7 7M20 12H4"/></svg>
                 </button>
-                <button @click="bulkDeleteForAll" class="select-action-btn danger" :disabled="!canBulkDeleteForAll" title="Удалить для всех">
+                <button @click="bulkDeleteForAll" class="select-action-btn danger" :disabled="!canBulkDeleteForAll" :title="t('deleteForAll')">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>
                 </button>
-                <button @click="bulkDeleteForMe" class="select-action-btn" :disabled="!selectedMessages.length" title="Удалить для себя">
+                <button @click="bulkDeleteForMe" class="select-action-btn" :disabled="!selectedMessages.length" :title="t('deleteForMe')">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>
                 </button>
               </div>
             </div>
+            <div v-if="chatSearchMode" class="chat-search-header">
+              <input v-model="chatSearchQuery" type="text" :placeholder="t('searchMessages')" class="chat-search-input" ref="chatSearchInput" @keydown.esc="closeChatSearch" @keydown.enter="navigateSearchResult(1)">
+              <div class="chat-search-nav" v-if="searchResults.length > 0">
+                <span class="search-count">{{ currentSearchIndex + 1 }} / {{ searchResults.length }}</span>
+                <button @click="navigateSearchResult(-1)" class="search-nav-btn" :disabled="currentSearchIndex <= 0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+                </button>
+                <button @click="navigateSearchResult(1)" class="search-nav-btn" :disabled="currentSearchIndex >= searchResults.length - 1">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </div>
+              <span v-else-if="chatSearchQuery && !searchResults.length" class="search-no-results">{{ t('notFound') }}</span>
+              <button @click="closeChatSearch" class="chat-search-close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <button v-if="!selectMode && !chatSearchMode" @click="toggleChatSearch" class="chat-search-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
           </div>
 
           <!-- Pinned message banner -->
-          <div v-if="pinnedMessage" class="pinned-banner" @click="scrollToPinned">
+          <div v-if="pinnedMessage && !chatSearchMode" class="pinned-banner" @click="scrollToPinned">
             <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>
             <div class="pinned-content">
-              <span class="pinned-label">Закреплённое сообщение</span>
-              <span class="pinned-text">{{ pinnedMessage.content || 'Медиа' }}</span>
+              <span class="pinned-label">{{ t('pinnedMessage') }}</span>
+              <span class="pinned-text">{{ pinnedMessage.content || t('media') }}</span>
             </div>
             <button @click.stop="unpinMessage" class="unpin-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -107,7 +136,7 @@
                 </div>
               </div>
               <!-- Regular message -->
-              <div v-else class="message" :id="'msg-' + msg.id" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice', selected: selectedMessages.includes(msg.id) }" @contextmenu.prevent="openMsgMenu($event, msg)" @click="selectMode ? toggleMessageSelection(msg.id) : null">
+              <div v-else class="message" :id="'msg-' + msg.id" :class="{ own: msg.senderId === authStore.user?.id, forwarded: msg.forwarded, 'media-message': msg.mediaType === 'circle' || msg.mediaType === 'voice', selected: selectedMessages.includes(msg.id), 'search-highlight': searchResults.includes(msg.id) && searchResults[currentSearchIndex] === msg.id }" @contextmenu.prevent="openMsgMenu($event, msg)" @click="selectMode ? toggleMessageSelection(msg.id) : null">
                 <div v-if="selectMode" class="message-checkbox" @click.stop="toggleMessageSelection(msg.id)">
                   <div class="checkbox-inner" :class="{ checked: selectedMessages.includes(msg.id) }">
                     <svg v-if="selectedMessages.includes(msg.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6l-11 11-5-5"/></svg>
@@ -159,14 +188,14 @@
                     <!-- Reply preview in message -->
                     <div v-if="msg.replyTo" class="reply-in-message" @click.stop="scrollToMessage(msg.replyTo.id)">
                       <span class="reply-sender">{{ msg.replyTo.senderName }}</span>
-                      <span class="reply-text">{{ msg.replyTo.content || 'Медиа' }}</span>
+                      <span class="reply-text">{{ msg.replyTo.content || t('media') }}</span>
                     </div>
                     <div v-if="msg.forwarded && msg.forwardedFrom" class="forwarded-header">
-                      <span class="forwarded-text">Переслано от</span>
+                      <span class="forwarded-text">{{ t('forwardedFrom') }}</span>
                       <img :src="getAvatarUrl(msg.forwardedFrom.avatar)" class="forwarded-avatar" alt="">
                       <span class="forwarded-name">{{ msg.forwardedFrom.name }}</span>
                     </div>
-                    <span v-else-if="msg.forwarded" class="forwarded-label">Переслано</span>
+                    <span v-else-if="msg.forwarded" class="forwarded-label">{{ t('forwarded') }}</span>
                     
                     <!-- Visual media gallery (images, videos, gifs) -->
                     <div v-if="getVisualMedia(msg).length > 0" class="msg-media-gallery" :class="'media-count-' + Math.min(getVisualMedia(msg).length, 4)">
@@ -187,8 +216,8 @@
                             <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4zM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V4z"/></svg>
                           </button>
                           <div class="audio-info">
-                            <div class="audio-name">{{ item.fileName || 'Аудио' }}</div>
-                            <div class="audio-meta">{{ getAudioTimeGlobal(item.url) }} · {{ item.artist || 'Неизвестный исполнитель' }}</div>
+                            <div class="audio-name">{{ item.fileName || t('audioFile') }}</div>
+                            <div class="audio-meta">{{ getAudioTimeGlobal(item.url) }} · {{ item.artist || t('unknownArtist') }}</div>
                           </div>
                           <span class="file-msg-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
                         </div>
@@ -198,7 +227,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
                           </div>
                           <div class="file-info">
-                            <div class="file-name">{{ item.fileName || 'Файл' }}</div>
+                            <div class="file-name">{{ item.fileName || t('fileAttachment') }}</div>
                             <div class="file-size">{{ formatFileSize(item.fileSize) }}</div>
                           </div>
                           <span class="file-msg-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span>
@@ -220,7 +249,7 @@
                         <span class="msg-music-track-artist">{{ msg.musicArtist }}</span>
                       </div>
                     </div>
-                    <span class="message-text-wrap"><p v-if="msg.content">{{ msg.content }}</p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span></span>
+                    <span class="message-text-wrap"><p v-if="msg.content" v-html="formatMsgContent(msg.content)"></p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span></span>
                   </div>
                 </div>
               </div>
@@ -234,7 +263,7 @@
             <div class="voice-rec-dot"></div>
             <span class="voice-rec-time">{{ formatRecTimeMs(recordingTime) }}</span>
           </div>
-          <button @click="cancelRecording" class="voice-rec-cancel">Отмена</button>
+          <button @click="cancelRecording" class="voice-rec-cancel">{{ t('cancel') }}</button>
           <button @click="stopVoice" class="voice-rec-send">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
           </button>
@@ -243,16 +272,16 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-6.36 3.64l12.72 12.72"/>
           </svg>
-          <span>Вы не можете писать этому пользователю</span>
+          <span>{{ t('cantWriteUser') }}</span>
         </div>
         <div v-else-if="chatUser?.iBlockedUser" class="chat-blocked">
-          <button @click="unblockUser" class="unblock-btn">Разблокировать</button>
+          <button @click="unblockUser" class="unblock-btn">{{ t('unblockUser') }}</button>
         </div>
         <!-- Reply preview above input -->
         <div v-else-if="replyingTo" class="reply-preview">
           <div class="reply-preview-content">
             <span class="reply-preview-name">{{ replyingTo.senderName }}</span>
-            <span class="reply-preview-text">{{ replyingTo.content || 'Медиа' }}</span>
+            <span class="reply-preview-text">{{ replyingTo.content || t('media') }}</span>
           </div>
           <button @click="cancelReply" class="reply-cancel">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -274,7 +303,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
-          <button v-if="mediaFiles.length > 1" @click="clearMedia" class="msg-clear-all">Очистить всё</button>
+          <button v-if="mediaFiles.length > 1" @click="clearMedia" class="msg-clear-all">{{ t('clearAllMedia') }}</button>
         </div>
         <div v-if="selectedMusic && !chatUser?.blockedByUser && !chatUser?.iBlockedUser" class="msg-music-preview">
           <div class="msg-music-artwork">
@@ -300,38 +329,49 @@
                   <label class="attach-dropdown-item">
                     <input type="file" accept="image/*" @change="handleAttachSelect" multiple hidden>
                     <div class="attach-icon photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5-11 11"/></svg></div>
-                    <span>Фото</span>
+                    <span>{{ t('photo') }}</span>
                   </label>
                   <label class="attach-dropdown-item">
                     <input type="file" accept="video/*" @change="handleAttachSelect" multiple hidden>
                     <div class="attach-icon video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7zM1 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7z"/></svg></div>
-                    <span>Видео</span>
+                    <span>{{ t('video') }}</span>
                   </label>
                   <label class="attach-dropdown-item">
                     <input type="file" accept="image/gif" @change="handleAttachSelect" multiple hidden>
                     <div class="attach-icon gif"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4.18a2.18 2.18 0 0 1 2.18-2.18h15.64A2.18 2.18 0 0 1 22 4.18v15.64A2.18 2.18 0 0 1 19.82 22H4.18A2.18 2.18 0 0 1 2 19.82V4.18zM7 10.5v3M10 10v4c0 .5.5 1 1 1h1.5M14 10v4h2.5"/></svg></div>
-                    <span>GIF</span>
+                    <span>{{ t('gif') }}</span>
                   </label>
                   <label class="attach-dropdown-item">
                     <input type="file" accept="audio/*" @change="handleAttachSelect" multiple hidden>
                     <div class="attach-icon audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></div>
-                    <span>Аудио</span>
+                    <span>{{ t('audio') }}</span>
                   </label>
                   <label class="attach-dropdown-item">
                     <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z" @change="handleAttachSelect" multiple hidden>
                     <div class="attach-icon file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg></div>
-                    <span>Файл</span>
+                    <span>{{ t('file') }}</span>
                   </label>
                   <button class="attach-dropdown-item" @click="showMusicPicker = true; showAttachMenu = false">
                     <div class="attach-icon music"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></div>
-                    <span>Музыка</span>
+                    <span>{{ t('music') }}</span>
                   </button>
                 </div>
               </Transition>
             </div>
           </div>
           <div class="input-wrap">
-            <input v-model="newMessage" placeholder="Написать сообщение..." autocomplete="off" ref="msgInput">
+            <input v-model="newMessage" :placeholder="t('writeMessage')" autocomplete="off" ref="msgInput" @input="handleMessageInput" @keydown="handleMentionKeydown">
+            <Transition name="mention-dropdown">
+              <div v-if="mentionMode && mentionUsers.length > 0" class="mention-dropdown">
+                <div v-for="(user, idx) in mentionUsers" :key="user.id" class="mention-item" :class="{ active: idx === mentionIndex }" @click="selectMention(user)" @mouseenter="mentionIndex = idx">
+                  <img :src="getAvatarUrl(user.avatar)" class="mention-avatar" alt="" @error="handleAvatarError">
+                  <div class="mention-info">
+                    <span class="mention-name">{{ user.name }}</span>
+                    <span class="mention-username">@{{ user.username }}</span>
+                  </div>
+                </div>
+              </div>
+            </Transition>
             <EmojiPicker @select="insertEmoji" />
           </div>
           <div class="input-actions-right">
@@ -375,7 +415,7 @@
           <div class="circle-rec-bottom">
             <div class="circle-rec-dot"></div>
             <span class="circle-rec-time">{{ formatRecTimeMs(recordingTime) }}</span>
-            <button @click="cancelRecording" class="circle-rec-cancel">Отмена</button>
+            <button @click="cancelRecording" class="circle-rec-cancel">{{ t('cancel') }}</button>
           </div>
           <button @click="stopCircle" class="circle-rec-send">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
@@ -387,21 +427,21 @@
       <Teleport to="body">
         <Transition name="menu">
           <div v-if="showDialogMenu" class="msg-menu glass-modal" :style="{ top: dialogMenuY + 'px', left: dialogMenuX + 'px' }" @click.stop>
-            <button class="menu-item" @click="toggleDialogPin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ selectedDialog?.isPinned ? 'Открепить' : 'Закрепить' }}</button>
-            <button class="menu-item" @click="toggleDialogMute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><template v-if="!selectedDialog?.isMuted"><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></template><template v-else><path d="M23 9l-6 6M17 9l6 6"/></template></svg>{{ selectedDialog?.isMuted ? 'Включить звук' : 'Отключить звук' }}</button>
-            <button class="menu-item danger" @click="confirmDeleteDialogForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
-            <button class="menu-item muted" @click="confirmDeleteDialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
+            <button class="menu-item" @click="toggleDialogPin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ selectedDialog?.isPinned ? t('unpinDialog') : t('pinDialog') }}</button>
+            <button class="menu-item" @click="toggleDialogMute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><template v-if="!selectedDialog?.isMuted"><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></template><template v-else><path d="M23 9l-6 6M17 9l6 6"/></template></svg>{{ selectedDialog?.isMuted ? t('unmuteSound') : t('muteSound') }}</button>
+            <button class="menu-item danger" @click="confirmDeleteDialogForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
+            <button class="menu-item muted" @click="confirmDeleteDialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForMe') }}</button>
           </div>
         </Transition>
 
         <Transition name="modal">
           <div v-if="showDeleteDialogModal" class="modal-overlay" @click.self="showDeleteDialogModal = false">
             <div class="delete-modal glass-modal">
-              <h3>Удалить диалог?</h3>
-              <p>Все сообщения будут удалены только для вас.</p>
+              <h3>{{ t('deleteDialog') }}</h3>
+              <p>{{ t('deleteDialogDesc') }}</p>
               <div class="delete-actions">
-                <button class="delete-btn cancel" @click="showDeleteDialogModal = false">Отмена</button>
-                <button class="delete-btn" @click="deleteDialog(false)">Удалить</button>
+                <button class="delete-btn cancel" @click="showDeleteDialogModal = false">{{ t('cancel') }}</button>
+                <button class="delete-btn" @click="deleteDialog(false)">{{ t('delete') }}</button>
               </div>
             </div>
           </div>
@@ -410,11 +450,11 @@
         <Transition name="modal">
           <div v-if="showDeleteDialogForAllModal" class="modal-overlay" @click.self="showDeleteDialogForAllModal = false">
             <div class="delete-modal glass-modal">
-              <h3>Удалить диалог для всех?</h3>
-              <p>Все сообщения будут удалены у вас и у собеседника навсегда.</p>
+              <h3>{{ t('deleteDialogForAll') }}</h3>
+              <p>{{ t('deleteDialogForAllDesc') }}</p>
               <div class="delete-actions">
-                <button class="delete-btn cancel" @click="showDeleteDialogForAllModal = false">Отмена</button>
-                <button class="delete-btn danger" @click="deleteDialog(true)">Удалить</button>
+                <button class="delete-btn cancel" @click="showDeleteDialogForAllModal = false">{{ t('cancel') }}</button>
+                <button class="delete-btn danger" @click="deleteDialog(true)">{{ t('delete') }}</button>
               </div>
             </div>
           </div>
@@ -422,31 +462,31 @@
 
         <Transition name="menu">
           <div v-if="showMsgMenu" class="msg-menu glass-modal" :style="{ top: msgMenuY + 'px', left: msgMenuX + 'px' }" @click.stop>
-            <button class="menu-item" @click="startReply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17l-5-5 5-5M4 12h16"/></svg>Ответить</button>
-            <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17l5-5-5-5M20 12H4"/></svg>Переслать</button>
-            <button class="menu-item" @click="pinMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ pinnedMessage?.id === selectedMsg?.id ? 'Открепить' : 'Закрепить' }}</button>
-            <button class="menu-item" @click="startSelectMode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Выбрать</button>
-            <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
-            <button class="menu-item muted" @click="confirmDeleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
+            <button class="menu-item" @click="startReply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17l-5-5 5-5M4 12h16"/></svg>{{ t('reply') }}</button>
+            <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17l5-5-5-5M20 12H4"/></svg>{{ t('forward') }}</button>
+            <button class="menu-item" @click="pinMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ pinnedMessage?.id === selectedMsg?.id ? t('unpin') : t('pin') }}</button>
+            <button class="menu-item" @click="startSelectMode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>{{ t('selected') }}</button>
+            <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
+            <button class="menu-item muted" @click="confirmDeleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForMe') }}</button>
           </div>
         </Transition>
 
         <Transition name="menu">
           <div v-if="showSystemMsgMenu" class="msg-menu glass-modal" :style="{ top: systemMsgMenuY + 'px', left: systemMsgMenuX + 'px' }" @click.stop>
-            <button v-if="selectedSystemMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="deleteSystemMsgForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>Удалить для всех</button>
-            <button class="menu-item muted" @click="deleteSystemMsgForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>Удалить для себя</button>
+            <button v-if="selectedSystemMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="deleteSystemMsgForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
+            <button class="menu-item muted" @click="deleteSystemMsgForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForMe') }}</button>
           </div>
         </Transition>
 
         <Transition name="modal">
           <div v-if="showDeleteForAllModal" class="modal-overlay" @click.self="showDeleteForAllModal = false">
             <div class="delete-modal glass-modal">
-              <h3>Удалить для всех?</h3>
-              <p>Сообщение будет удалено у вас и у собеседника</p>
-              <label class="custom-checkbox"><input type="checkbox" v-model="rememberDeleteForAll"><span class="checkmark"></span><span class="label-text">Запомнить выбор</span></label>
+              <h3>{{ t('deleteForAllQ') }}</h3>
+              <p>{{ t('deleteForAllDesc') }}</p>
+              <label class="custom-checkbox"><input type="checkbox" v-model="rememberDeleteForAll"><span class="checkmark"></span><span class="label-text">{{ t('rememberChoice') }}</span></label>
               <div class="delete-actions">
-                <button class="delete-btn cancel" @click="showDeleteForAllModal = false">Отмена</button>
-                <button class="delete-btn danger" @click="deleteForAll">Удалить</button>
+                <button class="delete-btn cancel" @click="showDeleteForAllModal = false">{{ t('cancel') }}</button>
+                <button class="delete-btn danger" @click="deleteForAll">{{ t('delete') }}</button>
               </div>
             </div>
           </div>
@@ -455,12 +495,12 @@
         <Transition name="modal">
           <div v-if="showDeleteForMeModal" class="modal-overlay" @click.self="showDeleteForMeModal = false">
             <div class="delete-modal glass-modal">
-              <h3>Удалить для себя?</h3>
-              <p>Сообщение будет удалено только у вас</p>
-              <label class="custom-checkbox"><input type="checkbox" v-model="rememberDeleteForMe"><span class="checkmark"></span><span class="label-text">Запомнить выбор</span></label>
+              <h3>{{ t('deleteForMeQ') }}</h3>
+              <p>{{ t('deleteForMeDesc') }}</p>
+              <label class="custom-checkbox"><input type="checkbox" v-model="rememberDeleteForMe"><span class="checkmark"></span><span class="label-text">{{ t('rememberChoice') }}</span></label>
               <div class="delete-actions">
-                <button class="delete-btn cancel" @click="showDeleteForMeModal = false">Отмена</button>
-                <button class="delete-btn" @click="deleteForMe">Удалить</button>
+                <button class="delete-btn cancel" @click="showDeleteForMeModal = false">{{ t('cancel') }}</button>
+                <button class="delete-btn" @click="deleteForMe">{{ t('delete') }}</button>
               </div>
             </div>
           </div>
@@ -469,7 +509,7 @@
         <Transition name="modal">
           <div v-if="showForwardModal" class="modal-overlay" @click.self="showForwardModal = false">
             <div class="modal glass-modal">
-              <div class="modal-header"><h2>{{ bulkForwardMode ? `Переслать (${selectedMessages.length})` : 'Переслать сообщение' }}</h2><button @click="showForwardModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+              <div class="modal-header"><h2>{{ bulkForwardMode ? t('forwardCount') + ' (' + selectedMessages.length + ')' : t('forwardMessage') }}</h2><button @click="showForwardModal = false" class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
               <div class="forward-list">
                 <div v-for="d in dialogs" :key="d.user.id" class="forward-item" @click="doForward(d.user.id)"><img :src="getAvatarUrl(d.user.avatar)" class="avatar" alt=""><span>{{ d.user.name }}</span></div>
               </div>
@@ -501,9 +541,12 @@ import { useAudioPlayerStore } from '../stores/audioPlayer'
 import { currentChatUserId } from '../stores/chat'
 import { cache } from '../stores/cache'
 import { useSocket } from '../socket'
+import { useI18n } from '../i18n'
 import EmojiPicker from '../components/EmojiPicker.vue'
 import MusicPicker from '../components/MusicPicker.vue'
 import api from '../api'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -587,6 +630,22 @@ const bulkForwardMode = ref(false)
 const showMusicPicker = ref(false)
 const selectedMusic = ref(null)
 
+const dialogsSearchMode = ref(false)
+const dialogsSearchQuery = ref('')
+const dialogsSearchInput = ref(null)
+const chatSearchMode = ref(false)
+const chatSearchQuery = ref('')
+const chatSearchInput = ref(null)
+const searchResults = ref([])
+const currentSearchIndex = ref(0)
+
+const mentionMode = ref(false)
+const mentionQuery = ref('')
+const mentionUsers = ref([])
+const mentionIndex = ref(0)
+const mentionStartPos = ref(0)
+let mentionSearchTimeout = null
+
 const scrollPositions = {}
 
 const showFloatingDate = ref(false)
@@ -597,6 +656,64 @@ let isProgrammaticScroll = false
 
 const canSend = computed(() => newMessage.value.trim() || mediaFiles.value.length > 0 || selectedMusic.value)
 const isMobile = ref(window.innerWidth <= 900)
+
+const filteredDialogs = computed(() => {
+  if (!dialogsSearchQuery.value.trim()) return dialogs.value
+  const q = dialogsSearchQuery.value.toLowerCase()
+  return dialogs.value.filter(d => d.user.name.toLowerCase().includes(q))
+})
+
+function toggleDialogsSearch() {
+  dialogsSearchMode.value = !dialogsSearchMode.value
+  if (dialogsSearchMode.value) {
+    nextTick(() => dialogsSearchInput.value?.focus())
+  } else {
+    dialogsSearchQuery.value = ''
+  }
+}
+
+function closeDialogsSearch() {
+  dialogsSearchMode.value = false
+  dialogsSearchQuery.value = ''
+}
+
+function toggleChatSearch() {
+  chatSearchMode.value = !chatSearchMode.value
+  if (chatSearchMode.value) {
+    nextTick(() => chatSearchInput.value?.focus())
+  } else {
+    closeChatSearch()
+  }
+}
+
+function closeChatSearch() {
+  chatSearchMode.value = false
+  chatSearchQuery.value = ''
+  searchResults.value = []
+  currentSearchIndex.value = 0
+}
+
+watch(chatSearchQuery, (q) => {
+  if (!q.trim()) {
+    searchResults.value = []
+    currentSearchIndex.value = 0
+    return
+  }
+  const query = q.toLowerCase()
+  searchResults.value = messages.value
+    .filter(m => m.content && m.content.toLowerCase().includes(query))
+    .map(m => m.id)
+  currentSearchIndex.value = searchResults.value.length > 0 ? searchResults.value.length - 1 : 0
+  if (searchResults.value.length > 0) {
+    scrollToMessage(searchResults.value[currentSearchIndex.value])
+  }
+})
+
+function navigateSearchResult(dir) {
+  if (!searchResults.value.length) return
+  currentSearchIndex.value = Math.max(0, Math.min(searchResults.value.length - 1, currentSearchIndex.value + dir))
+  scrollToMessage(searchResults.value[currentSearchIndex.value])
+}
 
 function saveScrollPosition() {
   if (selectedUserId.value && messagesContainer.value) {
@@ -614,7 +731,7 @@ function restoreScrollPosition(userId) {
   })
 }
 
-function goBack() { saveScrollPosition(); selectedUserId.value = null; chatUser.value = null; currentChatUserId.value = null; replyingTo.value = null; selectMode.value = false; selectedMessages.value = []; pinnedMessage.value = null }
+function goBack() { saveScrollPosition(); selectedUserId.value = null; chatUser.value = null; currentChatUserId.value = null; replyingTo.value = null; selectMode.value = false; selectedMessages.value = []; pinnedMessage.value = null; closeChatSearch() }
 function handleResize() { isMobile.value = window.innerWidth <= 900 }
 function getAvatarUrl(a) { return a || '/default-avatar.svg' }
 function handleAvatarError(e) { e.target.src = '/default-avatar.svg' }
@@ -626,11 +743,18 @@ function formatTime(d) {
   const isYesterday = date.toDateString() === yesterday.toDateString()
   
   if (isToday) return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-  if (isYesterday) return 'вчера'
+  if (isYesterday) return t('yesterday')
   if (diff < 604800) return date.toLocaleDateString('ru-RU', { weekday: 'short' })
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: '2-digit', year: '2-digit' }).replace(/\//g, '.')
 }
 function formatMsgTime(d) { return new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
+
+function formatMsgContent(content) {
+  if (!content) return ''
+  const escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return escaped.replace(/@([a-zA-Z0-9_]{3,20})/g, '<a href="/profile/username/$1" class="mention-link">@$1</a>')
+}
+
 function formatDateSeparator(d) {
   const date = new Date(d)
   const now = new Date()
@@ -638,19 +762,19 @@ function formatDateSeparator(d) {
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
   const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
   
-  if (msgDate.getTime() === today.getTime()) return 'Сегодня'
-  if (msgDate.getTime() === yesterday.getTime()) return 'Вчера'
+  if (msgDate.getTime() === today.getTime()) return t('today')
+  if (msgDate.getTime() === yesterday.getTime()) return t('yesterdayFull')
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 }
 
 function formatSystemMessage(msg) {
   const isMe = msg.senderId === authStore.user?.id
-  const name = isMe ? 'Вы' : chatUser.value?.name
+  const name = chatUser.value?.name
   if (msg.content.startsWith('pinned_message:')) {
-    return `${name} ${isMe ? 'закрепили' : 'закрепил(а)'} сообщение`
+    return isMe ? t('youPinnedMessage') : t('userPinnedMessage').replace('{name}', name)
   }
   if (msg.content === 'unpinned_message') {
-    return `${name} ${isMe ? 'открепили' : 'открепил(а)'} сообщение`
+    return isMe ? t('youUnpinnedMessage') : t('userUnpinnedMessage').replace('{name}', name)
   }
   return msg.content
 }
@@ -701,7 +825,7 @@ function shouldShowDateSeparator(index) {
 }
 function formatRecTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}` }
 function formatRecTimeMs(s) { const mins = Math.floor(s/60); const secs = s % 60; return `${mins}:${secs.toString().padStart(2,'0')},00` }
-function formatLastSeen(lastSeen) { if (!lastSeen) return 'был(а) давно'; const d = new Date(lastSeen), now = new Date(), diff = (now - d) / 1000; if (diff < 60) return 'был(а) только что'; if (diff < 3600) return `был(а) ${Math.floor(diff / 60)} мин назад`; if (diff < 86400) return `был(а) ${Math.floor(diff / 3600)} ч назад`; return `был(а) ${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` }
+function formatLastSeen(lastSeen) { if (!lastSeen) return t('wasOnlineLongAgo'); const d = new Date(lastSeen), now = new Date(), diff = (now - d) / 1000; if (diff < 60) return t('wasOnlineJustNow'); if (diff < 3600) return t('wasOnlineMinAgo').replace('{n}', Math.floor(diff / 60)); if (diff < 86400) return t('wasOnlineHoursAgo').replace('{n}', Math.floor(diff / 3600)); return `${t('wasOnlineDate')} ${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` }
 function scrollToBottom() { 
   nextTick(() => { 
     if (messagesContainer.value) {
@@ -887,8 +1011,8 @@ function toggleAudio(e, item) {
   } else {
     audioPlayerStore.play({
       url: item.url,
-      name: item.fileName || 'Аудио',
-      source: chatUser.value?.name || 'Сообщение'
+      name: item.fileName || t('audioFile'),
+      source: chatUser.value?.name || t('message')
     })
   }
 }
@@ -976,6 +1100,76 @@ function downloadFile(url, filename) {
 }
 
 function insertEmoji(emoji) { const input = msgInput.value; if (input) { const start = input.selectionStart, end = input.selectionEnd; newMessage.value = newMessage.value.substring(0, start) + emoji + newMessage.value.substring(end); nextTick(() => { input.focus(); input.setSelectionRange(start + emoji.length, start + emoji.length) }) } else newMessage.value += emoji }
+
+function handleMessageInput(e) {
+  const input = e.target
+  const value = input.value
+  const cursorPos = input.selectionStart
+  
+  const textBeforeCursor = value.substring(0, cursorPos)
+  const atMatch = textBeforeCursor.match(/@([a-zA-Z0-9_]*)$/)
+  
+  if (atMatch) {
+    mentionMode.value = true
+    mentionQuery.value = atMatch[1]
+    mentionStartPos.value = cursorPos - atMatch[0].length
+    mentionIndex.value = 0
+    
+    clearTimeout(mentionSearchTimeout)
+    if (mentionQuery.value.length > 0) {
+      mentionSearchTimeout = setTimeout(async () => {
+        try {
+          const res = await api.get('/users/mention-search', { params: { q: mentionQuery.value } })
+          mentionUsers.value = res.data
+        } catch { mentionUsers.value = [] }
+      }, 150)
+    } else {
+      mentionUsers.value = []
+    }
+  } else {
+    closeMention()
+  }
+}
+
+function closeMention() {
+  mentionMode.value = false
+  mentionQuery.value = ''
+  mentionUsers.value = []
+  mentionIndex.value = 0
+}
+
+function selectMention(user) {
+  const input = msgInput.value
+  if (!input) return
+  
+  const before = newMessage.value.substring(0, mentionStartPos.value)
+  const after = newMessage.value.substring(input.selectionStart)
+  newMessage.value = before + '@' + user.username + ' ' + after
+  
+  closeMention()
+  nextTick(() => {
+    input.focus()
+    const newPos = mentionStartPos.value + user.username.length + 2
+    input.setSelectionRange(newPos, newPos)
+  })
+}
+
+function handleMentionKeydown(e) {
+  if (!mentionMode.value || !mentionUsers.value.length) return
+  
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    mentionIndex.value = Math.min(mentionIndex.value + 1, mentionUsers.value.length - 1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    mentionIndex.value = Math.max(mentionIndex.value - 1, 0)
+  } else if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault()
+    selectMention(mentionUsers.value[mentionIndex.value])
+  } else if (e.key === 'Escape') {
+    closeMention()
+  }
+}
 
 function getMediaType(file) {
   if (file.type === 'image/gif') return 'gif'
@@ -1127,7 +1321,7 @@ async function startVoice() {
     recordingTime.value = 0
     recordingInterval = setInterval(() => recordingTime.value++, 1000) 
   } catch { 
-    notifications.error('Нет доступа к микрофону') 
+    notifications.error(t('noMicAccess')) 
   } 
 }
 function stopVoice() { if (mediaRecorder && mediaRecorder.state !== 'inactive' && isRecording.value) { mediaRecorder.stop(); isRecording.value = false; clearInterval(recordingInterval) } }
@@ -1222,14 +1416,14 @@ async function startCircle() {
     recordingTime.value = 0
     recordingInterval = setInterval(() => recordingTime.value++, 1000) 
   } catch { 
-    notifications.error('Нет доступа к камере')
+    notifications.error(t('noCameraAccess'))
     showCircleOverlay.value = false 
   } 
 }
 function stopCircle() { if (mediaRecorder) { mediaRecorder.stop(); clearInterval(recordingInterval) } }
 function toggleCirclePause() { if (!mediaRecorder) return; if (circlePaused.value) { mediaRecorder.resume(); recordingInterval = setInterval(() => recordingTime.value++, 1000); circlePaused.value = false } else { mediaRecorder.pause(); clearInterval(recordingInterval); circlePaused.value = true } }
 function toggleCircleRecMute() { circleMuted.value = !circleMuted.value; if (stream) { stream.getAudioTracks().forEach(t => t.enabled = !circleMuted.value) } }
-async function switchCamera() { facingMode.value = facingMode.value === 'user' ? 'environment' : 'user'; if (stream) { stream.getTracks().forEach(t => t.stop()); try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode.value, width: 480, height: 480 }, audio: !circleMuted.value }); if (circlePreviewEl.value) circlePreviewEl.value.srcObject = stream } catch { notifications.error('Не удалось переключить камеру') } } }
+async function switchCamera() { facingMode.value = facingMode.value === 'user' ? 'environment' : 'user'; if (stream) { stream.getTracks().forEach(t => t.stop()); try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode.value, width: 480, height: 480 }, audio: !circleMuted.value }); if (circlePreviewEl.value) circlePreviewEl.value.srcObject = stream } catch { notifications.error(t('couldNotSwitchCamera')) } } }
 function cancelRecording() { 
   const wasRecording = isRecording.value
   isRecording.value = false
@@ -1394,7 +1588,7 @@ async function playMsgMusic(msg) {
       artwork: msg.musicArtwork
     }).catch(() => {})
   } catch (err) {
-    notifications.error('Не удалось воспроизвести трек')
+    notifications.error(t('couldNotPlayTrack'))
   }
 }
 
@@ -1403,7 +1597,7 @@ async function unblockUser() {
   try {
     await api.delete(`/users/${chatUser.value.id}/block`)
     chatUser.value.iBlockedUser = false
-    notifications.success('Пользователь разблокирован')
+    notifications.success(t('userUnblocked'))
   } catch (err) { notifications.error(err.message) }
 }
 
@@ -1523,7 +1717,7 @@ function startReply() {
     id: msg.id,
     content: msg.content,
     senderId: msg.senderId,
-    senderName: msg.senderId === authStore.user?.id ? 'Вы' : chatUser.value?.name
+    senderName: msg.senderId === authStore.user?.id ? t('you') : chatUser.value?.name
   }
   showMsgMenu.value = false
   selectedMsg.value = null
@@ -1609,7 +1803,7 @@ async function pinMessage() {
     if (msgId) {
       pinnedMessage.value = {
         ...selectedMsg.value,
-        senderName: selectedMsg.value.senderId === authStore.user?.id ? 'Вы' : chatUser.value?.name
+        senderName: selectedMsg.value.senderId === authStore.user?.id ? t('you') : chatUser.value?.name
       }
     } else {
       pinnedMessage.value = null
@@ -1675,13 +1869,18 @@ function onMessagePin(data) {
   }
 }
 
-onMounted(() => { 
+onMounted(async () => { 
   fetchDialogs()
   pollInterval = setInterval(() => { 
     pollMessages()
     fetchDialogs() 
   }, 500)
-  if (route.params.id) selectDialog(route.params.id)
+  if (route.params.id) {
+    await selectDialog(route.params.id)
+    if (route.query.msg) {
+      nextTick(() => scrollToMessage(route.query.msg))
+    }
+  }
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', handleResize)
   
@@ -1706,10 +1905,19 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 
 <style scoped>
 .messages-page { min-height: 100vh; padding: 20px; padding-left: calc(var(--sidebar-width) + 20px); display: flex; justify-content: center; }
-.messages-container { display: grid; grid-template-columns: 340px 1fr; gap: 20px; max-width: 1000px; width: 100%; height: calc(100vh - 40px); }
+.messages-container { display: grid; grid-template-columns: 380px 1fr; gap: 20px; max-width: 1100px; width: 100%; height: calc(100vh - 40px); }
 .dialogs-panel, .chat-panel, .chat-empty { display: flex; flex-direction: column; overflow: hidden; }
-.dialogs-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.dialogs-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; }
 .dialogs-header h1 { font-size: 20px; font-weight: 600; }
+.dialogs-search-wrap { flex: 1; animation: searchExpand 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes searchExpand { from { opacity: 0; transform: scaleX(0.8); } to { opacity: 1; transform: scaleX(1); } }
+.dialogs-search-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-lg); font-size: 15px; color: var(--text-primary); transition: all 0.2s ease; }
+.dialogs-search-input:focus { background: rgba(255,255,255,0.05); outline: none; }
+.dialogs-search-input::placeholder { color: var(--text-muted); }
+.dialogs-search-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.2s ease; flex-shrink: 0; }
+.dialogs-search-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.dialogs-search-btn:active { transform: scale(0.9); }
+.dialogs-search-btn svg { width: 20px; height: 20px; transition: transform 0.2s ease; }
 .dialogs-list { flex: 1; overflow-y: auto; padding: 8px; }
 .loading-state, .empty-state { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text-secondary); }
 .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -1740,17 +1948,41 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .chat-empty h3 { font-size: 20px; font-weight: 600; }
 .chat-empty p { color: var(--text-secondary); }
 .chat-panel { display: flex; flex-direction: column; }
-.chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.chat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 64px; }
 .back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); flex-shrink: 0; transition: all 0.2s ease; }
 .back-btn:hover { background: rgba(255,255,255,0.04); }
 .back-btn:active { transform: scale(0.9); }
 .back-btn svg { width: 20px; height: 20px; }
-.chat-user { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+.chat-user { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
+.chat-user .avatar { width: 40px; height: 40px; }
 .user-info { display: flex; flex-direction: column; }
-.user-name { font-weight: 600; font-size: 16px; }
+.user-name { font-weight: 600; font-size: 15px; }
 .user-status { font-size: 13px; color: var(--text-muted); }
+.chat-search-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.2s ease; flex-shrink: 0; margin-left: auto; }
+.chat-search-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.chat-search-btn:active { transform: scale(0.9); }
+.chat-search-btn svg { width: 18px; height: 18px; }
+.chat-search-header { display: flex; align-items: center; gap: 12px; flex: 1; animation: chatSearchExpand 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes chatSearchExpand { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+.chat-search-input { flex: 1; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-lg); font-size: 15px; color: var(--text-primary); transition: all 0.2s ease; }
+.chat-search-input:focus { background: rgba(255,255,255,0.05); outline: none; }
+.chat-search-input::placeholder { color: var(--text-muted); }
+.chat-search-nav { display: flex; align-items: center; gap: 4px; }
+.search-count { font-size: 13px; color: var(--text-muted); white-space: nowrap; padding: 0 4px; }
+.search-no-results { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.search-nav-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.15s ease; }
+.search-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.search-nav-btn:active:not(:disabled) { transform: scale(0.9); }
+.search-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.search-nav-btn svg { width: 18px; height: 18px; }
+.chat-search-close { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.15s ease; }
+.chat-search-close:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.chat-search-close:active { transform: scale(0.9); }
+.chat-search-close svg { width: 18px; height: 18px; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; background: url('/chat-pattern.svg') repeat; background-size: 400px 400px; position: relative; }
 .message { display: flex; gap: 8px; max-width: 70%; animation: messageIn 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.message.search-highlight .message-bubble { box-shadow: 0 0 0 2px rgba(255, 200, 0, 0.7); animation: highlightPulse 0.5s ease; }
+@keyframes highlightPulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(255, 200, 0, 0.7); } 50% { box-shadow: 0 0 0 4px rgba(255, 200, 0, 0.4); } }
 @keyframes messageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .message.own { align-self: flex-end; flex-direction: row-reverse; }
 .msg-avatar { flex-shrink: 0; align-self: flex-end; }
@@ -1772,9 +2004,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .date-separator span { font-size: 13px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 12px; }
 .system-message { display: flex; justify-content: center; padding: 8px 0; }
 .system-message.clickable { cursor: pointer; }
-.system-message-content.glass-pill { 
-  display: flex; 
-  align-items: center; 
+.system-message-content.glass-pill {
+  display: flex;
+  align-items: center;
   gap: 6px; 
   font-size: 13px; 
   color: var(--text-secondary); 
@@ -1804,6 +2036,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message-text-wrap { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px 8px; }
 .message-bubble.files-only .message-text-wrap { display: none; }
 .message-bubble p { display: inline; word-break: break-word; line-height: 1.4; font-size: 15px; }
+.message-bubble p :deep(.mention-link) { color: #5b9aff; text-decoration: none; font-weight: 500; }
+.message-bubble p :deep(.mention-link:hover) { text-decoration: underline; }
+.message.own .message-bubble p :deep(.mention-link) { color: #ffffff; }
 .message-time { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: rgba(255,255,255,0.5); white-space: nowrap; margin-left: auto; }
 .message.own .message-time { color: rgba(255,255,255,0.7); }
 .read-status { width: 14px; height: 8px; color: rgba(255,255,255,0.5); }
@@ -2018,6 +2253,17 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .input-wrap input::placeholder { color: rgba(255,255,255,0.35); }
 .input-wrap input:focus { outline: none; }
 .input-wrap :deep(.emoji-wrap) { position: absolute; right: 8px; }
+
+.mention-dropdown { position: absolute; bottom: 100%; left: 0; right: 0; margin-bottom: 8px; background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 8px; max-height: 240px; overflow-y: auto; z-index: 100; }
+.mention-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background 0.15s; }
+.mention-item:hover, .mention-item.active { background: rgba(255, 255, 255, 0.08); }
+.mention-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+.mention-info { display: flex; flex-direction: column; gap: 2px; }
+.mention-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.mention-username { font-size: 13px; color: var(--text-muted); }
+.mention-dropdown-enter-active { animation: mention-in 0.15s ease-out; }
+.mention-dropdown-leave-active { animation: mention-in 0.1s ease-in reverse; }
+@keyframes mention-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .send-btn { width: 36px; height: 36px; background: transparent; border: none; color: rgba(255,255,255,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
 .send-btn:hover:not(:disabled) { color: white; transform: scale(1.05); }
 .send-btn:disabled { opacity: 0.5; }
@@ -2210,6 +2456,42 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     letter-spacing: -0.5px;
   }
   
+  .dialogs-search-input {
+    padding: 12px 16px;
+    font-size: 15px;
+    background: rgba(255,255,255,0.03);
+  }
+  
+  .dialogs-search-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .chat-search-input {
+    padding: 12px 16px;
+    font-size: 15px;
+    background: rgba(255,255,255,0.03);
+  }
+  
+  .chat-search-header {
+    flex: 1;
+    gap: 8px;
+  }
+  
+  .search-count {
+    font-size: 13px;
+  }
+  
+  .search-nav-btn {
+    width: 34px;
+    height: 34px;
+  }
+  
+  .chat-search-close {
+    width: 34px;
+    height: 34px;
+  }
+  
   .dialogs-list { 
     padding: 0 8px; 
   }
@@ -2275,7 +2557,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .chat-panel {
-    background: var(--bg-primary);
+    background: transparent;
     border: none;
     border-radius: 0;
     height: 100vh;
@@ -2295,6 +2577,29 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     gap: 10px;
+    min-height: auto;
+  }
+  
+  .chat-search-header {
+    gap: 8px;
+  }
+  
+  .chat-search-input {
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.03);
+    border: none;
+    font-size: 15px;
+  }
+  
+  .chat-search-btn {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .search-nav-btn,
+  .chat-search-close {
+    width: 34px;
+    height: 34px;
   }
   
   .back-btn {
@@ -2377,13 +2682,18 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     margin: 8px;
     margin-bottom: calc(8px + env(safe-area-inset-bottom));
     gap: 6px;
+    background: transparent;
+    border: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
   
   .input-wrap input {
     padding: 10px 14px;
     padding-right: 40px;
     font-size: 16px;
-    background: transparent;
+    background: rgba(255,255,255,0.08);
+    border: none;
     border-radius: 18px;
   }
   

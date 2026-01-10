@@ -4,7 +4,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 15v6m-5-17h10m-8 0v6l-2 3v2h10v-2l-2-3V4"/>
       </svg>
-      Закреплено
+      {{ t('pinned') }}
     </div>
     <div class="post-header">
       <router-link :to="`/profile/${post.author.id}`" class="post-author">
@@ -30,19 +30,19 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 15v6m-5-17h10m-8 0v6l-2 3v2h10v-2l-2-3V4"/>
               </svg>
-              {{ post.isPinned ? 'Открепить' : 'Закрепить' }}
+              {{ post.isPinned ? t('unpinPost') : t('pinPost') }}
             </button>
             <button @click="handleToggleComments" class="dropdown-item" v-if="isOwner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10zM9 9h6"/>
               </svg>
-              {{ post.commentsDisabled ? 'Включить комментарии' : 'Отключить комментарии' }}
+              {{ post.commentsDisabled ? t('enableComments') : t('disableComments') }}
             </button>
             <button @click="copyLink" class="dropdown-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
               </svg>
-              Скопировать ссылку
+              {{ t('copyLink') }}
             </button>
             
             <template v-if="isOwner">
@@ -51,13 +51,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>
                 </svg>
-                {{ post.isArchived ? 'Разархивировать' : 'Архивировать' }}
+                {{ post.isArchived ? t('unarchive') : t('archive') }}
               </button>
               <button @click="handleDelete" class="dropdown-item danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M3 6h18M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M10 11v6M14 11v6"/>
                 </svg>
-                Удалить
+                {{ t('delete') }}
               </button>
             </template>
           </div>
@@ -65,7 +65,7 @@
       </div>
     </div>
 
-    <p v-if="post.content" class="post-content">{{ post.content }}</p>
+    <p v-if="post.content" class="post-content" v-html="formatContent(post.content)"></p>
     
     <!-- Multiple media - visual gallery (images, videos, gifs) -->
     <div v-if="visualMedia.length > 0" class="post-media-gallery" :class="'media-count-' + Math.min(visualMedia.length, 4)">
@@ -76,27 +76,24 @@
       </div>
     </div>
     
-    <!-- Multiple media - file list (audio, documents) -->
     <div v-if="fileMedia.length > 0" class="post-files-list">
       <template v-for="(item, index) in fileMedia" :key="item.id">
-        <!-- Audio -->
         <div v-if="item.mediaType === 'audio'" class="post-audio-wrap" @click="toggleMediaAudio(index, item)">
           <button class="audio-play-btn" @click.stop="toggleMediaAudio(index, item)">
             <svg v-if="!isMediaAudioPlaying(item.url)" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
             <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4zM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V4z"/></svg>
           </button>
           <div class="audio-info">
-            <div class="audio-name">{{ item.fileName || 'Аудио' }}</div>
-            <div class="audio-meta">{{ getMediaAudioTime(item.url) }} · {{ item.artist || 'Неизвестный исполнитель' }}</div>
+            <div class="audio-name">{{ item.fileName || t('audioTrack') }}</div>
+            <div class="audio-meta">{{ getMediaAudioTime(item.url) }} · {{ item.artist || t('unknownArtist') }}</div>
           </div>
         </div>
-        <!-- File -->
         <div v-else class="post-file-wrap" @click="downloadMediaFile(item)">
           <div class="file-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6"/></svg>
           </div>
           <div class="file-info">
-            <div class="file-name">{{ item.fileName || 'Файл' }}</div>
+            <div class="file-name">{{ item.fileName || t('file') }}</div>
             <div class="file-size">{{ formatFileSize(item.fileSize) }}</div>
           </div>
           <div class="file-download">
@@ -106,25 +103,20 @@
       </template>
     </div>
     
-    <!-- Legacy single image/video support -->
     <template v-else-if="post.image && (!post.media || post.media.length === 0)">
-      <!-- Image/Video media -->
       <div v-if="post.mediaType === 'image' || !post.mediaType" class="post-image-wrap" @click="openMedia">
         <img :src="postImage" class="post-image" alt="" @error="handleImageError" @load="imageLoaded = true">
         <div v-if="!imageLoaded" class="image-placeholder skeleton"></div>
       </div>
     
-    <!-- GIF -->
     <div v-else-if="post.image && post.mediaType === 'gif'" class="post-image-wrap">
       <img :src="postImage" class="post-image post-gif" alt="" @error="handleImageError">
     </div>
     
-    <!-- Video -->
     <div v-else-if="post.image && post.mediaType === 'video'" class="post-image-wrap">
       <video :src="postImage" class="post-image post-video" controls></video>
     </div>
     
-    <!-- Audio -->
     <div v-else-if="post.image && post.mediaType === 'audio'" class="post-audio-wrap" @click="togglePostAudio">
       <button class="audio-play-btn" @click.stop="togglePostAudio">
         <svg v-if="!isPostAudioPlaying" class="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
@@ -136,13 +128,12 @@
       </div>
     </div>
     
-    <!-- File -->
     <div v-else-if="post.image && post.mediaType === 'file'" class="post-file-wrap" @click="downloadFile">
       <div class="file-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6"/></svg>
       </div>
       <div class="file-info">
-        <div class="file-name">{{ post.fileName || 'Файл' }}</div>
+        <div class="file-name">{{ post.fileName || t('file') }}</div>
         <div class="file-size">{{ formatFileSize(post.fileSize) }}</div>
       </div>
       <div class="file-download">
@@ -150,7 +141,6 @@
       </div>
     </div>
     
-    <!-- Legacy video support -->
     <div v-else-if="post.image && isVideo" class="post-image-wrap">
       <video :src="postImage" class="post-image post-video" controls></video>
     </div>
@@ -220,8 +210,8 @@
                   </svg>
                   <span v-if="comment.likesCount">{{ formatCount(comment.likesCount) }}</span>
                 </button>
-                <button class="comment-action" @click="startReply(comment)">Ответить</button>
-                <button v-if="canDeleteComment(comment)" class="comment-action delete" @click="deleteComment(comment)">Удалить</button>
+                <button class="comment-action" @click="startReply(comment)">{{ t('replyTo') }}</button>
+                <button v-if="canDeleteComment(comment)" class="comment-action delete" @click="deleteComment(comment)">{{ t('delete') }}</button>
               </div>
               
               <div v-if="comment.replies?.length" class="replies">
@@ -244,8 +234,8 @@
                         </svg>
                         <span v-if="reply.likesCount">{{ formatCount(reply.likesCount) }}</span>
                       </button>
-                      <button class="comment-action" @click="startReply(reply, comment)">Ответить</button>
-                      <button v-if="canDeleteComment(reply)" class="comment-action delete" @click="deleteReply(comment, reply)">Удалить</button>
+                      <button class="comment-action" @click="startReply(reply, comment)">{{ t('replyTo') }}</button>
+                      <button v-if="canDeleteComment(reply)" class="comment-action delete" @click="deleteReply(comment, reply)">{{ t('delete') }}</button>
                     </div>
                   </div>
                 </div>
@@ -256,7 +246,7 @@
         
         <form @submit.prevent="addComment" class="comment-form" :class="{ 'reply-mode': isReplyMode }">
           <div class="comment-input-wrap">
-            <input v-model="newComment" :placeholder="replyingTo ? `Ответ для ${replyingTo.author.name}...` : 'Написать комментарий...'" required ref="commentInput">
+            <input v-model="newComment" :placeholder="replyingTo ? t('replyToComment').replace('{name}', replyingTo.author.name) : t('writeComment')" required ref="commentInput">
             <EmojiPicker @select="insertCommentEmoji" class="comment-emoji" />
             <button v-if="!replyingTo" type="submit" class="inside-btn send-inside" :disabled="!newComment.trim()" key="send-inside">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -287,8 +277,11 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useAudioPlayerStore } from '../stores/audioPlayer'
 import { useSocket } from '../socket'
+import { useI18n } from '../i18n'
 import EmojiPicker from './EmojiPicker.vue'
 import api from '../api'
+
+const { t } = useI18n()
 
 const props = defineProps({
   post: { type: Object, required: true },
@@ -315,13 +308,11 @@ const commentPressed = ref(false)
 const sharePressed = ref(false)
 const commentInput = ref(null)
 
-// Audio playback - using global player
 const audioEl = ref(null)
 const isAudioPlaying = ref(false)
 const audioDuration = ref('0:00')
 const audioProgress = ref(0)
 
-// Computed for legacy audio sync with global player
 const isPostAudioPlaying = computed(() => {
   return audioPlayerStore.currentTrack?.url === props.post.image && audioPlayerStore.isPlaying
 })
@@ -378,13 +369,12 @@ async function playMusic() {
 }
 
 function togglePostAudio() {
-  // Use global audio player
   if (audioPlayerStore.currentTrack?.url === props.post.image && audioPlayerStore.isPlaying) {
     audioPlayerStore.pause()
   } else {
     audioPlayerStore.play({
       url: props.post.image,
-      name: props.post.fileName || 'Аудио',
+      name: props.post.fileName || t('audioTrack'),
       source: props.post.author.name
     })
   }
@@ -466,34 +456,30 @@ const isVideo = computed(() => {
   return img.match(/\.(mp4|webm|mov)$/i)
 })
 
-// Computed for visual media (images, videos, gifs)
 const visualMedia = computed(() => {
   const media = props.post.media || []
   const visualTypes = ['image', 'video', 'gif']
   return media.filter(item => visualTypes.includes(item.mediaType))
 })
 
-// Computed for file media (audio, documents)
 const fileMedia = computed(() => {
   const media = props.post.media || []
   const fileTypes = ['audio', 'file']
   return media.filter(item => fileTypes.includes(item.mediaType))
 })
 
-// Multiple audio playback support - using global player
 const mediaAudioEls = ref({})
 const playingMediaAudios = ref({})
 const mediaAudioProgress = ref({})
 const mediaAudioDurations = ref({})
 
 function toggleMediaAudio(index, item) {
-  // Use global audio player
   if (audioPlayerStore.currentTrack?.url === item.url && audioPlayerStore.isPlaying) {
     audioPlayerStore.pause()
   } else {
     audioPlayerStore.play({
       url: item.url,
-      name: item.fileName || 'Аудио',
+      name: item.fileName || t('audioTrack'),
       source: props.post.author.name
     })
   }
@@ -568,7 +554,7 @@ function openMediaGallery(index) {
   const items = visualMedia.value
   const item = items[index]
   if (!item) return
-  if (item.mediaType === 'video') return // Videos play inline
+  if (item.mediaType === 'video') return
   emit('open-media', item.url, item.mediaType, index, items.map(m => ({ src: m.url, type: m.mediaType })))
 }
 
@@ -591,6 +577,12 @@ function toggleMenu() {
 
 function closeMenu() {
   showMenu.value = false
+}
+
+function formatContent(content) {
+  if (!content) return ''
+  const escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return escaped.replace(/@([a-zA-Z0-9_]{3,20})/g, '<a href="/profile/username/$1" class="mention-link" onclick="event.stopPropagation()">@$1</a>')
 }
 
 function formatTime(date) {
@@ -753,14 +745,12 @@ function cancelReply() {
 }
 
 function onReplyTransitionEnd() {
-  // не нужно больше
 }
 
 watch(showComments, (val) => {
   if (val && comments.value.length === 0) loadComments()
 })
 
-// Socket event handlers
 function onPostLike(data) {
   if (data.postId === props.post.id && data.userId !== authStore.user?.id) {
     emit('update', { ...props.post, likesCount: data.likesCount })
@@ -782,7 +772,6 @@ function onPostComment(data) {
   }
 }
 
-// Poll for new comments when comments section is open
 async function pollComments() {
   if (!showComments.value) return
   try {
@@ -791,20 +780,16 @@ async function pollComments() {
     const newReplyIds = new Set()
     res.data.forEach(c => c.replies?.forEach(r => newReplyIds.add(r.id)))
     
-    // Remove deleted comments
     comments.value = comments.value.filter(c => newCommentIds.has(c.id))
     
-    // Update existing and add new comments
     res.data.forEach(newComment => {
       const existing = comments.value.find(c => c.id === newComment.id)
       if (existing) {
         existing.likesCount = newComment.likesCount
         existing.isLiked = newComment.isLiked
-        // Remove deleted replies
         if (existing.replies) {
           existing.replies = existing.replies.filter(r => newReplyIds.has(r.id))
         }
-        // Update/add replies
         if (newComment.replies) {
           newComment.replies.forEach(newReply => {
             const existingReply = existing.replies?.find(r => r.id === newReply.id)
@@ -840,7 +825,6 @@ onUnmounted(() => {
   if (commentsPollInterval) clearInterval(commentsPollInterval)
 })
 
-// Custom directive for click outside
 const vClickOutside = {
   mounted(el, binding) {
     el._clickOutside = (e) => {
@@ -1017,6 +1001,16 @@ const vClickOutside = {
   white-space: pre-wrap;
   word-break: break-word;
   margin-bottom: 14px;
+}
+
+.post-content :deep(.mention-link) {
+  color: #5b9aff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.post-content :deep(.mention-link:hover) {
+  text-decoration: underline;
 }
 
 .post-image-wrap {

@@ -20,9 +20,9 @@
 
         <Transition name="dropdown">
           <div v-if="showNotifications" class="notifications-dropdown glass-modal">
-            <div class="notif-header"><span>Уведомления</span><button v-if="notificationsList.length" @click="clearNotifications" class="clear-all">Очистить</button></div>
+            <div class="notif-header"><span>{{ t('notificationsTitle') }}</span><button v-if="notificationsList.length" @click="clearNotifications" class="clear-all">{{ t('clearAll') }}</button></div>
             <div class="notif-list">
-              <div v-if="!notificationsList.length" class="notif-empty">Нет уведомлений</div>
+              <div v-if="!notificationsList.length" class="notif-empty">{{ t('noNotifications') }}</div>
               <div v-for="notif in notificationsList" :key="notif.id" class="notif-item" @click="handleNotifClick(notif)">
                 <img :src="notif.avatar || '/default-avatar.svg'" class="avatar avatar-sm" alt="">
                 <div class="notif-content">
@@ -47,7 +47,7 @@
           <span v-if="counts.friends" class="nav-badge">{{ counts.friends }}</span>
         </router-link>
 
-        <button class="nav-item create-btn" :class="{ pressed: pressedItem === 'create' }" @click="handleCreate">
+        <button class="nav-item create-btn" :class="{ pressed: pressedItem === 'create' }" @click="handleCreate" :title="t('createNewPost')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
         </button>
 
@@ -56,9 +56,17 @@
           <span v-if="counts.messages" class="nav-badge">{{ counts.messages }}</span>
         </router-link>
 
-        <router-link :to="`/profile/${authStore.user?.id}`" class="nav-item" :class="{ active: $route.name === 'profile', pressed: pressedItem === 'profile' }" @click="handlePress('profile')">
+        <router-link :to="`/profile/${authStore.user?.id}`" class="nav-item desktop-only" :class="{ active: $route.name === 'profile', pressed: pressedItem === 'profile' }" @click="handlePress('profile')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </router-link>
+
+        <router-link to="/settings" class="nav-item mobile-only" :class="{ active: $route.name === 'settings', pressed: pressedItem === 'settings' }" @click="handlePress('settings')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </router-link>
+
+        <button class="nav-item mobile-only" :class="{ pressed: pressedItem === 'logout' }" @click="logout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/><path d="M7 12h14m0 0l-3-3m3 3l-3 3"/></svg>
+        </button>
       </nav>
 
       <div class="sidebar-bottom">
@@ -70,11 +78,15 @@
           <div v-if="showMenu" class="user-menu glass-modal">
             <router-link :to="`/profile/${authStore.user?.id}`" class="menu-item" @click="showMenu = false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
-              <span>Профиль</span>
+              <span>{{ t('profile') }}</span>
+            </router-link>
+            <router-link to="/settings" class="menu-item" @click="showMenu = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>{{ t('settings') }}</span>
             </router-link>
             <button @click="logout" class="menu-item danger">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/><path d="M7 12h14m0 0l-3-3m3 3l-3 3"/></svg>
-              <span>Выйти</span>
+              <span>{{ t('logout') }}</span>
             </button>
           </div>
         </Transition>
@@ -87,11 +99,15 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useSocket } from '../socket'
+import { useI18n } from '../i18n'
 import api from '../api'
 
+const { t } = useI18n()
 const emit = defineEmits(['create'])
 const router = useRouter()
 const authStore = useAuthStore()
+const { on, off } = useSocket()
 
 const counts = reactive({ messages: 0, friends: 0 })
 const prevCounts = reactive({ messages: 0, friends: 0 })
@@ -141,18 +157,51 @@ async function fetchCounts() {
   }
 }
 
+async function fetchNotifications() {
+  try {
+    const res = await api.get('/notifications')
+    const serverNotifs = res.data.filter(n => !n.isRead && (n.type === 'mention' || n.type === 'post_mention')).map(n => ({
+      id: n.id,
+      type: n.type,
+      text: n.content,
+      avatar: n.fromUserAvatar,
+      fromUserId: n.fromUserId,
+      chatId: n.chatId,
+      messageId: n.messageId,
+      postId: n.postId,
+      createdAt: n.createdAt
+    }))
+    
+    const localNotifs = notificationsList.value.filter(n => n.type === 'friend_request')
+    notificationsList.value = [...serverNotifs, ...localNotifs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  } catch {}
+}
+
 async function sendHeartbeat() {
   try { await api.post('/users/heartbeat') } catch {}
 }
 
 function handleNotifClick(notif) {
-  if (notif.type === 'friend_request') router.push('/friends')
-  else if (notif.type === 'message') router.push('/messages')
+  if (notif.type === 'friend_request') {
+    router.push('/friends')
+  } else if (notif.type === 'mention') {
+    router.push(`/messages/${notif.fromUserId}?msg=${notif.messageId}`)
+  } else if (notif.type === 'post_mention') {
+    router.push(`/?post=${notif.postId}`)
+  }
+  
+  if (notif.type === 'mention' || notif.type === 'post_mention') {
+    api.post(`/notifications/${notif.id}/read`).catch(() => {})
+  }
+  
   notificationsList.value = notificationsList.value.filter(n => n.id !== notif.id)
   showNotifications.value = false
 }
 
-function clearNotifications() { notificationsList.value = [] }
+function clearNotifications() {
+  api.post('/notifications/read').catch(() => {})
+  notificationsList.value = []
+}
 
 function logout() { authStore.logout(); router.push('/login') }
 
@@ -161,14 +210,34 @@ function handleClickOutside(e) {
   if (showNotifications.value && !e.target.closest('.notifications-wrap')) showNotifications.value = false
 }
 
+function handleNewNotification(notif) {
+  notificationsList.value.unshift({
+    id: notif.id,
+    type: notif.type,
+    text: notif.content,
+    avatar: notif.fromUserAvatar,
+    fromUserId: notif.fromUserId,
+    chatId: notif.chatId,
+    messageId: notif.messageId,
+    postId: notif.postId,
+    createdAt: notif.createdAt
+  })
+}
+
 onMounted(() => {
   if (authStore.isAuthenticated) {
     fetchCounts()
+    fetchNotifications()
     sendHeartbeat()
     
-    pollInterval = setInterval(fetchCounts, 3000)
+    pollInterval = setInterval(() => {
+      fetchCounts()
+      fetchNotifications()
+    }, 500)
     
     heartbeatInterval = setInterval(sendHeartbeat, 30000)
+    
+    on('notification:new', handleNewNotification)
   }
   
   document.addEventListener('click', handleClickOutside)
@@ -177,6 +246,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
   if (heartbeatInterval) clearInterval(heartbeatInterval)
+  off('notification:new', handleNewNotification)
   document.removeEventListener('click', handleClickOutside)
 })
 </script>
@@ -226,6 +296,9 @@ onUnmounted(() => {
 .menu-enter-from, .menu-leave-to { opacity: 0; transform: translateX(-6px); }
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateX(-6px); }
 
+.desktop-only { display: flex; }
+.mobile-only { display: none; }
+
 @media (max-width: 768px) {
   .sidebar {
     top: auto;
@@ -261,26 +334,30 @@ onUnmounted(() => {
     width: 100%;
     justify-content: space-around;
     gap: 0;
+    margin-top: 0;
   }
   
   .nav-item {
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
   }
   
   .nav-item svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
   
   .nav-badge {
-    top: 8px;
-    right: 8px;
+    top: 4px;
+    right: 4px;
   }
   
   .nav-item:active {
     transform: scale(0.88);
     background: rgba(255, 255, 255, 0.08);
   }
+  
+  .desktop-only { display: none; }
+  .mobile-only { display: flex; }
 }
 </style>

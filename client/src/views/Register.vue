@@ -28,25 +28,40 @@
             </svg>
           </div>
           
-          <h1 class="auth-title">Регистрация</h1>
-          <p class="auth-subtitle">Создайте аккаунт в Littor</p>
+          <h1 class="auth-title">{{ t('registrationTitle2') }}</h1>
+          <p class="auth-subtitle">{{ t('createAccountInLittorDesc') }}</p>
           
           <form @submit.prevent="submitRegister" class="auth-form">
             <div class="input-group">
               <input 
                 v-model="form.name" 
                 type="text" 
-                placeholder="Ваше имя" 
+                :placeholder="t('yourNamePlaceholder')" 
                 required
                 autocomplete="name"
               >
             </div>
 
             <div class="input-group">
+              <div class="username-input-wrap">
+                <span class="username-prefix">@</span>
+                <input 
+                  v-model="form.username" 
+                  type="text" 
+                  placeholder="username" 
+                  required
+                  autocomplete="username"
+                  @input="form.username = form.username.toLowerCase().replace(/[^a-z0-9_]/g, '')"
+                >
+              </div>
+              <span v-if="form.username && !/^[a-zA-Z0-9_]{3,20}$/.test(form.username)" class="input-hint">{{ t('usernameHint2') }}</span>
+            </div>
+
+            <div class="input-group">
               <input 
                 v-model="form.email" 
                 type="email" 
-                placeholder="Email" 
+                :placeholder="t('email')" 
                 required
                 autocomplete="email"
               >
@@ -56,7 +71,7 @@
               <input 
                 v-model="form.password" 
                 :type="showPassword ? 'text' : 'password'" 
-                placeholder="Придумайте пароль" 
+                :placeholder="t('createPasswordPlaceholder')" 
                 required
                 minlength="6"
                 autocomplete="new-password"
@@ -75,12 +90,12 @@
 
             <button type="submit" class="submit-btn" :disabled="loading || !canSubmit">
               <span v-if="loading" class="spinner"></span>
-              <span v-else>Создать аккаунт</span>
+              <span v-else>{{ t('createAccount') }}</span>
             </button>
           </form>
 
           <button class="alt-action" @click="$router.push('/login')">
-            Уже есть аккаунт? Войти
+            {{ t('alreadyHaveAccountLogin') }}
           </button>
         </template>
 
@@ -93,8 +108,8 @@
             </svg>
           </div>
           
-          <h1 class="auth-title">Подтвердите email</h1>
-          <p class="auth-subtitle">Мы отправили код на <strong>{{ form.email }}</strong></p>
+          <h1 class="auth-title">{{ t('confirmEmailTitle') }}</h1>
+          <p class="auth-subtitle">{{ t('codeSentToEmail') }} <strong>{{ form.email }}</strong></p>
           
           <form @submit.prevent="submitVerify" class="auth-form">
             <div class="code-inputs">
@@ -114,21 +129,21 @@
 
             <button type="submit" class="submit-btn" :disabled="loading || verifyCode.length !== 6">
               <span v-if="loading" class="spinner"></span>
-              <span v-else>Подтвердить</span>
+              <span v-else>{{ t('confirmBtn') }}</span>
             </button>
           </form>
 
           <p class="resend-text">
-            Не пришёл код? 
+            {{ t('noCodeReceivedQ') }} 
             <button 
               v-if="resendTimer === 0" 
               @click="resendCode" 
               class="resend-link"
               :disabled="resendLoading"
             >
-              Отправить повторно
+              {{ t('resendCodeBtn') }}
             </button>
-            <span v-else class="resend-timer">Повторно через {{ resendTimer }}с</span>
+            <span v-else class="resend-timer">{{ t('resendInSec') }} {{ resendTimer }}с</span>
           </p>
         </template>
 
@@ -140,16 +155,16 @@
             </svg>
           </div>
           
-          <h1 class="auth-title">Добро пожаловать!</h1>
-          <p class="auth-subtitle">Ваш аккаунт успешно создан</p>
+          <h1 class="auth-title">{{ t('welcomeTitle') }}</h1>
+          <p class="auth-subtitle">{{ t('accountCreatedDesc') }}</p>
           
           <button class="submit-btn" @click="$router.push('/')">
-            Начать
+            {{ t('startBtn') }}
           </button>
         </template>
       </div>
 
-      <span class="help-link" @click="showHelp = true">Помощь</span>
+      <span class="help-link" @click="showHelp = true">{{ t('help') }}</span>
 
       <!-- Help Modal -->
       <Teleport to="body">
@@ -157,7 +172,7 @@
           <div v-if="showHelp" class="modal-overlay" @click.self="showHelp = false">
             <div class="help-modal glass-modal">
               <div class="help-header">
-                <h2>Помощь</h2>
+                <h2>{{ t('helpTitle') }}</h2>
                 <button @click="showHelp = false" class="close-btn">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 6L6 18M6 6l12 12"/>
@@ -172,8 +187,8 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Как зарегистрироваться?</span>
-                    <span class="help-desc">Заполните все поля формы: имя, email и пароль (минимум 6 символов).</span>
+                    <span class="help-title">{{ t('howToRegisterTitle') }}</span>
+                    <span class="help-desc">{{ t('howToRegisterDesc2') }}</span>
                   </div>
                 </div>
                 <div class="help-item info-only">
@@ -183,8 +198,8 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Требования к паролю</span>
-                    <span class="help-desc">Пароль должен содержать минимум 6 символов.</span>
+                    <span class="help-title">{{ t('passwordRequirementsTitle') }}</span>
+                    <span class="help-desc">{{ t('passwordRequirementsDesc2') }}</span>
                   </div>
                 </div>
                 <div class="help-item" @click="$router.push('/login'); showHelp = false">
@@ -194,8 +209,8 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Уже есть аккаунт?</span>
-                    <span class="help-desc">Войдите в существующий аккаунт</span>
+                    <span class="help-title">{{ t('alreadyHaveAccountTitle') }}</span>
+                    <span class="help-desc">{{ t('loginToExistingDesc') }}</span>
                   </div>
                   <svg class="help-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
@@ -206,7 +221,7 @@
                     </svg>
                   </div>
                   <div class="help-text">
-                    <span class="help-title">Связаться с поддержкой</span>
+                    <span class="help-title">{{ t('contactSupportTitle') }}</span>
                     <span class="help-desc">n.golubtsov05@bk.ru</span>
                   </div>
                   <svg class="help-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -225,12 +240,14 @@ import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { useI18n } from '../i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
+const { t } = useI18n()
 
-const form = reactive({ name: '', email: '', password: '' })
+const form = reactive({ name: '', email: '', password: '', username: '' })
 const loading = ref(false)
 const showPassword = ref(false)
 const showHelp = ref(false)
@@ -241,7 +258,7 @@ const resendTimer = ref(0)
 const resendLoading = ref(false)
 let timerInterval = null
 
-const canSubmit = computed(() => form.name && form.email && form.password.length >= 6)
+const canSubmit = computed(() => form.name && form.email && form.password.length >= 6 && /^[a-zA-Z0-9_]{3,20}$/.test(form.username))
 
 function handleBack() {
   if (step.value === 'verify') {
@@ -269,12 +286,10 @@ function handleCodeInput(e, index) {
   const value = e.target.value.replace(/\D/g, '')
   e.target.value = value
   
-  // Update code
   const codeArray = verifyCode.value.split('')
   codeArray[index] = value
   verifyCode.value = codeArray.join('')
   
-  // Move to next input
   if (value && index < 5) {
     codeInputs.value[index + 1]?.focus()
   }
@@ -306,7 +321,7 @@ async function submitVerify() {
   try {
     await authStore.verifyEmail(form.email, verifyCode.value)
     step.value = 'success'
-    notifications.success('Email подтверждён!')
+    notifications.success(t('emailConfirmed'))
   } catch (err) {
     notifications.error(err.response?.data?.error || err.message)
   } finally {
@@ -329,7 +344,7 @@ async function resendCode() {
   resendLoading.value = true
   try {
     await authStore.resendVerification(form.email)
-    notifications.success('Код отправлен повторно')
+    notifications.success(t('codeSentAgain'))
     startResendTimer()
   } catch (err) {
     notifications.error(err.response?.data?.error || err.message)
@@ -500,6 +515,51 @@ async function resendCode() {
 .input-toggle svg {
   width: 20px;
   height: 20px;
+}
+
+.username-input-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+
+.username-input-wrap:focus-within {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.username-prefix {
+  padding-left: 16px;
+  color: var(--text-muted);
+  font-size: 15px;
+  user-select: none;
+}
+
+.username-input-wrap input {
+  flex: 1;
+  padding: 14px 16px 14px 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.username-input-wrap input:focus {
+  outline: none;
+}
+
+.username-input-wrap input::placeholder {
+  color: var(--text-muted);
+}
+
+.input-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #f87171;
 }
 
 .code-inputs {

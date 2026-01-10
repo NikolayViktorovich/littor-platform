@@ -13,6 +13,17 @@ function getMediaType(mimetype) {
   return 'file'
 }
 
+function extractMentions(content) {
+  if (!content) return []
+  const regex = /@([a-zA-Z0-9_]{3,20})/g
+  const mentions = []
+  let match
+  while ((match = regex.exec(content)) !== null) {
+    mentions.push(match[1].toLowerCase())
+  }
+  return [...new Set(mentions)]
+}
+
 router.get('/dialogs', authMiddleware, (req, res) => {
   const dialogs = db.prepare(`
     SELECT 
@@ -391,12 +402,53 @@ router.post('/:id', authMiddleware, upload.array('media', 10), (req, res) => {
       return res.status(403).json({ error: 'Невозможно отправить сообщение' })
     }
 
+    const receiver = db.prepare('SELECT settings FROM users WHERE id = ?').get(req.params.id)
+    if (receiver?.settings) {
+      try {
+        const receiverSettings = JSON.parse(receiver.settings)
+        if (receiverSettings.whoCanMessage === 'contacts') {
+          const isFriend = db.prepare(`
+            SELECT 1 FROM friendships 
+            WHERE ((userId = ? AND friendId = ?) OR (userId = ? AND friendId = ?)) AND status = 'accepted'
+          `).get(req.userId, req.params.id, req.params.id, req.userId)
+          if (!isFriend) {
+            return res.status(403).json({ error: 'Этот пользователь принимает сообщения только от друзей' })
+          }
+        }
+      } catch {}
+    }
+
     const id = uuid()
     const createdAt = new Date().toISOString()
     const messageContent = content?.trim() || null
 
     db.prepare(`INSERT INTO messages (id, senderId, receiverId, content, media, mediaType, fileName, fileSize, replyToId, musicTrackId, musicTitle, musicArtist, musicArtwork, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(id, req.userId, req.params.id, messageContent, media, finalMediaType, fileName, fileSize, replyToId || null, musicTrackId || null, musicTitle || null, musicArtist || null, musicArtwork || null, createdAt)
+
+    const mentions = extractMentions(messageContent)
+    if (mentions.length > 0) {
+      const sender = db.prepare('SELECT name FROM users WHERE id = ?').get(req.userId)
+      mentions.forEach(username => {
+        const mentionedUser = db.prepare('SELECT id FROM users WHERE username = ?').get(username)
+        if (mentionedUser && mentionedUser.id !== req.userId) {
+          const notifId = uuid()
+          db.prepare(`INSERT INTO notifications (id, userId, type, fromUserId, messageId, chatId, content, createdAt) VALUES (?, ?, 'mention', ?, ?, ?, ?, ?)`)
+            .run(notifId, mentionedUser.id, req.userId, id, req.params.id, `${sender?.name || 'Пользователь'} упомянул вас в сообщении`, createdAt)
+          
+          const io = req.app.get('io')
+          io.to(`user:${mentionedUser.id}`).emit('notification:new', {
+            id: notifId,
+            type: 'mention',
+            fromUserId: req.userId,
+            fromUserName: sender?.name,
+            messageId: id,
+            chatId: req.params.id,
+            content: `${sender?.name || 'Пользователь'} упомянул вас в сообщении`,
+            createdAt
+          })
+        }
+      })
+    }
 
     let replyTo = null
     if (replyToId) {

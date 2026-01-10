@@ -152,8 +152,43 @@ router.post('/', authMiddleware, upload.array('media', 10), (req, res) => {
     io.to(`user:${f.friendId}`).emit('post:new', post)
   })
 
+  const mentions = extractMentions(content)
+  if (mentions.length > 0) {
+    mentions.forEach(username => {
+      const mentionedUser = db.prepare('SELECT id FROM users WHERE username = ?').get(username)
+      if (mentionedUser && mentionedUser.id !== req.userId) {
+        const notifId = uuid()
+        const createdAt = new Date().toISOString()
+        db.prepare(`INSERT INTO notifications (id, userId, type, fromUserId, postId, content, createdAt) VALUES (?, ?, 'post_mention', ?, ?, ?, ?)`)
+          .run(notifId, mentionedUser.id, req.userId, id, `${user.name} упомянул вас в посте`, createdAt)
+        
+        io.to(`user:${mentionedUser.id}`).emit('notification:new', {
+          id: notifId,
+          type: 'post_mention',
+          fromUserId: req.userId,
+          fromUserName: user.name,
+          fromUserAvatar: user.avatar,
+          postId: id,
+          content: `${user.name} упомянул вас в посте`,
+          createdAt
+        })
+      }
+    })
+  }
+
   res.json(post)
 })
+
+function extractMentions(content) {
+  if (!content) return []
+  const regex = /@([a-zA-Z0-9_]{3,20})/g
+  const mentions = []
+  let match
+  while ((match = regex.exec(content)) !== null) {
+    mentions.push(match[1].toLowerCase())
+  }
+  return [...new Set(mentions)]
+}
 
 function getMediaType(mimetype) {
   if (mimetype.startsWith('image/gif')) return 'gif'

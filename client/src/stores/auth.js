@@ -19,7 +19,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(data) {
     const res = await api.post('/auth/register', data)
-    // Returns email for verification, not token yet
     return res.data
   }
 
@@ -79,7 +78,6 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(user.value))
   }
 
-  // Initialize auth header if token exists
   if (token.value) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
   }

@@ -3,7 +3,7 @@
     <div class="friends-container">
       <div class="friends-header glass">
         <div class="header-top">
-          <h1>Друзья</h1>
+          <h1>{{ t('friends') }}</h1>
           <button class="add-btn" :class="{ active: showSearch }" @click="showSearch = !showSearch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 5v14M5 12h14"/>
@@ -21,7 +21,7 @@
               <input 
                 v-model="searchQuery" 
                 @input="handleSearch"
-                placeholder="Поиск по имени или юзернейму..." 
+                :placeholder="t('searchByNameOrUsername')" 
                 ref="searchInput"
               >
             </div>
@@ -45,13 +45,13 @@
                   class="btn btn-primary btn-sm"
                   :disabled="isPending(user.id)"
                 >
-                  {{ isPending(user.id) ? 'Отправлено' : 'Добавить' }}
+                  {{ isPending(user.id) ? t('sent') : t('add') }}
                 </button>
               </div>
             </div>
             
             <div v-else-if="searchQuery && !searching" class="empty-search">
-              <p>Никого не найдено</p>
+              <p>{{ t('nobodyFound') }}</p>
             </div>
           </div>
         </Transition>
@@ -76,7 +76,7 @@
         </div>
         
         <div v-else-if="!list.length" class="empty-state">
-          <p>{{ activeTab === 'friends' ? 'Пока нет друзей' : 'Нет заявок' }}</p>
+          <p>{{ activeTab === 'friends' ? t('noFriends') : t('noRequests') }}</p>
         </div>
         
         <TransitionGroup v-else name="list" tag="div" class="friends-list">
@@ -90,15 +90,15 @@
             
             <div class="friend-actions">
               <template v-if="activeTab === 'friends'">
-                <router-link :to="`/messages/${user.id}`" class="btn btn-secondary btn-sm">Написать</router-link>
-                <button @click="removeFriend(user.id)" class="btn btn-ghost btn-sm">Удалить</button>
+                <router-link :to="`/messages/${user.id}`" class="btn btn-secondary btn-sm">{{ t('write') }}</router-link>
+                <button @click="removeFriend(user.id)" class="btn btn-ghost btn-sm">{{ t('remove') }}</button>
               </template>
               <template v-else-if="activeTab === 'incoming'">
-                <button @click="acceptRequest(user.id)" class="btn btn-primary btn-sm">Принять</button>
-                <button @click="declineRequest(user.id)" class="btn btn-ghost btn-sm">Отклонить</button>
+                <button @click="acceptRequest(user.id)" class="btn btn-primary btn-sm">{{ t('accept') }}</button>
+                <button @click="declineRequest(user.id)" class="btn btn-ghost btn-sm">{{ t('decline') }}</button>
               </template>
               <template v-else>
-                <button @click="cancelRequest(user.id)" class="btn btn-secondary btn-sm">Отменить</button>
+                <button @click="cancelRequest(user.id)" class="btn btn-secondary btn-sm">{{ t('cancel') }}</button>
               </template>
             </div>
           </div>
@@ -113,8 +113,10 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import { cache } from '../stores/cache'
+import { useI18n } from '../i18n'
 import api from '../api'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
 
@@ -133,9 +135,9 @@ let searchTimeout = null
 let pollInterval = null
 
 const tabs = computed(() => [
-  { key: 'friends', label: 'Друзья', count: friends.value.length },
-  { key: 'incoming', label: 'Входящие', count: incoming.value.length },
-  { key: 'outgoing', label: 'Исходящие', count: outgoing.value.length }
+  { key: 'friends', label: t('friends'), count: friends.value.length },
+  { key: 'incoming', label: t('incoming'), count: incoming.value.length },
+  { key: 'outgoing', label: t('outgoing'), count: outgoing.value.length }
 ])
 
 const list = computed(() => {
@@ -212,7 +214,6 @@ async function fetchData(silent = false) {
       api.get('/friends/outgoing')
     ])
     
-    // Check for new incoming requests
     if (silent && incomingRes.data.length > incoming.value.length) {
       const newRequests = incomingRes.data.filter(
         newUser => !incoming.value.some(oldUser => oldUser.id === newUser.id)

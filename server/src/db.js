@@ -21,6 +21,7 @@ export async function initDb() {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       name TEXT NOT NULL,
+      username TEXT,
       avatar TEXT,
       cover TEXT,
       bio TEXT,
@@ -36,6 +37,8 @@ export async function initDb() {
     if (!colNames.includes('cover')) db.run(`ALTER TABLE users ADD COLUMN cover TEXT`)
     if (!colNames.includes('lastSeen')) db.run(`ALTER TABLE users ADD COLUMN lastSeen TEXT`)
     if (!colNames.includes('emailVerified')) db.run(`ALTER TABLE users ADD COLUMN emailVerified INTEGER DEFAULT 0`)
+    if (!colNames.includes('username')) db.run(`ALTER TABLE users ADD COLUMN username TEXT`)
+    if (!colNames.includes('settings')) db.run(`ALTER TABLE users ADD COLUMN settings TEXT`)
   } catch (e) {}
 
   db.run(`
@@ -238,6 +241,29 @@ export async function initDb() {
   `)
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      type TEXT NOT NULL,
+      fromUserId TEXT,
+      messageId TEXT,
+      chatId TEXT,
+      postId TEXT,
+      content TEXT,
+      isRead INTEGER DEFAULT 0,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id),
+      FOREIGN KEY (fromUserId) REFERENCES users(id)
+    )
+  `)
+
+  try {
+    const cols = db.exec("PRAGMA table_info(notifications)")
+    const colNames = cols[0]?.values?.map(c => c[1]) || []
+    if (!colNames.includes('postId')) db.run(`ALTER TABLE notifications ADD COLUMN postId TEXT`)
+  } catch (e) {}
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS listening_history (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
@@ -247,6 +273,23 @@ export async function initDb() {
       artwork TEXT,
       duration INTEGER,
       playedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id)
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      token TEXT NOT NULL,
+      deviceName TEXT,
+      deviceType TEXT,
+      browser TEXT,
+      os TEXT,
+      ip TEXT,
+      location TEXT,
+      lastActive TEXT,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (userId) REFERENCES users(id)
     )
   `)
