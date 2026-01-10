@@ -213,4 +213,22 @@ const categories = {
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
 }
+
+[data-theme="light"] .emoji-picker {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .emoji-tabs button:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .emoji-tabs button.active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .emoji-grid button:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
 </style>

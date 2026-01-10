@@ -357,7 +357,7 @@ onUnmounted(() => {
   gap: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-full);
   padding: 14px 16px;
   overflow: visible;
 }
@@ -666,5 +666,48 @@ onUnmounted(() => {
     background: rgba(255, 255, 255, 0.15);
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
+}
+
+[data-theme="light"] .add-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .add-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .search-input-wrap {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .search-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .liquid-tabs {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .liquid-tab.active {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+}
+
+[data-theme="light"] .tab-badge {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .empty-icon {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .friend-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .friend-info:hover .friend-name {
+  color: var(--text-secondary);
 }
 </style>

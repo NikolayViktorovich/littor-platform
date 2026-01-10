@@ -302,7 +302,7 @@ onUnmounted(() => {
     right: 0;
     bottom: 0;
     width: 100%;
-    height: 72px;
+    height: 56px;
     padding: 0;
     background: rgba(14, 14, 14, 0.95);
     backdrop-filter: blur(20px);
@@ -314,8 +314,9 @@ onUnmounted(() => {
     flex-direction: row;
     justify-content: space-around;
     padding: 0 8px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
-    align-items: flex-end;
+    padding-bottom: env(safe-area-inset-bottom);
+    align-items: center;
+    height: 100%;
   }
   
   .sidebar-top,
@@ -334,18 +335,21 @@ onUnmounted(() => {
   }
   
   .nav-item {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
   }
   
   .nav-item svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
   
   .nav-badge {
-    top: 4px;
-    right: 4px;
+    top: 2px;
+    right: 2px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 9px;
   }
   
   .nav-item:active {
@@ -355,5 +359,37 @@ onUnmounted(() => {
   
   .desktop-only { display: none; }
   .mobile-only { display: flex; }
+}
+
+[data-theme="light"] .nav-divider {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .nav-item.create-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .nav-item.create-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .menu-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .notif-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 768px) {
+  [data-theme="light"] .sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    border-top-color: rgba(0, 0, 0, 0.06);
+  }
+  
+  [data-theme="light"] .nav-item:active {
+    background: rgba(0, 0, 0, 0.06);
+  }
 }
 </style>

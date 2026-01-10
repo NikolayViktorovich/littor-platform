@@ -184,7 +184,6 @@
       </Transition>
     </Teleport>
 
-    <!-- Dropdown menus teleported to body -->
     <Teleport to="body">
       <Transition name="dropdown">
         <div v-if="openDropdown === 'lastSeen'" class="custom-dropdown" :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }" @click.stop>
@@ -280,10 +279,16 @@ function toggleDropdown(name, event) {
   openDropdown.value = name
   if (event) {
     const rect = event.currentTarget.getBoundingClientRect()
-    dropdownPosition.value = {
-      top: rect.bottom + 8,
-      left: Math.min(rect.right - 180, window.innerWidth - 200)
+    const menuHeight = 150
+    const menuWidth = 180
+    let top = rect.bottom + 8
+    let left = Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 10)
+    
+    if (top + menuHeight > window.innerHeight - 10) {
+      top = rect.top - menuHeight - 8
     }
+    
+    dropdownPosition.value = { top, left: Math.max(10, left) }
   }
 }
 
@@ -385,7 +390,6 @@ function applyFontSize() {
   const sizes = { small: '14px', medium: '16px', large: '18px' }
   const size = sizes[settings.fontSize] || '16px'
   document.documentElement.style.setProperty('--base-font-size', size)
-  document.documentElement.style.fontSize = size
   localStorage.setItem('fontSize', settings.fontSize)
 }
 
@@ -485,8 +489,8 @@ onUnmounted(() => {
 .custom-dropdown { position: fixed; min-width: 180px; background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 6px; z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
 .dropdown-option { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 12px 14px; border-radius: var(--radius); font-size: 14px; color: var(--text-primary); transition: background 0.1s; text-align: left; }
 .dropdown-option:hover { background: var(--glass-bg-hover); }
-.dropdown-option.active { color: #5b9aff; }
-.check-icon { width: 18px; height: 18px; color: #5b9aff; }
+.dropdown-option.active { color: var(--text-primary); }
+.check-icon { width: 18px; height: 18px; color: var(--text-primary); }
 .dropdown-enter-active, .dropdown-leave-active { transition: all 0.15s ease; }
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-8px); }
 .toggle { position: relative; width: 50px; height: 30px; cursor: pointer; flex-shrink: 0; }
@@ -535,4 +539,7 @@ onUnmounted(() => {
 .modal-enter-active .settings-modal, .modal-leave-active .settings-modal { transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1); }
 .modal-enter-from .settings-modal, .modal-leave-to .settings-modal { transform: scale(0.95); }
 @media (max-width: 768px) { .settings-page { padding: 20px; padding-bottom: 100px; padding-left: 20px; } .settings-modal { max-height: 90vh; } }
+
+[data-theme="light"] .custom-dropdown { background: rgba(255, 255, 255, 0.95); box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+[data-theme="light"] .settings-modal-overlay { background: rgba(0,0,0,0.4); }
 </style>

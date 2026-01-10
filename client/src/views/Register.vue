@@ -841,4 +841,40 @@ async function resendCode() {
     font-size: 20px;
   }
 }
+
+[data-theme="light"] .verify-icon {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .input-group input {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .input-group input:focus {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .help-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .help-icon {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .close-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .code-input {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .code-input:focus {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.02);
+}
 </style>

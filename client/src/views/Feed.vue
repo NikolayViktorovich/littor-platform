@@ -332,4 +332,18 @@ onUnmounted(() => {
   0%, 30% { box-shadow: 0 0 0 2px rgba(91, 154, 255, 0.6); }
   100% { box-shadow: none; }
 }
+
+[data-theme="light"] .empty-icon {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .spinner-lg {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .spinner {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: rgba(0, 0, 0, 0.4);
+}
 </style>

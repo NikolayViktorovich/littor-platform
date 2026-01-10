@@ -87,13 +87,21 @@
     </div>
 
     <div class="profile-content" v-if="user && !user.blockedByUser">
-      <div class="liquid-tabs">
-        <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')">{{ t('posts') }}</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')">{{ t('photos') }}</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')">{{ t('videos') }}</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'audio' }" @click="setTab('audio')">{{ t('audio') }}</button>
-        <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')">{{ t('friends') }}</button>
-        <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')">{{ t('archive') }}</button>
+      <div class="tabs-container">
+        <button class="tab-nav-btn prev" @click="scrollTabsLeft">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="liquid-tabs" ref="tabsContainer">
+          <button class="liquid-tab" :class="{ active: activeTab === 'posts' }" @click="setTab('posts')">{{ t('posts') }}</button>
+          <button class="liquid-tab" :class="{ active: activeTab === 'photos' }" @click="setTab('photos')">{{ t('photos') }}</button>
+          <button class="liquid-tab" :class="{ active: activeTab === 'videos' }" @click="setTab('videos')">{{ t('videos') }}</button>
+          <button class="liquid-tab" :class="{ active: activeTab === 'audio' }" @click="setTab('audio')">{{ t('audio') }}</button>
+          <button class="liquid-tab" :class="{ active: activeTab === 'friends' }" @click="setTab('friends')">{{ t('friends') }}</button>
+          <button v-if="isOwner" class="liquid-tab" :class="{ active: activeTab === 'archive' }" @click="setTab('archive')">{{ t('archive') }}</button>
+        </div>
+        <button class="tab-nav-btn next" @click="scrollTabsRight">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
 
       <div v-if="activeTab === 'posts'" class="profile-posts">
@@ -336,6 +344,19 @@ const activeTab = ref('posts')
 const showEditModal = ref(false)
 const showProfileMenu = ref(false)
 const editForm = reactive({ name: '', bio: '', username: '' })
+const tabsContainer = ref(null)
+
+function scrollTabsLeft() {
+  if (tabsContainer.value) {
+    tabsContainer.value.scrollBy({ left: -150, behavior: 'smooth' })
+  }
+}
+
+function scrollTabsRight() {
+  if (tabsContainer.value) {
+    tabsContainer.value.scrollBy({ left: 150, behavior: 'smooth' })
+  }
+}
 
 const showCoverEditor = ref(false)
 const coverPreview = ref(null)
@@ -800,7 +821,13 @@ onUnmounted(() => {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .profile-content { max-width: 600px; margin: 0 auto; padding: 0 20px 40px; }
-.liquid-tabs { margin-bottom: 20px; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; }
+.tabs-container { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+.tab-nav-btn { display: none; width: 32px; height: 32px; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); color: var(--text-muted); flex-shrink: 0; transition: all 0.15s ease; }
+.tab-nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+.tab-nav-btn:active { transform: scale(0.9); }
+.tab-nav-btn svg { width: 16px; height: 16px; }
+.liquid-tabs { flex: 1; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.liquid-tabs::-webkit-scrollbar { display: none; }
 .liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all 0.2s ease; position: relative; flex: 1; text-align: center; }
 .liquid-tab:hover { color: var(--text-secondary); }
 .liquid-tab.active { color: #fff; background: rgba(255,255,255,0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
@@ -836,7 +863,7 @@ onUnmounted(() => {
 .audio-tab:hover { color: var(--text-secondary); }
 .audio-tab.active { color: #fff; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
 .audio-search { margin-bottom: 8px; }
-.audio-search .search-input-wrap { display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); padding: 12px 16px; }
+.audio-search .search-input-wrap { display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-full); padding: 12px 16px; }
 .audio-search .search-input-wrap svg { width: 20px; height: 20px; color: var(--text-muted); flex-shrink: 0; }
 .audio-search .search-input-wrap input { flex: 1; background: none; border: none; color: var(--text-primary); font-size: 15px; }
 .audio-search .search-input-wrap input::placeholder { color: var(--text-muted); }
@@ -924,25 +951,38 @@ onUnmounted(() => {
   .mobile-settings-btn { display: flex; }
   .media-grid { grid-template-columns: repeat(2, 1fr); }
   
-  .liquid-tabs {
+  .tabs-container {
     margin: 0 -20px 20px;
-    border-radius: 0;
-    background: rgba(255,255,255,0.02);
-    padding: 0;
-    gap: 0;
+    padding: 0 8px;
+  }
+  
+  .tab-nav-btn {
+    display: flex;
+    width: 36px;
+    height: 36px;
+  }
+  
+  .liquid-tabs {
+    flex: 1;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,0.03);
+    padding: 4px;
+    gap: 4px;
+    justify-content: flex-start;
   }
   
   .liquid-tab {
-    padding: 14px 8px;
+    padding: 10px 16px;
     font-size: 14px;
-    border-radius: 0;
-    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: auto;
   }
   
   .liquid-tab.active {
-    background: transparent;
-    box-shadow: none;
-    border-bottom: 2px solid rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.08);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2);
   }
   
   .audio-tabs {
@@ -974,7 +1014,8 @@ onUnmounted(() => {
   .cover-edit {
     width: 36px;
     height: 36px;
-    bottom: 70px;
+    top: 12px;
+    bottom: auto;
     right: 12px;
     background: rgba(0, 0, 0, 0.4);
     border: none;
@@ -1075,5 +1116,66 @@ onUnmounted(() => {
     background: rgba(255, 255, 255, 0.08);
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1), background 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
+}
+
+[data-theme="light"] .profile-header {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .profile-menu-dropdown {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .profile-menu-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .blocked-message {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .liquid-tabs {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .liquid-tab.active {
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+}
+
+[data-theme="light"] .audio-tabs {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .audio-tab.active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .audio-search .search-input-wrap {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .audio-list-item {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .audio-list-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .artwork-placeholder {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .friends-group .group-title {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .friend-row:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .cover-editor {
+  background: rgba(255, 255, 255, 0.95);
 }
 </style>

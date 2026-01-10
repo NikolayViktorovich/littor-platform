@@ -1756,4 +1756,32 @@ const vClickOutside = {
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
 }
+
+[data-theme="light"] .post-dropdown {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .post-audio-wrap {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .post-file-wrap {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .post-file-wrap:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .music-artwork .artwork-placeholder {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .comment-form input {
+  background: rgba(0, 0, 0, 0.04);
+}
 </style>

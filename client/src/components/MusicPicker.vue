@@ -427,4 +427,40 @@ onMounted(() => {
     max-height: 90vh;
   }
 }
+
+[data-theme="light"] .music-picker-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .music-picker {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .picker-header {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .picker-tabs {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .picker-tab.active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .search-input-wrap {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .track-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .track-item.playing {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .artwork-placeholder {
+  background: rgba(0, 0, 0, 0.04);
+}
 </style>

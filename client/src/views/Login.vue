@@ -1235,4 +1235,30 @@ async function submit() {
     font-size: 20px;
   }
 }
+
+[data-theme="light"] .user-card {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .user-avatar {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .help-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .help-icon {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .code-input {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .code-input:focus {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.02);
+}
 </style>

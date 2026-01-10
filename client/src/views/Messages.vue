@@ -9,7 +9,7 @@
               <input v-model="dialogsSearchQuery" type="text" :placeholder="t('searchChats')" class="dialogs-search-input" ref="dialogsSearchInput" @keydown.esc="closeDialogsSearch">
             </div>
             <button @click="toggleDialogsSearch" class="dialogs-search-btn">
-              <svg v-if="!dialogsSearchMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+              <svg v-if="!dialogsSearchMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" fill="none"/><path d="M21 21l-4.35-4.35"/></svg>
               <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
@@ -99,7 +99,7 @@
               </button>
             </div>
             <button v-if="!selectMode && !chatSearchMode" @click="toggleChatSearch" class="chat-search-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" fill="none"/><path d="M21 21l-4.35-4.35"/></svg>
             </button>
           </div>
 
@@ -429,8 +429,8 @@
           <div v-if="showDialogMenu" class="msg-menu glass-modal" :style="{ top: dialogMenuY + 'px', left: dialogMenuX + 'px' }" @click.stop>
             <button class="menu-item" @click="toggleDialogPin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ selectedDialog?.isPinned ? t('unpinDialog') : t('pinDialog') }}</button>
             <button class="menu-item" @click="toggleDialogMute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><template v-if="!selectedDialog?.isMuted"><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></template><template v-else><path d="M23 9l-6 6M17 9l6 6"/></template></svg>{{ selectedDialog?.isMuted ? t('unmuteSound') : t('muteSound') }}</button>
-            <button class="menu-item danger" @click="confirmDeleteDialogForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
             <button class="menu-item muted" @click="confirmDeleteDialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForMe') }}</button>
+            <button class="menu-item danger" @click="confirmDeleteDialogForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
           </div>
         </Transition>
 
@@ -466,15 +466,15 @@
             <button class="menu-item" @click="forwardMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17l5-5-5-5M20 12H4"/></svg>{{ t('forward') }}</button>
             <button class="menu-item" @click="pinMessage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10M9 4v6l-2 3v2h10v-2l-2-3V4M12 15v6"/></svg>{{ pinnedMessage?.id === selectedMsg?.id ? t('unpin') : t('pin') }}</button>
             <button class="menu-item" @click="startSelectMode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>{{ t('selected') }}</button>
-            <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
             <button class="menu-item muted" @click="confirmDeleteForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForMe') }}</button>
+            <button v-if="selectedMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="confirmDeleteForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
           </div>
         </Transition>
 
         <Transition name="menu">
           <div v-if="showSystemMsgMenu" class="msg-menu glass-modal" :style="{ top: systemMsgMenuY + 'px', left: systemMsgMenuX + 'px' }" @click.stop>
-            <button v-if="selectedSystemMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="deleteSystemMsgForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
             <button class="menu-item muted" @click="deleteSystemMsgForMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForMe') }}</button>
+            <button v-if="selectedSystemMsg?.senderId === authStore.user?.id" class="menu-item danger" @click="deleteSystemMsgForAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21H7a2 2 0 0 1-2-2V5h14v14a2 2 0 0 1-2 2zM9 9v8M15 9v8M3 5h18M9 5V3h6v2"/></svg>{{ t('deleteForAll') }}</button>
           </div>
         </Transition>
 
@@ -1601,13 +1601,22 @@ async function unblockUser() {
   } catch (err) { notifications.error(err.message) }
 }
 
-function openMsgMenu(e, msg) { selectedMsg.value = msg; msgMenuX.value = Math.min(e.clientX, window.innerWidth - 200); msgMenuY.value = Math.min(e.clientY, window.innerHeight - 150); showMsgMenu.value = true }
+function openMsgMenu(e, msg) {
+  selectedMsg.value = msg
+  const menuWidth = 200
+  const menuHeight = msg.senderId === authStore.user?.id ? 280 : 240
+  msgMenuX.value = Math.min(Math.max(e.clientX, 10), window.innerWidth - menuWidth - 10)
+  msgMenuY.value = Math.min(Math.max(e.clientY, 10), window.innerHeight - menuHeight - 10)
+  showMsgMenu.value = true
+}
 function closeMsgMenu() { showMsgMenu.value = false; selectedMsg.value = null }
 
 function openDialogMenu(e, dialog) {
   selectedDialog.value = dialog
-  dialogMenuX.value = Math.min(e.clientX, window.innerWidth - 200)
-  dialogMenuY.value = Math.min(e.clientY, window.innerHeight - 180)
+  const menuWidth = 200
+  const menuHeight = 180
+  dialogMenuX.value = Math.min(Math.max(e.clientX, 10), window.innerWidth - menuWidth - 10)
+  dialogMenuY.value = Math.min(Math.max(e.clientY, 10), window.innerHeight - menuHeight - 10)
   showDialogMenu.value = true
 }
 
@@ -1911,7 +1920,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .dialogs-header h1 { font-size: 20px; font-weight: 600; }
 .dialogs-search-wrap { flex: 1; animation: searchExpand 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes searchExpand { from { opacity: 0; transform: scaleX(0.8); } to { opacity: 1; transform: scaleX(1); } }
-.dialogs-search-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-lg); font-size: 15px; color: var(--text-primary); transition: all 0.2s ease; }
+.dialogs-search-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-full); font-size: 15px; color: var(--text-primary); transition: all 0.2s ease; }
 .dialogs-search-input:focus { background: rgba(255,255,255,0.05); outline: none; }
 .dialogs-search-input::placeholder { color: var(--text-muted); }
 .dialogs-search-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.2s ease; flex-shrink: 0; }
@@ -1958,13 +1967,13 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .user-info { display: flex; flex-direction: column; }
 .user-name { font-weight: 600; font-size: 15px; }
 .user-status { font-size: 13px; color: var(--text-muted); }
-.chat-search-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.2s ease; flex-shrink: 0; margin-left: auto; }
+.chat-search-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.2s ease; flex-shrink: 0; margin-left: auto; }
 .chat-search-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
 .chat-search-btn:active { transform: scale(0.9); }
-.chat-search-btn svg { width: 18px; height: 18px; }
+.chat-search-btn svg { width: 20px; height: 20px; }
 .chat-search-header { display: flex; align-items: center; gap: 12px; flex: 1; animation: chatSearchExpand 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes chatSearchExpand { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-.chat-search-input { flex: 1; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-lg); font-size: 15px; color: var(--text-primary); transition: all 0.2s ease; }
+.chat-search-input { flex: 1; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-full); font-size: 15px; color: var(--text-primary); transition: all 0.2s ease; }
 .chat-search-input:focus { background: rgba(255,255,255,0.05); outline: none; }
 .chat-search-input::placeholder { color: var(--text-muted); }
 .chat-search-nav { display: flex; align-items: center; gap: 4px; }
@@ -2355,10 +2364,10 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 
-.chat-slide-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.chat-slide-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.chat-slide-enter-from { opacity: 0; transform: translateX(30px); }
-.chat-slide-leave-to { opacity: 0; transform: translateX(30px); }
+.chat-slide-enter-active { transition: opacity 0.2s ease; }
+.chat-slide-leave-active { transition: opacity 0.15s ease; }
+.chat-slide-enter-from { opacity: 0; }
+.chat-slide-leave-to { opacity: 0; }
 
 .dialogs-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .dialogs-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -2674,7 +2683,12 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   }
   
   .msg-avatar {
-    display: none;
+    display: block;
+  }
+  
+  .msg-avatar .avatar-sm {
+    width: 24px;
+    height: 24px;
   }
   
   .chat-input {
@@ -3040,5 +3054,25 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
     transform: scale(0.97);
     transition: transform 0.08s cubic-bezier(0.2, 0, 0, 1);
   }
+}
+
+[data-theme="light"] .context-menu {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .context-menu-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .forward-modal {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .forward-user:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .media-viewer-overlay {
+  background: rgba(0, 0, 0, 0.9);
 }
 </style>
