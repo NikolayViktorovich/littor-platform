@@ -1118,7 +1118,7 @@ const vClickOutside = {
   background: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 .post-music:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -1157,7 +1157,7 @@ const vClickOutside = {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 .post-music:hover .play-overlay {
   opacity: 1;
@@ -1200,7 +1200,7 @@ const vClickOutside = {
   background: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 .post-file-wrap:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -1503,7 +1503,7 @@ const vClickOutside = {
 .send-inside {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.08);
-  transition: all 0.2s ease;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .send-inside:hover:not(:disabled) {
@@ -1518,8 +1518,8 @@ const vClickOutside = {
 .cancel-inside {
   color: var(--text-muted);
   background: rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
-  animation: morph-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+  animation: morph-in 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .cancel-inside:hover {
@@ -1530,7 +1530,7 @@ const vClickOutside = {
 .outside-btn-wrap {
   width: 0;
   overflow: hidden;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .comment-form.reply-mode .outside-btn-wrap {
@@ -1547,7 +1547,7 @@ const vClickOutside = {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 50%;
   flex-shrink: 0;
-  transition: background 0.2s ease, opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.1s cubic-bezier(0.2, 0, 0, 1), opacity 0.15s cubic-bezier(0.2, 0, 0, 1), transform 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .outside-btn:hover:not(:disabled) {
@@ -1577,11 +1577,11 @@ const vClickOutside = {
 }
 
 .liquid-out-enter-active {
-  animation: liquid-emerge 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: liquid-emerge 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .liquid-out-leave-active {
-  animation: liquid-merge 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: liquid-merge 0.1s cubic-bezier(0.4, 0, 1, 1);
 }
 
 @keyframes liquid-emerge {
@@ -1720,11 +1720,11 @@ const vClickOutside = {
 }
 
 .comments-enter-active {
-  transition: opacity 0.2s ease-out;
+  transition: opacity 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .comments-leave-active {
-  transition: opacity 0.15s ease-in;
+  transition: opacity 0.1s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .comments-enter-from,

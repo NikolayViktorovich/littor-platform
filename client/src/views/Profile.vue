@@ -807,59 +807,59 @@ onUnmounted(() => {
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
 .profile-menu-item:hover { background: rgba(255, 255, 255, 0.08); }
 .profile-menu-item:active { background: rgba(255, 255, 255, 0.04); }
 .profile-menu-item svg { width: 22px; height: 22px; color: var(--text-secondary); flex-shrink: 0; }
 .profile-menu-item.danger { color: #ef4444; }
 .profile-menu-item.danger svg { color: #ef4444; }
-.profile-menu-enter-active { animation: profile-menu-in 0.2s ease-out; }
-.profile-menu-leave-active { animation: profile-menu-in 0.15s ease-in reverse; }
+.profile-menu-enter-active { animation: profile-menu-in 0.15s cubic-bezier(0.2, 0, 0, 1); }
+.profile-menu-leave-active { animation: profile-menu-in 0.1s cubic-bezier(0.4, 0, 1, 1) reverse; }
 @keyframes profile-menu-in {
   from { opacity: 0; transform: scale(0.95) translateY(-8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .profile-content { max-width: 600px; margin: 0 auto; padding: 0 20px 40px; }
 .tabs-container { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
-.tab-nav-btn { display: none; width: 32px; height: 32px; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); color: var(--text-muted); flex-shrink: 0; transition: all 0.15s ease; }
+.tab-nav-btn { display: none; width: 32px; height: 32px; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); color: var(--text-muted); flex-shrink: 0; transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .tab-nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 .tab-nav-btn:active { transform: scale(0.9); }
 .tab-nav-btn svg { width: 16px; height: 16px; }
 .liquid-tabs { flex: 1; justify-content: center; display: flex; position: relative; background: rgba(255,255,255,0.03); border-radius: var(--radius-full); padding: 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
 .liquid-tabs::-webkit-scrollbar { display: none; }
-.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all 0.2s ease; position: relative; flex: 1; text-align: center; }
+.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 15px; border-radius: var(--radius-full); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); position: relative; flex: 1; text-align: center; }
 .liquid-tab:hover { color: var(--text-secondary); }
 .liquid-tab.active { color: #fff; background: rgba(255,255,255,0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
 .liquid-tab.active { color: var(--text-primary); }
 .profile-posts { display: flex; flex-direction: column; gap: 16px; }
 .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .media-item { aspect-ratio: 1; overflow: hidden; border-radius: var(--radius); cursor: pointer; position: relative; }
-.media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+.media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .media-item:hover img, .media-item:hover video { transform: scale(1.05); }
 .video-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
 .play-icon svg { width: 40px; height: 40px; color: white; }
 
 /* Audio list */
 .audio-list { display: flex; flex-direction: column; gap: 4px; }
-.audio-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); cursor: pointer; transition: background 0.2s ease; }
+.audio-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); cursor: pointer; transition: background 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .audio-list-item:hover { background: rgba(255, 255, 255, 0.06); }
 .audio-item-artwork { width: 48px; height: 48px; border-radius: var(--radius); overflow: hidden; position: relative; flex-shrink: 0; }
 .audio-item-artwork img { width: 100%; height: 100%; object-fit: cover; }
 .audio-item-artwork .artwork-placeholder { width: 100%; height: 100%; background: rgba(255, 255, 255, 0.05); display: flex; align-items: center; justify-content: center; }
 .audio-item-artwork .artwork-placeholder svg { width: 20px; height: 20px; color: var(--text-muted); }
-.audio-item-artwork .play-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s ease; }
+.audio-item-artwork .play-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .audio-list-item:hover .play-overlay, .audio-item-artwork .play-overlay.visible { opacity: 1; }
 .audio-item-artwork .play-overlay svg { width: 20px; height: 20px; color: white; }
 .audio-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .audio-item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .audio-item-artist { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.audio-add-btn, .audio-remove-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius); flex-shrink: 0; transition: all 0.15s ease; }
+.audio-add-btn, .audio-remove-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: var(--radius); flex-shrink: 0; transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .audio-add-btn:hover, .audio-remove-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
 .audio-add-btn svg, .audio-remove-btn svg { width: 16px; height: 16px; }
 .audio-section { display: flex; flex-direction: column; gap: 16px; }
 .audio-tabs { display: flex; gap: 8px; padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-full); }
-.audio-tab { flex: 1; padding: 10px 16px; font-size: 14px; color: var(--text-muted); border-radius: var(--radius-full); text-align: center; transition: all 0.15s ease; }
+.audio-tab { flex: 1; padding: 10px 16px; font-size: 14px; color: var(--text-muted); border-radius: var(--radius-full); text-align: center; transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .audio-tab:hover { color: var(--text-secondary); }
 .audio-tab.active { color: #fff; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1), 0 1px 3px rgba(0,0,0,0.2); }
 .audio-search { margin-bottom: 8px; }

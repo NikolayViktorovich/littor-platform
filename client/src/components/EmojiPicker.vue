@@ -89,7 +89,7 @@ const categories = {
 .emoji-btn {
   color: rgba(255, 255, 255, 0.4);
   padding: 4px;
-  transition: color 0.2s;
+  transition: color 0.1s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,7 +133,7 @@ const categories = {
   padding: 6px 8px;
   border-radius: 6px;
   opacity: 0.5;
-  transition: all 0.2s;
+  transition: all 0.1s;
   flex-shrink: 0;
 }
 
@@ -163,7 +163,7 @@ const categories = {
   font-size: 20px;
   padding: 6px;
   border-radius: 6px;
-  transition: background 0.15s;
+  transition: background 0.1s;
 }
 
 .emoji-grid button:hover {
@@ -171,17 +171,17 @@ const categories = {
 }
 
 .picker-enter-active {
-  animation: picker-in 0.15s ease-out;
+  animation: picker-in 0.1s ease-out;
 }
 
 .picker-leave-active {
-  animation: picker-out 0.1s ease-in;
+  animation: picker-out 0.08s ease-in;
 }
 
 @keyframes picker-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.95);
+    transform: translateY(6px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -196,7 +196,7 @@ const categories = {
   }
   to {
     opacity: 0;
-    transform: translateY(8px) scale(0.95);
+    transform: translateY(6px) scale(0.97);
   }
 }
 

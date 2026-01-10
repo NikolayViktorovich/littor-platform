@@ -344,7 +344,7 @@ onUnmounted(() => {
 .add-btn svg {
   width: 18px;
   height: 18px;
-  transition: transform 0.2s ease;
+  transition: transform 0.15s ease;
 }
 
 .add-btn.active svg {
@@ -459,13 +459,13 @@ onUnmounted(() => {
 
 .search-enter-active,
 .search-leave-active {
-  transition: all 0.15s ease;
+  transition: all 0.1s ease;
 }
 
 .search-enter-from,
 .search-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-6px);
 }
 
 .liquid-tabs {
@@ -489,7 +489,7 @@ onUnmounted(() => {
   color: var(--text-muted);
   font-size: 15px;
   border-radius: var(--radius-full);
-  transition: all 0.2s ease;
+  transition: all 0.1s ease;
   position: relative;
   display: flex;
   align-items: center;

@@ -238,7 +238,7 @@ onMounted(() => {
   font-size: 14px;
   color: var(--text-muted);
   border-radius: var(--radius-full);
-  transition: all 0.2s ease;
+  transition: all 0.1s ease;
 }
 
 .picker-tab:hover {
@@ -328,7 +328,7 @@ onMounted(() => {
   padding: 10px 12px;
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.1s ease;
 }
 
 .track-item:hover {
@@ -377,7 +377,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.1s ease;
 }
 
 .track-item:hover .play-overlay,

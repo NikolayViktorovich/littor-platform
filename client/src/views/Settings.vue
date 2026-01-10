@@ -440,18 +440,18 @@ onUnmounted(() => {
 .custom-select-item:hover { background: var(--glass-bg-hover); }
 .custom-select-item > span { font-size: 15px; color: var(--text-primary); }
 .custom-select-value { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 14px; }
-.chevron-down { width: 16px; height: 16px; transition: transform 0.2s; }
+.chevron-down { width: 16px; height: 16px; transition: transform 0.15s; }
 .custom-dropdown { position: fixed; min-width: 180px; background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 6px; z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
 .dropdown-option { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 12px 14px; border-radius: var(--radius); font-size: 14px; color: var(--text-primary); transition: background 0.1s; text-align: left; }
 .dropdown-option:hover { background: var(--glass-bg-hover); }
 .dropdown-option.active { color: var(--text-primary); }
 .check-icon { width: 18px; height: 18px; color: var(--text-primary); }
-.dropdown-enter-active, .dropdown-leave-active { transition: all 0.15s ease; }
-.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-8px); }
+.dropdown-enter-active, .dropdown-leave-active { transition: all 0.1s ease; }
+.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-6px); }
 .toggle { position: relative; width: 50px; height: 30px; cursor: pointer; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider { position: absolute; inset: 0; background: var(--glass-bg-active); border-radius: 15px; transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); }
-.toggle-slider::before { content: ''; position: absolute; width: 26px; height: 26px; left: 2px; top: 2px; background: white; border-radius: 50%; transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.toggle-slider { position: absolute; inset: 0; background: var(--glass-bg-active); border-radius: 15px; transition: all 0.15s cubic-bezier(0.2, 0, 0, 1); }
+.toggle-slider::before { content: ''; position: absolute; width: 26px; height: 26px; left: 2px; top: 2px; background: white; border-radius: 50%; transition: all 0.15s cubic-bezier(0.2, 0, 0, 1); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .toggle input:checked + .toggle-slider { background: #34c759; }
 .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
 .select-item select { background: var(--glass-bg-hover); border: 1px solid var(--glass-border); padding: 8px 12px; border-radius: var(--radius); color: var(--text-primary); font-size: 14px; cursor: pointer; }
@@ -489,10 +489,10 @@ onUnmounted(() => {
 .device-terminate svg { width: 18px; height: 18px; }
 .terminate-all-btn { width: 100%; padding: 14px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; border-radius: var(--radius-lg); font-size: 15px; font-weight: 500; transition: background 0.1s; text-align: center; }
 .terminate-all-btn:hover { background: rgba(255, 59, 48, 0.15); }
-.modal-enter-active, .modal-leave-active { transition: opacity 0.15s cubic-bezier(0.2, 0, 0, 1); }
+.modal-enter-active, .modal-leave-active { transition: opacity 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
-.modal-enter-active .settings-modal, .modal-leave-active .settings-modal { transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1); }
-.modal-enter-from .settings-modal, .modal-leave-to .settings-modal { transform: scale(0.95); }
+.modal-enter-active .settings-modal, .modal-leave-active .settings-modal { transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1); }
+.modal-enter-from .settings-modal, .modal-leave-to .settings-modal { transform: scale(0.97); }
 @media (max-width: 768px) { .settings-page { padding: 20px; padding-bottom: 100px; padding-left: 20px; } .settings-modal { max-height: 90vh; } }
 
 [data-theme="light"] .custom-dropdown { background: rgba(255, 255, 255, 0.95); box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
