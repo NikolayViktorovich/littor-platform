@@ -9,7 +9,7 @@
               <input v-model="dialogsSearchQuery" type="text" :placeholder="t('searchChats')" class="dialogs-search-input" ref="dialogsSearchInput" @keydown.esc="closeDialogsSearch">
             </div>
             <button @click="toggleDialogsSearch" class="dialogs-search-btn">
-              <svg v-if="!dialogsSearchMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <svg v-if="!dialogsSearchMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
               <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
@@ -99,7 +99,7 @@
               </button>
             </div>
             <button v-if="!selectMode && !chatSearchMode" @click="toggleChatSearch" class="chat-search-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
             </button>
           </div>
 

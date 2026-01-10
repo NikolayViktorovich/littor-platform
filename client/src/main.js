@@ -8,7 +8,9 @@ import { initSocket } from './socket'
 const savedFontSize = localStorage.getItem('fontSize')
 if (savedFontSize) {
   const sizes = { small: '14px', medium: '16px', large: '18px' }
-  document.documentElement.style.setProperty('--base-font-size', sizes[savedFontSize] || '16px')
+  const size = sizes[savedFontSize] || '16px'
+  document.documentElement.style.setProperty('--base-font-size', size)
+  document.documentElement.style.fontSize = size
 }
 
 const savedTheme = localStorage.getItem('theme')

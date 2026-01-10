@@ -110,50 +110,26 @@
 
               <template v-else-if="activeSection === 'privacy'">
                 <div class="settings-group">
-                  <div class="custom-select-item" @click="toggleDropdown('lastSeen')">
+                  <div class="custom-select-item" @click="toggleDropdown('lastSeen', $event)">
                     <span>{{ t('whoSeesLastSeen') }}</span>
                     <div class="custom-select-value">
                       <span>{{ getPrivacyLabel(settings.lastSeenVisibility, 'lastSeen') }}</span>
                       <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                     </div>
-                    <Transition name="dropdown">
-                      <div v-if="openDropdown === 'lastSeen'" class="custom-dropdown" @click.stop>
-                        <button v-for="opt in lastSeenOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.lastSeenVisibility === opt.value }" @click="selectOption('lastSeenVisibility', opt.value)">
-                          <span>{{ opt.label }}</span>
-                          <svg v-if="settings.lastSeenVisibility === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-                        </button>
-                      </div>
-                    </Transition>
                   </div>
-                  <div class="custom-select-item" @click="toggleDropdown('whoCanMessage')">
+                  <div class="custom-select-item" @click="toggleDropdown('whoCanMessage', $event)">
                     <span>{{ t('whoCanMessage') }}</span>
                     <div class="custom-select-value">
                       <span>{{ getPrivacyLabel(settings.whoCanMessage, 'message') }}</span>
                       <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                     </div>
-                    <Transition name="dropdown">
-                      <div v-if="openDropdown === 'whoCanMessage'" class="custom-dropdown" @click.stop>
-                        <button v-for="opt in messageOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.whoCanMessage === opt.value }" @click="selectOption('whoCanMessage', opt.value)">
-                          <span>{{ opt.label }}</span>
-                          <svg v-if="settings.whoCanMessage === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-                        </button>
-                      </div>
-                    </Transition>
                   </div>
-                  <div class="custom-select-item" @click="toggleDropdown('profileVisibility')">
+                  <div class="custom-select-item" @click="toggleDropdown('profileVisibility', $event)">
                     <span>{{ t('whoSeesProfile') }}</span>
                     <div class="custom-select-value">
                       <span>{{ getPrivacyLabel(settings.profileVisibility, 'profile') }}</span>
                       <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                     </div>
-                    <Transition name="dropdown">
-                      <div v-if="openDropdown === 'profileVisibility'" class="custom-dropdown" @click.stop>
-                        <button v-for="opt in profileOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.profileVisibility === opt.value }" @click="selectOption('profileVisibility', opt.value)">
-                          <span>{{ opt.label }}</span>
-                          <svg v-if="settings.profileVisibility === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-                        </button>
-                      </div>
-                    </Transition>
                   </div>
                 </div>
               </template>
@@ -179,20 +155,12 @@
                   </div>
                 </div>
                 <div class="settings-group">
-                  <div class="custom-select-item" @click="toggleDropdown('fontSize')">
+                  <div class="custom-select-item" @click="toggleDropdown('fontSize', $event)">
                     <span>{{ t('fontSize') }}</span>
                     <div class="custom-select-value">
                       <span>{{ getFontSizeLabel(settings.fontSize) }}</span>
                       <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                     </div>
-                    <Transition name="dropdown">
-                      <div v-if="openDropdown === 'fontSize'" class="custom-dropdown" @click.stop>
-                        <button v-for="opt in fontSizeOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.fontSize === opt.value }" @click="selectFontSize(opt.value)">
-                          <span>{{ opt.label }}</span>
-                          <svg v-if="settings.fontSize === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-                        </button>
-                      </div>
-                    </Transition>
                   </div>
                   <div class="toggle-item">
                     <span>{{ t('animations') }}</span>
@@ -215,11 +183,47 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Dropdown menus teleported to body -->
+    <Teleport to="body">
+      <Transition name="dropdown">
+        <div v-if="openDropdown === 'lastSeen'" class="custom-dropdown" :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }" @click.stop>
+          <button v-for="opt in lastSeenOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.lastSeenVisibility === opt.value }" @click="selectOption('lastSeenVisibility', opt.value)">
+            <span>{{ opt.label }}</span>
+            <svg v-if="settings.lastSeenVisibility === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+        </div>
+      </Transition>
+      <Transition name="dropdown">
+        <div v-if="openDropdown === 'whoCanMessage'" class="custom-dropdown" :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }" @click.stop>
+          <button v-for="opt in messageOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.whoCanMessage === opt.value }" @click="selectOption('whoCanMessage', opt.value)">
+            <span>{{ opt.label }}</span>
+            <svg v-if="settings.whoCanMessage === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+        </div>
+      </Transition>
+      <Transition name="dropdown">
+        <div v-if="openDropdown === 'profileVisibility'" class="custom-dropdown" :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }" @click.stop>
+          <button v-for="opt in profileOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.profileVisibility === opt.value }" @click="selectOption('profileVisibility', opt.value)">
+            <span>{{ opt.label }}</span>
+            <svg v-if="settings.profileVisibility === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+        </div>
+      </Transition>
+      <Transition name="dropdown">
+        <div v-if="openDropdown === 'fontSize'" class="custom-dropdown" :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }" @click.stop>
+          <button v-for="opt in fontSizeOptions" :key="opt.value" class="dropdown-option" :class="{ active: settings.fontSize === opt.value }" @click="selectFontSize(opt.value)">
+            <span>{{ opt.label }}</span>
+            <svg v-if="settings.fontSize === opt.value" class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from '../i18n'
 import api from '../api'
 
@@ -266,8 +270,21 @@ function getFontSizeLabel(value) {
   return t('medium')
 }
 
-function toggleDropdown(name) {
-  openDropdown.value = openDropdown.value === name ? null : name
+const dropdownPosition = ref({ top: 0, left: 0 })
+
+function toggleDropdown(name, event) {
+  if (openDropdown.value === name) {
+    openDropdown.value = null
+    return
+  }
+  openDropdown.value = name
+  if (event) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    dropdownPosition.value = {
+      top: rect.bottom + 8,
+      left: Math.min(rect.right - 180, window.innerWidth - 200)
+    }
+  }
 }
 
 function selectOption(key, value) {
@@ -366,7 +383,9 @@ function applyTheme(theme) {
 
 function applyFontSize() {
   const sizes = { small: '14px', medium: '16px', large: '18px' }
-  document.documentElement.style.setProperty('--base-font-size', sizes[settings.fontSize] || '16px')
+  const size = sizes[settings.fontSize] || '16px'
+  document.documentElement.style.setProperty('--base-font-size', size)
+  document.documentElement.style.fontSize = size
   localStorage.setItem('fontSize', settings.fontSize)
 }
 
@@ -407,8 +426,20 @@ async function saveSettings() {
   saveTimeout = setTimeout(async () => { try { await api.put('/users/settings', settings) } catch {} }, 500)
 }
 
+function handleClickOutside(e) {
+  if (openDropdown.value && !e.target.closest('.custom-dropdown') && !e.target.closest('.custom-select-item')) {
+    openDropdown.value = null
+  }
+}
+
 watch(settings, saveSettings, { deep: true })
-onMounted(loadSettings)
+onMounted(() => {
+  loadSettings()
+  document.addEventListener('click', handleClickOutside)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -451,7 +482,7 @@ onMounted(loadSettings)
 .custom-select-item > span { font-size: 15px; color: var(--text-primary); }
 .custom-select-value { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 14px; }
 .chevron-down { width: 16px; height: 16px; transition: transform 0.2s; }
-.custom-dropdown { position: absolute; top: 100%; right: 0; min-width: 180px; background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 6px; z-index: 10; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.custom-dropdown { position: fixed; min-width: 180px; background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 6px; z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
 .dropdown-option { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 12px 14px; border-radius: var(--radius); font-size: 14px; color: var(--text-primary); transition: background 0.1s; text-align: left; }
 .dropdown-option:hover { background: var(--glass-bg-hover); }
 .dropdown-option.active { color: #5b9aff; }
