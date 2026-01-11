@@ -417,18 +417,18 @@ onUnmounted(() => {
 
 <style scoped>
 .settings-page { min-height: 100vh; padding: 20px; padding-left: calc(var(--sidebar-width) + 20px); display: flex; justify-content: center; align-items: flex-start; }
-.settings-container { max-width: 500px; width: 100%; }
+.settings-container { max-width: 500px; width: 100%; background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); }
 .settings-header { display: flex; align-items: center; gap: 16px; padding: 20px; border-bottom: 1px solid var(--glass-border); }
 .settings-header h1 { font-size: 20px; font-weight: 600; margin: 0; }
-.back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-full); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); flex-shrink: 0; }
+.back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-full); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); flex-shrink: 0; background: var(--glass-bg); border: 1px solid var(--glass-border); }
 .back-btn:hover { background: var(--glass-bg-hover); color: var(--text-primary); }
-.back-btn:active { transform: scale(0.9); }
+.back-btn:active { transform: scale(0.88); }
 .back-btn svg { width: 24px; height: 24px; }
 .settings-content { padding: 12px; }
 .settings-section { display: flex; flex-direction: column; gap: 4px; }
 .settings-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-lg); cursor: pointer; transition: background 0.1s cubic-bezier(0.2, 0, 0, 1); }
-.settings-item:hover { background: var(--glass-bg-hover); }
-.settings-item:active { background: var(--glass-bg-active); }
+.settings-item:hover { background: rgba(255, 255, 255, 0.06); }
+.settings-item:active { background: rgba(255, 255, 255, 0.1); transform: scale(0.98); }
 .settings-icon { width: 36px; height: 36px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .settings-icon svg { width: 20px; height: 20px; color: white; }
 .settings-icon.orange { background: #ff9500; }
@@ -440,14 +440,14 @@ onUnmounted(() => {
 .settings-value { font-size: 14px; color: var(--text-muted); }
 .chevron { width: 18px; height: 18px; color: var(--text-muted); flex-shrink: 0; }
 .settings-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.settings-modal { width: 100%; max-width: 440px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+.settings-modal { width: 100%; max-width: 440px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); }
 .modal-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--glass-border); }
 .modal-header h2 { font-size: 18px; font-weight: 600; margin: 0; }
 .modal-content { flex: 1; overflow-y: auto; padding: 16px; }
 .loading-state { display: flex; justify-content: center; align-items: center; padding: 40px; }
 .spinner { width: 24px; height: 24px; border: 2px solid var(--glass-border); border-top-color: var(--text-secondary); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.settings-group { background: var(--glass-bg); border-radius: var(--radius-lg); padding: 4px; margin-bottom: 16px; }
+.settings-group { background: rgba(255, 255, 255, 0.04); border-radius: var(--radius-lg); padding: 4px; margin-bottom: 16px; }
 .toggle-item, .select-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; gap: 12px; }
 .toggle-item span, .select-item span { font-size: 15px; color: var(--text-primary); }
 .toggle-item-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }

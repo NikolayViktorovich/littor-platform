@@ -23,7 +23,7 @@ function parseMedia(mediaJson) {
 
 function mapPost(p) {
   const media = parseMedia(p.media)
-  return {
+  const result = {
     id: p.id,
     content: p.content,
     image: p.image,
@@ -36,12 +36,29 @@ function mapPost(p) {
     createdAt: p.createdAt,
     likesCount: p.likesCount,
     commentsCount: p.commentsCount,
+    repostsCount: p.repostsCount || 0,
     isLiked: !!p.isLiked,
     isPinned: !!p.isPinned,
     isArchived: !!p.isArchived,
     commentsDisabled: !!p.commentsDisabled,
     author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
   }
+  
+  if (p.originalPostId) {
+    result.originalPost = {
+      id: p.originalPostId,
+      content: p.originalContent,
+      image: p.originalImage,
+      media: parseMedia(p.originalMedia),
+      author: {
+        id: p.originalAuthorId,
+        name: p.originalAuthorName,
+        avatar: p.originalAuthorAvatar
+      }
+    }
+  }
+  
+  return result
 }
 
 router.get('/archived', authMiddleware, (req, res) => {
@@ -76,9 +93,13 @@ router.get('/', authMiddleware, (req, res) => {
     SELECT p.*, u.name as authorName, u.avatar as authorAvatar,
       (SELECT COUNT(*) FROM likes WHERE postId = p.id) as likesCount,
       (SELECT COUNT(*) FROM comments WHERE postId = p.id) as commentsCount,
-      EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked
+      EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked,
+      op.id as originalPostId, op.content as originalContent, op.image as originalImage, op.media as originalMedia,
+      ou.id as originalAuthorId, ou.name as originalAuthorName, ou.avatar as originalAuthorAvatar
     FROM posts p
     JOIN users u ON p.authorId = u.id
+    LEFT JOIN posts op ON p.originalPostId = op.id
+    LEFT JOIN users ou ON op.authorId = ou.id
     WHERE (p.isArchived = 0 OR p.isArchived IS NULL)
       AND (p.authorId = ? 
         OR p.authorId IN (
@@ -93,6 +114,28 @@ router.get('/', authMiddleware, (req, res) => {
   const result = posts.slice(0, limit).map(mapPost)
 
   res.json({ posts: result, hasMore })
+})
+
+router.get('/:id', authMiddleware, (req, res) => {
+  const post = db.prepare(`
+    SELECT p.*, u.name as authorName, u.avatar as authorAvatar,
+      (SELECT COUNT(*) FROM likes WHERE postId = p.id) as likesCount,
+      (SELECT COUNT(*) FROM comments WHERE postId = p.id) as commentsCount,
+      EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked,
+      op.id as originalPostId, op.content as originalContent, op.image as originalImage, op.media as originalMedia,
+      ou.id as originalAuthorId, ou.name as originalAuthorName, ou.avatar as originalAuthorAvatar
+    FROM posts p
+    JOIN users u ON p.authorId = u.id
+    LEFT JOIN posts op ON p.originalPostId = op.id
+    LEFT JOIN users ou ON op.authorId = ou.id
+    WHERE p.id = ?
+  `).get(req.userId, req.params.id)
+
+  if (!post) {
+    return res.status(404).json({ error: 'Пост не найден' })
+  }
+
+  res.json(mapPost(post))
 })
 
 router.post('/', authMiddleware, upload.array('media', 10), (req, res) => {
@@ -199,7 +242,7 @@ function getMediaType(mimetype) {
 }
 
 router.delete('/:id', authMiddleware, (req, res) => {
-  const post = db.prepare('SELECT authorId FROM posts WHERE id = ?').get(req.params.id)
+  const post = db.prepare('SELECT authorId, originalPostId FROM posts WHERE id = ?').get(req.params.id)
 
   if (!post) {
     return res.status(404).json({ error: 'Пост не найден' })
@@ -209,8 +252,13 @@ router.delete('/:id', authMiddleware, (req, res) => {
     return res.status(403).json({ error: 'Нет доступа' })
   }
 
+  if (post.originalPostId) {
+    db.prepare('UPDATE posts SET repostsCount = MAX(0, COALESCE(repostsCount, 0) - 1) WHERE id = ?')
+      .run(post.originalPostId)
+  }
+
   db.prepare('DELETE FROM posts WHERE id = ?').run(req.params.id)
-  res.json({ success: true })
+  res.json({ success: true, originalPostId: post.originalPostId })
 })
 
 router.post('/:id/pin', authMiddleware, (req, res) => {
@@ -430,6 +478,180 @@ router.delete('/comments/:id', authMiddleware, (req, res) => {
   } catch (err) {
     console.error('Error deleting comment:', err)
     res.status(500).json({ error: 'Ошибка удаления комментария' })
+  }
+})
+
+router.post('/:id/repost', authMiddleware, (req, res) => {
+  try {
+    const { comment } = req.body
+    
+    const targetPost = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id)
+    if (!targetPost) {
+      return res.status(404).json({ error: 'Пост не найден' })
+    }
+
+    let rootPostId = req.params.id
+    let rootPost = targetPost
+    if (targetPost.originalPostId) {
+      let currentPost = targetPost
+      while (currentPost.originalPostId) {
+        const parent = db.prepare('SELECT * FROM posts WHERE id = ?').get(currentPost.originalPostId)
+        if (!parent) break
+        rootPost = parent
+        rootPostId = parent.id
+        currentPost = parent
+      }
+    }
+    
+    const id = uuid()
+    const createdAt = new Date().toISOString()
+    
+    db.prepare(`
+      INSERT INTO posts (id, authorId, content, originalPostId, createdAt)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, req.userId, comment || null, rootPostId, createdAt)
+
+    db.prepare('UPDATE posts SET repostsCount = COALESCE(repostsCount, 0) + 1 WHERE id = ?')
+      .run(rootPostId)
+    
+    const user = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId)
+    const rootAuthor = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(rootPost.authorId)
+    
+    const post = {
+      id,
+      content: comment || null,
+      createdAt,
+      likesCount: 0,
+      commentsCount: 0,
+      repostsCount: 0,
+      isLiked: false,
+      author: user,
+      originalPost: {
+        id: rootPost.id,
+        content: rootPost.content,
+        image: rootPost.image,
+        media: parseMedia(rootPost.media),
+        author: rootAuthor
+      }
+    }
+    
+    if (rootPost.authorId !== req.userId) {
+      const notifId = uuid()
+      db.prepare(`INSERT INTO notifications (id, userId, type, fromUserId, postId, content, createdAt) VALUES (?, ?, 'repost', ?, ?, ?, ?)`)
+        .run(notifId, rootPost.authorId, req.userId, rootPostId, `${user.name} репостнул ваш пост`, createdAt)
+      
+      const io = req.app.get('io')
+      io.to(`user:${rootPost.authorId}`).emit('notification:new', {
+        id: notifId,
+        type: 'repost',
+        fromUserId: req.userId,
+        fromUserName: user.name,
+        fromUserAvatar: user.avatar,
+        postId: rootPostId,
+        content: `${user.name} репостнул ваш пост`,
+        createdAt
+      })
+    }
+    
+    res.json(post)
+  } catch (err) {
+    console.error('Error reposting:', err)
+    res.status(500).json({ error: 'Ошибка репоста' })
+  }
+})
+
+router.post('/:id/share', authMiddleware, upload.array('media', 10), (req, res) => {
+  try {
+    let userIds = req.body.userIds
+    if (typeof userIds === 'string') {
+      try { userIds = JSON.parse(userIds) } catch { userIds = [] }
+    }
+    
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'Выберите получателей' })
+    }
+    
+    let post = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id)
+    if (!post) {
+      return res.status(404).json({ error: 'Пост не найден' })
+    }
+    
+    let rootPost = post
+    let rootPostId = req.params.id
+    if (post.originalPostId) {
+      let currentPost = post
+      while (currentPost.originalPostId) {
+        const parent = db.prepare('SELECT * FROM posts WHERE id = ?').get(currentPost.originalPostId)
+        if (!parent) break
+        rootPost = parent
+        rootPostId = parent.id
+        currentPost = parent
+      }
+    }
+    
+    const user = db.prepare('SELECT id, name, avatar FROM users WHERE id = ?').get(req.userId)
+    const postAuthor = db.prepare('SELECT name FROM users WHERE id = ?').get(rootPost.authorId)
+    const io = req.app.get('io')
+    const createdAt = new Date().toISOString()
+    const customMessage = req.body.message || ''
+
+    const files = req.files || []
+    let mediaUrl = null
+    let mediaType = null
+    let fileName = null
+    let fileSize = null
+    
+    if (files.length > 0) {
+      mediaUrl = `/uploads/${files[0].filename}`
+      mediaType = getMediaType(files[0].mimetype)
+      fileName = files[0].originalname
+      fileSize = files[0].size
+    }
+    
+    const musicTrackId = req.body.musicTrackId || null
+    const musicTitle = req.body.musicTitle || null
+    const musicArtist = req.body.musicArtist || null
+    const musicArtwork = req.body.musicArtwork || null
+    
+    userIds.forEach(userId => {
+      const blocked = db.prepare(`
+        SELECT 1 FROM blocks 
+        WHERE (blockerId = ? AND blockedId = ?) OR (blockerId = ? AND blockedId = ?)
+      `).get(req.userId, userId, userId, req.userId)
+      
+      if (!blocked) {
+        const msgId = uuid()
+        db.prepare(`
+          INSERT INTO messages (id, senderId, receiverId, content, sharedPostId, media, mediaType, fileName, fileSize, musicTrackId, musicTitle, musicArtist, musicArtwork, createdAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(msgId, req.userId, userId, customMessage || null, rootPostId, mediaUrl, mediaType, fileName, fileSize, musicTrackId, musicTitle, musicArtist, musicArtwork, createdAt)
+        
+        const message = {
+          id: msgId,
+          senderId: req.userId,
+          receiverId: userId,
+          content: customMessage || null,
+          sharedPostId: rootPostId,
+          media: mediaUrl,
+          mediaType,
+          fileName,
+          fileSize,
+          musicTrackId,
+          musicTitle,
+          musicArtist,
+          musicArtwork,
+          isRead: 0,
+          createdAt
+        }
+        
+        io.to(`user:${userId}`).emit('message:new', message)
+      }
+    })
+    
+    res.json({ success: true })
+  } catch (err) {
+    console.error('Error sharing post:', err)
+    res.status(500).json({ error: 'Ошибка отправки' })
   }
 })
 

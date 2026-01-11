@@ -139,9 +139,9 @@
         <div v-if="!photos.length" class="empty-state glass"><p>{{ t('noPhotos') }}</p></div>
       </div>
 
-      <div v-else-if="activeTab === 'videos'" class="media-grid">
+      <div v-else-if="activeTab === 'videos'" class="media-grid videos-grid">
         <div v-for="(video, idx) in videos" :key="video.id" class="media-item video-item" @click="openMedia(video.video, 'video', idx, videos.map(v => ({ src: v.video, type: 'video' })))">
-          <video :src="video.video" muted></video>
+          <video :src="video.video" muted preload="metadata"></video>
           <div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
         </div>
         <div v-if="!videos.length" class="empty-state glass"><p>{{ t('noVideos') }}</p></div>
@@ -231,15 +231,89 @@
         </div>
       </Transition>
 
+      <!-- Media Viewer - Liquid Glass -->
       <Transition name="modal">
-        <div v-if="showMediaViewer" class="media-viewer-overlay" @click.self="closeMedia">
-          <button class="viewer-close" @click="closeMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-          <button v-if="mediaList.length > 1" class="viewer-nav prev" @click="prevMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <div class="viewer-content">
-            <img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt="">
-            <video v-else :src="mediaViewerSrc" controls autoplay></video>
+        <div v-if="showMediaViewer" class="media-viewer-overlay" @click="closeMedia" @mousemove="showProfileControls" @touchstart="showProfileControls">
+          <!-- Floating top controls -->
+          <div class="viewer-floating-top" @click.stop>
+            <button class="viewer-glass-btn" @click="closeMedia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="viewer-glass-pill" v-if="mediaList.length > 1">
+              <span>{{ mediaIndex + 1 }} / {{ mediaList.length }}</span>
+            </div>
+            <button class="viewer-glass-btn" @click="downloadCurrentMedia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            </button>
           </div>
-          <button v-if="mediaList.length > 1" class="viewer-nav next" @click="nextMedia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+          
+          <!-- Navigation arrows -->
+          <button v-if="mediaList.length > 1 && mediaIndex > 0" class="viewer-nav-glass prev" @click.stop="prevMedia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          
+          <div class="media-viewer-content" @click="closeMedia">
+            <img v-if="mediaViewerType === 'image'" :src="mediaViewerSrc" alt="" @click.stop>
+            <video 
+              v-else
+              ref="profileVideoRef"
+              :src="mediaViewerSrc" 
+              class="video-player-video"
+              @loadedmetadata="onProfileVideoMeta"
+              @timeupdate="onProfileVideoTime"
+              @ended="onProfileVideoEnded"
+              @click.stop="toggleProfileVideoPlay"
+              playsinline
+            ></video>
+          </div>
+          
+          <button v-if="mediaList.length > 1 && mediaIndex < mediaList.length - 1" class="viewer-nav-glass next" @click.stop="nextMedia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          
+          <!-- Video controls (only for video) -->
+          <div v-if="mediaViewerType === 'video'" class="video-floating-bottom" :class="{ hidden: profileControlsHidden }" @click.stop>
+            <div class="video-progress-glass" @mousedown="startProfileSeek" @touchstart.prevent="startProfileSeek">
+              <div class="video-progress-track">
+                <div class="video-progress-fill" :style="{ width: profileVideoProgress + '%' }"></div>
+              </div>
+              <div class="video-progress-thumb" :style="{ left: profileVideoProgress + '%' }"></div>
+            </div>
+            
+            <div class="video-controls-row">
+              <button class="viewer-glass-btn small" @click="skipProfileVideo(-10)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 3C17.15 3 21.08 6.03 22.47 10.22L20.1 11C19.05 7.81 16.04 5.5 12.5 5.5C10.54 5.5 8.77 6.22 7.38 7.38L10 10H3V3L5.6 5.6C7.45 4 9.85 3 12.5 3M10 12V22H8V14H6V12H10M18 14V20C18 21.11 17.11 22 16 22H14C12.9 22 12 21.1 12 20V14C12 12.9 12.9 12 14 12H16C17.11 12 18 12.9 18 14M14 14V20H16V14H14Z"/></svg>
+              </button>
+              <button class="viewer-glass-btn play-btn" @click="toggleProfileVideoPlay">
+                <svg v-if="!profileVideoPlaying" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+                <svg v-else viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              </button>
+              <button class="viewer-glass-btn small" @click="skipProfileVideo(10)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 3C6.85 3 2.92 6.03 1.53 10.22L3.9 11C4.95 7.81 7.96 5.5 11.5 5.5C13.46 5.5 15.23 6.22 16.62 7.38L14 10H21V3L18.4 5.6C16.55 4 14.15 3 11.5 3M10 12V22H8V14H6V12H10M18 14V20C18 21.11 17.11 22 16 22H14C12.9 22 12 21.1 12 20V14C12 12.9 12.9 12 14 12H16C17.11 12 18 12.9 18 14M14 14V20H16V14H14Z"/></svg>
+              </button>
+              <button class="viewer-glass-btn speed-btn" @click="cycleProfileSpeed">
+                <span>{{ profilePlaybackSpeed }}x</span>
+              </button>
+              <button class="viewer-glass-btn" @click="toggleProfileFullscreen">
+                <svg v-if="!profileIsFullscreen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Image info (only for images) -->
+          <div v-else class="viewer-floating-bottom image-viewer-bottom" @click.stop>
+            <button class="viewer-glass-btn" @click="shareCurrentMedia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            </button>
+            <div class="viewer-glass-info">
+              <span class="viewer-info-name">{{ user?.name }}</span>
+              <span class="viewer-info-date">{{ formatViewerDate(photos[mediaIndex]?.createdAt) }}</span>
+            </div>
+            <button class="viewer-glass-btn" @click="downloadCurrentMedia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            </button>
+          </div>
         </div>
       </Transition>
     </Teleport>
@@ -316,6 +390,184 @@ const mediaViewerSrc = ref('')
 const mediaViewerType = ref('image')
 const mediaIndex = ref(0)
 const mediaList = ref([])
+
+const profileVideoRef = ref(null)
+const profileVideoPlaying = ref(false)
+const profileVideoCurrentTime = ref(0)
+const profileVideoDuration = ref(0)
+const profileVideoProgress = ref(0)
+const profileControlsHidden = ref(false)
+const profileIsSeeking = ref(false)
+const profilePlaybackSpeed = ref(1)
+const profileIsFullscreen = ref(false)
+let profileControlsTimeout = null
+let profileSeekingBar = null
+
+function handleViewerClick(e) {
+  if (e.target.classList.contains('media-viewer-overlay')) {
+    closeMedia()
+  }
+}
+
+function handleContentClick(e) {
+  if (e.target.classList.contains('media-viewer-content')) {
+    closeMedia()
+  }
+}
+
+function onProfileVideoMeta() {
+  if (profileVideoRef.value) {
+    profileVideoDuration.value = profileVideoRef.value.duration
+    profileVideoRef.value.play()
+    profileVideoPlaying.value = true
+    resetProfileControlsTimeout()
+  }
+}
+
+function onProfileVideoTime() {
+  if (profileVideoRef.value && !profileIsSeeking.value) {
+    profileVideoCurrentTime.value = profileVideoRef.value.currentTime
+    profileVideoProgress.value = (profileVideoRef.value.currentTime / profileVideoRef.value.duration) * 100
+  }
+}
+
+function onProfileVideoEnded() {
+  profileVideoPlaying.value = false
+  profileControlsHidden.value = false
+}
+
+function toggleProfileVideoPlay() {
+  if (!profileVideoRef.value) return
+  if (profileVideoRef.value.paused) {
+    profileVideoRef.value.play()
+    profileVideoPlaying.value = true
+  } else {
+    profileVideoRef.value.pause()
+    profileVideoPlaying.value = false
+  }
+  resetProfileControlsTimeout()
+}
+
+function skipProfileVideo(seconds) {
+  if (!profileVideoRef.value) return
+  profileVideoRef.value.currentTime = Math.max(0, Math.min(profileVideoRef.value.duration, profileVideoRef.value.currentTime + seconds))
+  resetProfileControlsTimeout()
+}
+
+function seekProfileVideo(e) {
+  if (!profileVideoRef.value) return
+  const rect = e.currentTarget.getBoundingClientRect()
+  const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+  profileVideoRef.value.currentTime = percent * profileVideoRef.value.duration
+  profileVideoProgress.value = percent * 100
+  resetProfileControlsTimeout()
+}
+
+function startProfileSeek(e) {
+  e.preventDefault()
+  e.stopPropagation()
+  profileIsSeeking.value = true
+  profileSeekingBar = e.currentTarget
+  
+  const updateSeek = (clientX) => {
+    if (!profileVideoRef.value || !profileSeekingBar) return
+    const rect = profileSeekingBar.getBoundingClientRect()
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    profileVideoProgress.value = percent * 100
+    profileVideoRef.value.currentTime = percent * profileVideoRef.value.duration
+  }
+  
+  const onMove = (moveEvent) => {
+    const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
+    updateSeek(clientX)
+    resetProfileControlsTimeout()
+  }
+  
+  const onEnd = () => {
+    profileIsSeeking.value = false
+    profileSeekingBar = null
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onEnd)
+    document.removeEventListener('touchmove', onMove)
+    document.removeEventListener('touchend', onEnd)
+  }
+  
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onEnd)
+  document.addEventListener('touchmove', onMove, { passive: false })
+  document.addEventListener('touchend', onEnd)
+  
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  updateSeek(clientX)
+  resetProfileControlsTimeout()
+}
+
+function cycleProfileSpeed() {
+  const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
+  const currentIndex = speeds.indexOf(profilePlaybackSpeed.value)
+  profilePlaybackSpeed.value = speeds[(currentIndex + 1) % speeds.length]
+  if (profileVideoRef.value) {
+    profileVideoRef.value.playbackRate = profilePlaybackSpeed.value
+  }
+  resetProfileControlsTimeout()
+}
+
+function toggleProfileFullscreen() {
+  const container = document.querySelector('.media-viewer-overlay')
+  if (!document.fullscreenElement) {
+    container?.requestFullscreen()
+    profileIsFullscreen.value = true
+  } else {
+    document.exitFullscreen()
+    profileIsFullscreen.value = false
+  }
+  resetProfileControlsTimeout()
+}
+
+function resetProfileControlsTimeout() {
+  profileControlsHidden.value = false
+  clearTimeout(profileControlsTimeout)
+  if (profileVideoPlaying.value) {
+    profileControlsTimeout = setTimeout(() => {
+      profileControlsHidden.value = true
+    }, 3000)
+  }
+}
+
+function showProfileControls() {
+  resetProfileControlsTimeout()
+}
+
+function formatVideoTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function downloadCurrentMedia() {
+  const link = document.createElement('a')
+  link.href = mediaViewerSrc.value
+  link.download = mediaViewerType.value === 'image' ? 'photo.jpg' : 'video.mp4'
+  link.click()
+}
+
+function shareCurrentMedia() {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Фото',
+      url: mediaViewerSrc.value
+    }).catch(() => {})
+  } else {
+    navigator.clipboard.writeText(mediaViewerSrc.value)
+  }
+}
+
+function formatViewerDate(date) {
+  if (!date) return ''
+  const d = new Date(date)
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 function setTab(tab) {
   if (tab === activeTab.value) return
@@ -568,10 +820,47 @@ function updatePost(updated) {
   }
 }
 
-function openMedia(src, type, idx = 0, list = []) { mediaViewerSrc.value = src; mediaViewerType.value = type; mediaIndex.value = idx; mediaList.value = list; showMediaViewer.value = true }
-function closeMedia() { showMediaViewer.value = false }
-function prevMedia() { if (mediaIndex.value > 0) { mediaIndex.value--; const item = mediaList.value[mediaIndex.value]; mediaViewerSrc.value = item.src; mediaViewerType.value = item.type } }
-function nextMedia() { if (mediaIndex.value < mediaList.value.length - 1) { mediaIndex.value++; const item = mediaList.value[mediaIndex.value]; mediaViewerSrc.value = item.src; mediaViewerType.value = item.type } }
+function openMedia(src, type, idx = 0, list = []) { 
+  mediaViewerSrc.value = src
+  mediaViewerType.value = type
+  mediaIndex.value = idx
+  mediaList.value = list
+  showMediaViewer.value = true
+  profileVideoPlaying.value = false
+  profileVideoCurrentTime.value = 0
+  profileVideoProgress.value = 0
+  profileControlsHidden.value = false
+}
+function closeMedia() { 
+  showMediaViewer.value = false
+  if (profileVideoRef.value) {
+    profileVideoRef.value.pause()
+  }
+  profileVideoPlaying.value = false
+  clearTimeout(profileControlsTimeout)
+}
+function prevMedia() { 
+  if (mediaIndex.value > 0) { 
+    mediaIndex.value--
+    const item = mediaList.value[mediaIndex.value]
+    mediaViewerSrc.value = item.src
+    mediaViewerType.value = item.type
+    profileVideoPlaying.value = false
+    profileVideoCurrentTime.value = 0
+    profileVideoProgress.value = 0
+  } 
+}
+function nextMedia() { 
+  if (mediaIndex.value < mediaList.value.length - 1) { 
+    mediaIndex.value++
+    const item = mediaList.value[mediaIndex.value]
+    mediaViewerSrc.value = item.src
+    mediaViewerType.value = item.type
+    profileVideoPlaying.value = false
+    profileVideoCurrentTime.value = 0
+    profileVideoProgress.value = 0
+  } 
+}
 
 async function fetchFriends() {
   const id = route.params.id || authStore.user?.id
@@ -738,25 +1027,29 @@ onUnmounted(() => {
 <style scoped>
 .profile-page { min-height: 100vh; padding-left: var(--sidebar-width); }
 .profile-header { position: relative; padding: 20px; }
-.back-btn { position: absolute; top: 32px; left: 32px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10; color: var(--text-primary); background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: var(--radius-xl); }
+.back-btn { position: absolute; top: 32px; left: 32px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10; color: var(--text-primary); background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-full); transition: all 0.1s ease; }
+.back-btn:active { transform: scale(0.88); }
 .back-btn svg { width: 20px; height: 20px; }
 .profile-cover { height: 200px; border-radius: var(--radius-2xl); overflow: hidden; position: relative; background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%); transition: background-image 0.3s ease; }
 .profile-cover.cover-removing { animation: coverFadeOut 0.3s ease forwards; }
 @keyframes coverFadeOut { from { opacity: 1; } to { opacity: 0.5; background-image: none; } }
 .cover-gradient { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5)); }
-.cover-edit { position: absolute; bottom: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); z-index: 20; }
-.cover-edit:hover { background: rgba(0,0,0,0.7); }
+.cover-edit { position: absolute; bottom: 16px; right: 16px; width: 40px; height: 40px; background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); z-index: 20; opacity: 0.7; }
+.cover-edit:hover { background: var(--glass-bg-hover); opacity: 1; }
+.cover-edit:active { transform: scale(0.88); }
 .cover-edit svg { width: 20px; height: 20px; color: white; }
-.cover-delete { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; background: rgba(0,0,0,0.3); border: none; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); z-index: 20; opacity: 0.5; }
-.cover-delete:hover { background: rgba(0,0,0,0.6); opacity: 1; }
+.cover-delete { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition); z-index: 20; opacity: 0.7; }
+.cover-delete:hover { opacity: 1; }
+.cover-delete:active { transform: scale(0.88); }
 .cover-delete svg { width: 18px; height: 18px; color: white; }
 .cover-btn-enter-active, .cover-btn-leave-active { transition: all 0.15s ease; }
 .cover-btn-enter-from, .cover-btn-leave-to { opacity: 0; transform: scale(0.8); }
-.profile-info { max-width: 700px; margin: -60px auto 0; padding: 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; background: rgba(18, 18, 18, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: var(--radius-xl); }
+.profile-info { max-width: 700px; margin: -60px auto 0; padding: 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); }
 .profile-avatar-wrap { position: relative; flex-shrink: 0; }
 .avatar-xl { border: 4px solid var(--bg-primary); }
-.avatar-edit { position: absolute; bottom: 4px; right: 4px; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.avatar-edit:hover { background: rgba(255, 255, 255, 0.08); }
+.avatar-edit { position: absolute; bottom: 4px; right: 4px; width: 36px; height: 36px; background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s ease; }
+.avatar-edit:hover { background: var(--glass-bg-hover); }
+.avatar-edit:active { transform: scale(0.88); }
 .avatar-edit svg { width: 16px; height: 16px; color: var(--text-secondary); }
 .profile-details { flex: 1; min-width: 200px; }
 .profile-details h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
@@ -768,26 +1061,27 @@ onUnmounted(() => {
 .meta-item { color: var(--text-muted); font-size: 14px; }
 .profile-actions { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
 .mobile-settings-btn { display: none; }
-.btn-icon { width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; }
+.btn-icon { width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-full); transition: all 0.1s ease; }
+.btn-icon:active { transform: scale(0.88); }
 .btn-icon svg { width: 22px; height: 22px; }
-.profile-more-wrap { position: relative; }
-.profile-more-wrap .btn-icon svg { width: 24px; height: 24px; }
+.profile-more-wrap { position: relative; z-index: 1000; }
+.profile-more-wrap .btn-icon svg { width: 20px; height: 20px; }
 .profile-menu-dropdown {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   min-width: 220px;
   padding: 8px;
-  background: rgba(28, 28, 30, 0.85);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  background: rgba(28, 28, 30, 0.92);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 2px 8px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  z-index: 100;
+  z-index: 10000;
 }
 .profile-menu-item {
   display: flex;
@@ -820,19 +1114,20 @@ onUnmounted(() => {
 .tab-nav-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 .tab-nav-btn:active { transform: scale(0.9); }
 .tab-nav-btn svg { width: 16px; height: 16px; }
-.liquid-tabs { flex: 1; justify-content: center; display: flex; position: relative; background: var(--glass-bg); border-radius: var(--radius-full); padding: 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; gap: 4px; }
+.liquid-tabs { display: flex; position: relative; background: transparent; border: none; border-radius: 0; padding: 0; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; gap: 8px; justify-content: center; }
 .liquid-tabs::-webkit-scrollbar { display: none; }
-.liquid-tab { padding: 10px 20px; color: var(--text-muted); font-size: 14px; border-radius: var(--radius-full); transition: color 0.15s cubic-bezier(0.2, 0, 0, 1); position: relative; flex: 1; text-align: center; font-weight: 400; }
-.liquid-tab:hover { color: var(--text-secondary); }
-.liquid-tab.active { color: var(--text-primary); background: var(--glass-bg-active); }
-.liquid-tab.active { color: var(--text-primary); }
+.liquid-tab { padding: 10px 20px; color: var(--text-secondary); font-size: 14px; font-weight: 500; border-radius: var(--radius-full); background: var(--glass-bg); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); transition: all 0.15s cubic-bezier(0.2, 0, 0, 1); position: relative; text-align: center; white-space: nowrap; }
+.liquid-tab:active { transform: scale(0.95); }
+.liquid-tab.active { color: var(--text-primary); background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.2); }
 .profile-posts { display: flex; flex-direction: column; gap: 16px; }
 .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.media-item { aspect-ratio: 1; overflow: hidden; border-radius: var(--radius); cursor: pointer; position: relative; }
+.media-grid.videos-grid { grid-template-columns: repeat(2, 1fr); }
+.media-grid.videos-grid .media-item { aspect-ratio: 16/9; }
+.media-item { aspect-ratio: 1; overflow: hidden; border-radius: var(--radius); cursor: pointer; position: relative; background: rgba(0, 0, 0, 0.3); }
 .media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .media-item:hover img, .media-item:hover video { transform: scale(1.05); }
-.video-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
-.play-icon svg { width: 40px; height: 40px; color: white; }
+.video-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); pointer-events: none; }
+.play-icon svg { width: 40px; height: 40px; color: white; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
 .audio-list { display: flex; flex-direction: column; gap: 4px; }
 .audio-list-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-lg); cursor: pointer; transition: background 0.1s cubic-bezier(0.2, 0, 0, 1); }
 .audio-list-item:hover { background: rgba(255, 255, 255, 0.06); }
@@ -913,17 +1208,308 @@ onUnmounted(() => {
 .desktop-zone { top: 85px; left: 50%; transform: translateX(-50%); width: 85%; height: 160px; border-radius: 8px; }
 .cover-editor-actions { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
 .cover-editor-right { display: flex; gap: 10px; }
-.media-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: flex; align-items: center; justify-content: center; }
-.viewer-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; z-index: 10; }
-.viewer-close:hover { background: rgba(255,255,255,0.1); }
-.viewer-close svg { width: 24px; height: 24px; }
-.viewer-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; background: rgba(255,255,255,0.05); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: white; }
-.viewer-nav:hover { background: rgba(255,255,255,0.1); }
-.viewer-nav.prev { left: 20px; }
-.viewer-nav.next { right: 20px; }
-.viewer-nav svg { width: 24px; height: 24px; }
-.viewer-content { max-width: 90vw; max-height: 90vh; }
-.viewer-content img, .viewer-content video { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+
+.media-viewer-overlay { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0, 0, 0, 0.92); 
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  z-index: 100000; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  cursor: pointer;
+}
+
+.viewer-floating-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.viewer-floating-top > * {
+  pointer-events: auto;
+}
+
+.viewer-glass-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: rgba(40, 40, 40, 0.6);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+  cursor: pointer;
+}
+
+.viewer-glass-btn:active {
+  transform: scale(0.85);
+  background: rgba(60, 60, 60, 0.7);
+}
+
+.viewer-glass-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.viewer-glass-btn.small {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+.viewer-glass-btn.small svg {
+  width: 20px;
+  height: 20px;
+}
+
+.viewer-glass-btn.play-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+}
+
+.viewer-glass-btn.play-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.viewer-glass-btn.speed-btn {
+  width: auto;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.viewer-glass-pill {
+  padding: 10px 18px;
+  border-radius: 22px;
+  background: rgba(40, 40, 40, 0.6);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.viewer-glass-pill.time-pill {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.viewer-nav-glass {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background: rgba(40, 40, 40, 0.6);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 10;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+  cursor: pointer;
+}
+
+.viewer-nav-glass:active {
+  transform: translateY(-50%) scale(0.85);
+  background: rgba(60, 60, 60, 0.7);
+}
+
+.viewer-nav-glass.prev { left: 16px; }
+.viewer-nav-glass.next { right: 16px; }
+
+.viewer-nav-glass svg {
+  width: 24px;
+  height: 24px;
+}
+
+.viewer-floating-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.viewer-floating-bottom > * {
+  pointer-events: auto;
+}
+
+.viewer-floating-bottom.image-viewer-bottom {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+}
+
+.viewer-floating-bottom.image-viewer-bottom > *:first-child {
+  justify-self: start;
+}
+
+.viewer-floating-bottom.image-viewer-bottom > *:last-child {
+  justify-self: end;
+}
+
+.video-floating-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.video-floating-bottom > * {
+  pointer-events: auto;
+}
+
+.video-floating-bottom.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.viewer-glass-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 20px;
+  border-radius: 18px;
+  background: rgba(40, 40, 40, 0.6);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.viewer-info-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.viewer-info-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.video-progress-glass {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.video-progress-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 6px;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  overflow: visible;
+}
+
+.video-progress-fill {
+  height: 100%;
+  background: white;
+  border-radius: 3px;
+  transition: none !important;
+}
+
+.video-progress-thumb {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  transition: none !important;
+}
+
+.video-progress-glass:hover .video-progress-thumb {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.video-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-radius: 28px;
+  background: rgba(40, 40, 40, 0.6);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  align-self: center;
+}
+
+.media-viewer-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 80px 16px;
+  width: 100%;
+  cursor: default;
+}
+
+.media-viewer-content img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  cursor: default;
+}
+
+.video-player-video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: default;
+}
 .modal-enter-active, .modal-leave-active { transition: opacity 0.15s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .friends-section { display: flex; flex-direction: column; gap: 24px; }
@@ -947,8 +1533,8 @@ onUnmounted(() => {
     position: fixed;
     top: 12px;
     left: 12px;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -959,7 +1545,7 @@ onUnmounted(() => {
   .profile-cover { 
     height: 180px; 
     border-radius: 0; 
-    margin-bottom: -50px;
+    margin-bottom: 0;
   }
   
   .profile-info {
@@ -975,12 +1561,13 @@ onUnmounted(() => {
   }
   
   .profile-avatar-wrap {
-    margin-top: 0;
+    margin-top: -50px;
+    z-index: 10;
   }
   
   .profile-avatar-wrap .avatar-xl {
-    width: 90px !important;
-    height: 90px !important;
+    width: 100px !important;
+    height: 100px !important;
     border: 4px solid var(--bg-primary);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
@@ -1062,14 +1649,24 @@ onUnmounted(() => {
   }
   
   .profile-more-wrap .btn-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   
   .profile-more-wrap .btn-icon svg {
-    width: 22px !important;
-    height: 22px !important;
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  .profile-actions .profile-more-wrap .btn-icon svg {
+    width: 24px !important;
+    height: 24px !important;
   }
   
   .profile-meta.desktop-only {
@@ -1150,6 +1747,14 @@ onUnmounted(() => {
     margin: 0;
   }
   
+  .media-grid.videos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .media-grid.videos-grid .media-item {
+    aspect-ratio: 16/9;
+  }
+  
   .media-item {
     border-radius: 0;
   }
@@ -1183,8 +1788,8 @@ onUnmounted(() => {
   }
   
   .cover-edit {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     bottom: 12px;
     top: auto;
     right: 12px;
@@ -1198,20 +1803,20 @@ onUnmounted(() => {
   }
   
   .cover-delete {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     top: 12px;
     right: 12px;
   }
   
   .cover-delete svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
   
   .cover-edit svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     opacity: 0.7;
   }
   
@@ -1303,6 +1908,25 @@ onUnmounted(() => {
   .empty-state {
     padding: 40px 20px;
   }
+  
+  .profile-more-wrap {
+    position: relative;
+    z-index: 10000 !important;
+  }
+  
+  .profile-menu-dropdown {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 80px !important;
+    left: 16px !important;
+    right: 16px !important;
+    z-index: 100000 !important;
+    min-width: auto !important;
+    max-width: none !important;
+    background: rgba(10, 10, 12, 0.97) !important;
+    backdrop-filter: blur(50px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(50px) saturate(200%) !important;
+  }
 }
 
 @media (hover: none) and (pointer: coarse) {
@@ -1353,13 +1977,13 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .back-btn {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.4);
+  border: none;
+  color: white;
 }
 
 [data-theme="light"] .back-btn:hover {
-  background: rgba(255, 255, 255, 1);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="light"] .avatar-edit {
@@ -1376,35 +2000,46 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .cover-edit {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="light"] .cover-edit:hover {
-  background: rgba(255, 255, 255, 1);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="light"] .cover-edit svg {
-  color: var(--text-secondary);
+  color: white;
 }
 
 [data-theme="light"] .cover-delete {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="light"] .cover-delete:hover {
-  background: rgba(255, 255, 255, 1);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="light"] .cover-delete svg {
-  color: var(--text-secondary);
+  color: white;
 }
 
 [data-theme="light"] .profile-menu-dropdown {
   background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .profile-menu-item {
+  color: var(--text-primary);
 }
 
 [data-theme="light"] .profile-menu-item:hover {
   background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .profile-menu-item.danger {
+  color: #ff3b30;
 }
 
 [data-theme="light"] .blocked-message {
@@ -1412,11 +2047,19 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .liquid-tabs {
-  background: var(--glass-bg);
+  background: transparent;
+}
+
+[data-theme="light"] .liquid-tab {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: var(--text-secondary);
 }
 
 [data-theme="light"] .liquid-tab.active {
-  background: var(--glass-bg-active);
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15);
+  color: var(--text-primary);
 }
 
 [data-theme="light"] .audio-tabs {
@@ -1457,7 +2100,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   [data-theme="light"] .back-btn {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(0, 0, 0, 0.4);
   }
   
   [data-theme="light"] .tabs-container {

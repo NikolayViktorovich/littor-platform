@@ -1,12 +1,14 @@
 <template>
-  <article class="post glass" :class="{ 'menu-open': menuOpen, 'pinned': post.isPinned && !hidePin }">
+  <article class="post glass" :class="{ 'menu-open': menuOpen, 'pinned': post.isPinned && !hidePin, 'is-repost': post.originalPost }">
     <div v-if="post.isPinned && !hidePin" class="pinned-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 15v6m-5-17h10m-8 0v6l-2 3v2h10v-2l-2-3V4"/>
       </svg>
       {{ t('pinned') }}
     </div>
-    <div class="post-header">
+    
+    <!-- Regular post header (not repost) -->
+    <div v-if="!post.originalPost" class="post-header">
       <router-link :to="`/profile/${post.author.id}`" class="post-author">
         <img :src="authorAvatar" class="avatar" alt="" @error="handleAvatarError">
         <div class="author-info">
@@ -62,23 +64,106 @@
         </Transition>
       </div>
     </div>
-
-    <p v-if="post.content" class="post-content" v-html="formatContent(post.content)"></p>
     
-    <div v-if="visualMedia.length > 0" class="post-media-gallery" :class="'media-count-' + Math.min(visualMedia.length, 4)">
-      <div v-for="(item, index) in visualMedia.slice(0, 4)" :key="item.id" class="media-gallery-item" :class="{ 'has-more': index === 3 && visualMedia.length > 4, 'is-video': item.mediaType === 'video' }" @click="openMediaGallery(index)">
-        <img v-if="item.mediaType === 'image' || item.mediaType === 'gif'" :src="item.url" alt="">
-        <template v-else-if="item.mediaType === 'video'">
-          <video :src="item.url" muted></video>
-          <div class="video-play-overlay">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72c0 .94 1.02 1.52 1.83 1.04l11.09-6.86c.78-.48.78-1.6 0-2.08L9.83 4.1C9.02 3.62 8 4.2 8 5.14z"/></svg>
+    <!-- Repost header - shows reposter first -->
+    <template v-if="post.originalPost">
+      <div class="post-header">
+        <router-link :to="`/profile/${post.author.id}`" class="post-author">
+          <img :src="authorAvatar" class="avatar" alt="" @error="handleAvatarError">
+          <div class="author-info">
+            <span class="author-name">{{ post.author.name }}</span>
+            <span class="post-time">{{ formatTime(post.createdAt) }}</span>
           </div>
-        </template>
-        <div v-if="index === 3 && visualMedia.length > 4" class="more-overlay">+{{ visualMedia.length - 4 }}</div>
+        </router-link>
+        
+        <div class="post-menu-wrap">
+          <button @click.stop="toggleMenu" class="post-menu-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+          </button>
+          
+          <Transition name="menu" @after-leave="menuOpen = false">
+            <div v-if="showMenu" class="post-dropdown glass-modal" v-click-outside="closeMenu">
+              <button @click="handlePin" class="dropdown-item" v-if="isOwner && !hidePin">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 15v6m-5-17h10m-8 0v6l-2 3v2h10v-2l-2-3V4"/>
+                </svg>
+                {{ post.isPinned ? t('unpinPost') : t('pinPost') }}
+              </button>
+              <button @click="copyLink" class="dropdown-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                {{ t('copyLink') }}
+              </button>
+              <template v-if="isOwner">
+                <div class="dropdown-divider"></div>
+                <button @click="handleDelete" class="dropdown-item danger">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M3 6h18M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M10 11v6M14 11v6"/>
+                  </svg>
+                  {{ t('delete') }}
+                </button>
+              </template>
+            </div>
+          </Transition>
+        </div>
       </div>
-    </div>
+      
+      <!-- Reposter's comment -->
+      <p v-if="post.content" class="post-content" v-html="formatContent(post.content)" @click="handleContentClick"></p>
+      
+      <!-- Original post as embedded block -->
+      <div class="repost-embedded" @click="goToOriginalPost">
+        <div class="repost-embedded-header">
+          <router-link :to="`/profile/${post.originalPost.author.id}`" class="repost-embedded-author" @click.stop>
+            <img :src="getAvatarUrl(post.originalPost.author.avatar)" class="avatar avatar-sm" alt="" @error="handleAvatarError">
+            <span class="repost-embedded-name">{{ post.originalPost.author.name }}</span>
+          </router-link>
+        </div>
+        <p v-if="post.originalPost.content" class="repost-embedded-content" v-html="formatContent(post.originalPost.content)" @click="handleContentClick"></p>
+        <div v-if="displayMedia.length > 0" class="repost-embedded-media">
+          <img v-if="displayMedia[0].mediaType === 'image' || displayMedia[0].mediaType === 'gif'" :src="displayMedia[0].url" alt="" @click.stop="openMediaGallery(0)">
+          <video v-else-if="displayMedia[0].mediaType === 'video'" :src="displayMedia[0].url" @click.stop="openVideoPlayer(displayMedia[0].url)"></video>
+          <div v-if="displayMedia.length > 1" class="repost-media-count">+{{ displayMedia.length - 1 }}</div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Regular post content (not repost) -->
+    <template v-if="!post.originalPost">
+      <p v-if="post.content" class="post-content" v-html="formatContent(post.content)" @click="handleContentClick"></p>
+      
+      <div v-if="displayMedia.length > 0" class="post-media-gallery" :class="'media-count-' + Math.min(displayMedia.length, 4)">
+        <div v-for="(item, index) in displayMedia.slice(0, 4)" :key="item.id || index" class="media-gallery-item" :class="{ 'has-more': index === 3 && displayMedia.length > 4, 'is-video': item.mediaType === 'video' }" @click="item.mediaType === 'video' ? openVideoPlayer(item.url) : openMediaGallery(index)">
+          <img v-if="item.mediaType === 'image' || item.mediaType === 'gif'" :src="item.url" alt="">
+          <template v-else-if="item.mediaType === 'video'">
+            <video 
+              :src="item.url" 
+              :ref="el => setPostVideoRef(el, item.url)"
+              muted 
+              loop 
+              playsinline
+              @loadedmetadata="e => handlePostVideoMeta(e, item.url)"
+              @timeupdate="e => handlePostVideoTime(e, item.url)"
+            ></video>
+            <div class="video-inline-controls">
+              <span class="video-time-badge">{{ formatVideoTime(postVideoTimes[item.url] || 0) }}</span>
+              <span class="video-mute-badge">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+              </span>
+            </div>
+            <div class="video-progress-bar">
+              <div class="video-progress-fill" :style="{ width: (postVideoProgress[item.url] || 0) + '%' }"></div>
+            </div>
+          </template>
+          <div v-if="index === 3 && displayMedia.length > 4" class="more-overlay">+{{ displayMedia.length - 4 }}</div>
+        </div>
+      </div>
+    </template>
     
-    <div v-if="fileMedia.length > 0" class="post-files-list">
+    <div v-if="fileMedia.length > 0 && !post.originalPost" class="post-files-list">
       <template v-for="(item, index) in fileMedia" :key="item.id">
         <div v-if="item.mediaType === 'audio'" class="post-audio-wrap" @click="toggleMediaAudio(index, item)">
           <button class="audio-play-btn" @click.stop="toggleMediaAudio(index, item)">
@@ -182,8 +267,9 @@
 
       <button @click="handleShare" class="action-btn" :class="{ pressed: sharePressed }">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+          <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
         </svg>
+        <span v-if="post.repostsCount" class="count">{{ formatCount(post.repostsCount) }}</span>
       </button>
     </div>
 
@@ -274,8 +360,8 @@
 
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="showImageViewer" class="media-viewer-overlay" @click.self="closeImageViewer">
-          <div class="viewer-floating-top">
+        <div v-if="showImageViewer" class="media-viewer-overlay" @click="closeImageViewer">
+          <div class="viewer-floating-top" @click.stop>
             <button class="viewer-glass-btn" @click="closeImageViewer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
@@ -301,11 +387,19 @@
             </div>
           </div>
           
-          <div class="media-viewer-content">
-            <img :src="currentImageUrl" alt="">
+          <div class="media-viewer-content" @click="closeImageViewer" @wheel="handleImageWheel">
+            <img 
+              :src="currentImageUrl" 
+              :style="{ transform: `scale(${imageZoom}) translate(${imageOffset.x}px, ${imageOffset.y}px)` }"
+              @click.stop
+              @mousedown="startImageDrag"
+              @touchstart="startImageTouchDrag"
+              @dblclick="resetImageZoom"
+              draggable="false"
+            >
           </div>
           
-          <div class="viewer-floating-bottom">
+          <div class="viewer-floating-bottom" @click.stop>
             <button class="viewer-glass-btn" @click="shareCurrentMedia">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
             </button>
@@ -321,8 +415,8 @@
       </Transition>
 
       <Transition name="modal">
-        <div v-if="showGifViewer" class="media-viewer-overlay" @click.self="closeGifViewer">
-          <div class="viewer-floating-top">
+        <div v-if="showGifViewer" class="media-viewer-overlay" @click="closeGifViewer">
+          <div class="viewer-floating-top" @click.stop>
             <button class="viewer-glass-btn" @click="closeGifViewer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
@@ -349,11 +443,11 @@
             </div>
           </div>
           
-          <div class="media-viewer-content">
-            <img :src="currentGifUrl" alt="GIF">
+          <div class="media-viewer-content" @click="closeGifViewer">
+            <img :src="currentGifUrl" alt="GIF" @click.stop>
           </div>
           
-          <div class="viewer-floating-bottom">
+          <div class="viewer-floating-bottom" @click.stop>
             <button class="viewer-glass-btn" @click="shareCurrentMedia">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
             </button>
@@ -369,7 +463,7 @@
       </Transition>
 
       <Transition name="modal">
-        <div v-if="showVideoPlayer" class="video-player-overlay" @click.self="closeVideoPlayer">
+        <div v-if="showVideoPlayer" class="video-player-overlay" @click.self="closeVideoPlayer" @mousemove="resetControlsTimeout" @touchstart="resetControlsTimeout">
           <div class="viewer-floating-top">
             <button class="viewer-glass-btn" @click="closeVideoPlayer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -394,7 +488,7 @@
           ></video>
           
           <div class="video-floating-bottom" :class="{ hidden: controlsHidden }">
-            <div class="video-progress-glass" @click="seekFullVideo">
+            <div class="video-progress-glass" @click="seekFullVideo" @mousedown="startSeek" @touchstart="startSeek">
               <div class="video-progress-bg"></div>
               <div class="video-progress-buffered" :style="{ width: bufferedProgress + '%' }"></div>
               <div class="video-progress-fill" :style="{ width: fullVideoProgress + '%' }"></div>
@@ -423,20 +517,206 @@
           </div>
         </div>
       </Transition>
+
+      <Transition name="modal">
+        <div v-if="showShareModal" class="share-modal-overlay" @click.self="closeShareModal">
+          <div class="share-modal glass-modal" @click.stop>
+            <div class="share-modal-header">
+              <h3>{{ t('share') }}</h3>
+              <button class="share-modal-close" @click="closeShareModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            
+            <div class="share-options">
+              <button class="share-option" @click="openRepostModal">
+                <div class="share-option-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                </div>
+                <div class="share-option-text">
+                  <span class="share-option-title">{{ t('repostToProfile') }}</span>
+                  <span class="share-option-desc">{{ t('repostToProfileDesc') }}</span>
+                </div>
+              </button>
+              
+              <button class="share-option" @click="openSendToMessageModal">
+                <div class="share-option-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div class="share-option-text">
+                  <span class="share-option-title">{{ t('sendToMessage') }}</span>
+                  <span class="share-option-desc">{{ t('sendToMessageDesc') }}</span>
+                </div>
+              </button>
+              
+              <button class="share-option" @click="copyPostLink">
+                <div class="share-option-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </div>
+                <div class="share-option-text">
+                  <span class="share-option-title">{{ t('copyLink') }}</span>
+                  <span class="share-option-desc">{{ t('copyLinkDesc') }}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div v-if="showRepostModal" class="share-modal-overlay" @click.self="closeRepostModal">
+          <div class="share-modal glass-modal" @click.stop>
+            <div class="share-modal-header">
+              <button class="share-modal-back" @click="backToShareModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <h3>{{ t('repostToProfile') }}</h3>
+              <button class="share-modal-close" @click="closeRepostModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            
+            <div class="repost-preview">
+              <div class="repost-original">
+                <div class="repost-original-header">
+                  <img :src="getAvatarUrl(post.author.avatar)" class="avatar avatar-sm" alt="">
+                  <span class="repost-original-name">{{ post.author.name }}</span>
+                </div>
+                <p v-if="post.content" class="repost-original-content">{{ post.content.slice(0, 100) }}{{ post.content.length > 100 ? '...' : '' }}</p>
+                <div v-if="visualMedia.length > 0" class="repost-original-media">
+                  <img v-if="visualMedia[0].mediaType === 'image' || visualMedia[0].mediaType === 'gif'" :src="visualMedia[0].url" alt="">
+                  <video v-else-if="visualMedia[0].mediaType === 'video'" :src="visualMedia[0].url"></video>
+                </div>
+              </div>
+            </div>
+            
+            <div class="repost-comment">
+              <textarea v-model="repostComment" :placeholder="t('addComment')" rows="2"></textarea>
+            </div>
+            
+            <button class="repost-submit-btn" @click="submitRepost" :disabled="repostLoading">
+              <span v-if="!repostLoading">{{ t('repost') }}</span>
+              <div v-else class="spinner small"></div>
+            </button>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div v-if="showSendToMessageModal" class="share-modal-overlay" @click.self="closeSendToMessageModal">
+          <div class="share-modal glass-modal send-modal" @click.stop>
+            <div class="share-modal-header">
+              <button class="share-modal-back" @click="backToShareModalFromSend">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <h3>{{ t('sendToMessage') }}</h3>
+              <button class="share-modal-close" @click="closeSendToMessageModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            
+            <div class="send-search">
+              <input v-model="sendSearchQuery" :placeholder="t('searchFriends')" type="text">
+            </div>
+            
+            <div class="send-friends-list">
+              <div v-if="loadingFriends" class="send-loading">
+                <div class="spinner"></div>
+              </div>
+              <div v-else-if="filteredFriends.length === 0" class="send-empty">
+                {{ t('noFriendsFound') }}
+              </div>
+              <button v-else v-for="friend in filteredFriends" :key="friend.id" class="send-friend-item" :class="{ selected: selectedFriends.includes(friend.id) }" @click="toggleFriendSelection(friend.id)">
+                <img :src="getAvatarUrl(friend.avatar)" class="avatar" alt="">
+                <span class="send-friend-name">{{ friend.name }}</span>
+                <div class="send-friend-check" :class="{ checked: selectedFriends.includes(friend.id) }">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+              </button>
+            </div>
+            
+            <!-- Message input with media -->
+            <div class="send-message-section">
+              <!-- Media preview -->
+              <div v-if="sendMessageMedia.length > 0 || sendSelectedMusic" class="send-media-preview">
+                <div v-for="(media, idx) in sendMessageMedia" :key="idx" class="send-media-item">
+                  <img v-if="media.type.startsWith('image')" :src="media.preview" alt="">
+                  <video v-else-if="media.type.startsWith('video')" :src="media.preview"></video>
+                  <div v-else class="send-file-preview">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                    <span>{{ media.name }}</span>
+                  </div>
+                  <button class="send-media-remove" @click="removeSendMedia(idx)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <div v-if="sendSelectedMusic" class="send-music-preview">
+                  <img v-if="sendSelectedMusic.artwork" :src="sendSelectedMusic.artwork" class="music-art" alt="">
+                  <div v-else class="music-art-placeholder">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                  </div>
+                  <div class="music-info">
+                    <span class="music-title">{{ sendSelectedMusic.title }}</span>
+                    <span class="music-artist">{{ sendSelectedMusic.artist }}</span>
+                  </div>
+                  <button class="send-media-remove" @click="sendSelectedMusic = null">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="send-input-row">
+                <div class="send-input-wrap">
+                  <input v-model="sendMessageText" :placeholder="t('addMessage')" type="text">
+                  <EmojiPicker @select="insertSendEmoji" class="send-emoji-picker" />
+                </div>
+                <div class="send-media-btns">
+                  <button class="send-media-btn" @click="triggerSendMediaInput('image')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                  </button>
+                  <button class="send-media-btn" @click="triggerSendMediaInput('video')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  </button>
+                  <button class="send-media-btn" @click="triggerSendMediaInput('file')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
+                  </button>
+                  <button class="send-media-btn" @click="showSendMusicPicker = true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  </button>
+                </div>
+                <input ref="sendMediaInput" type="file" hidden @change="handleSendMediaSelect" multiple>
+              </div>
+            </div>
+            
+            <button class="send-submit-btn" @click="submitSendToFriends" :disabled="selectedFriends.length === 0 || sendLoading">
+              <span v-if="!sendLoading">{{ t('send') }} {{ selectedFriends.length > 0 ? `(${selectedFriends.length})` : '' }}</span>
+              <div v-else class="spinner small"></div>
+            </button>
+          </div>
+        </div>
+      </Transition>
+      
+      <!-- Music Picker for Send Modal -->
+      <Transition name="modal">
+        <MusicPicker v-if="showSendMusicPicker" @close="showSendMusicPicker = false" @select="selectSendMusic" />
+      </Transition>
     </Teleport>
   </article>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useAudioPlayerStore } from '../stores/audioPlayer'
 import { useSocket } from '../socket'
 import { useI18n } from '../i18n'
 import EmojiPicker from './EmojiPicker.vue'
+import MusicPicker from './MusicPicker.vue'
 import api from '../api'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const props = defineProps({
   post: { type: Object, required: true },
@@ -479,6 +759,32 @@ const totalMediaCount = ref(1)
 const showViewerMenu = ref(false)
 const showGifMenu = ref(false)
 
+const showShareModal = ref(false)
+const showRepostModal = ref(false)
+const showSendToMessageModal = ref(false)
+const repostComment = ref('')
+const repostLoading = ref(false)
+const sendSearchQuery = ref('')
+const friendsList = ref([])
+const loadingFriends = ref(false)
+const selectedFriends = ref([])
+const sendLoading = ref(false)
+const sendMessageText = ref('')
+const sendMessageMedia = ref([])
+const sendMediaInput = ref(null)
+const showSendMusicPicker = ref(false)
+const sendSelectedMusic = ref(null)
+
+const imageZoom = ref(1)
+const imageOffset = ref({ x: 0, y: 0 })
+let isDraggingImage = false
+let dragStart = { x: 0, y: 0 }
+
+const postVideoRefs = ref({})
+const postVideoTimes = ref({})
+const postVideoDurations = ref({})
+const postVideoProgress = ref({})
+
 const fullscreenVideoRef = ref(null)
 const fullVideoPlaying = ref(false)
 const fullVideoCurrentTime = ref(0)
@@ -488,7 +794,43 @@ const bufferedProgress = ref(0)
 const playbackSpeed = ref(1)
 const isFullscreen = ref(false)
 const controlsHidden = ref(false)
+const isSeeking = ref(false)
 let controlsTimeout = null
+let seekingProgressBar = null
+
+function setPostVideoRef(el, url) {
+  if (el) {
+    postVideoRefs.value[url] = el
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          el.play().catch(() => {})
+        } else {
+          el.pause()
+        }
+      })
+    }, { threshold: 0.5 })
+    observer.observe(el)
+  }
+}
+
+function handlePostVideoMeta(e, url) {
+  postVideoDurations.value[url] = e.target.duration
+}
+
+function handlePostVideoTime(e, url) {
+  postVideoTimes.value[url] = e.target.currentTime
+  if (postVideoDurations.value[url]) {
+    postVideoProgress.value[url] = (e.target.currentTime / postVideoDurations.value[url]) * 100
+  }
+}
+
+function formatVideoTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 const isPostAudioPlaying = computed(() => {
   return audioPlayerStore.currentTrack?.url === props.post.image && audioPlayerStore.isPlaying
@@ -639,6 +981,15 @@ const visualMedia = computed(() => {
   return media.filter(item => visualTypes.includes(item.mediaType))
 })
 
+const displayMedia = computed(() => {
+  if (props.post.originalPost) {
+    const media = props.post.originalPost.media || []
+    const visualTypes = ['image', 'video', 'gif']
+    return media.filter(item => visualTypes.includes(item.mediaType))
+  }
+  return visualMedia.value
+})
+
 const fileMedia = computed(() => {
   const media = props.post.media || []
   const fileTypes = ['audio', 'file']
@@ -728,7 +1079,7 @@ function openMedia() {
 }
 
 function openMediaGallery(index) {
-  const items = visualMedia.value
+  const items = displayMedia.value
   const item = items[index]
   if (!item) return
   
@@ -751,6 +1102,8 @@ function openImageViewer(url, index, total) {
   currentImageUrl.value = url
   currentMediaIndex.value = index
   totalMediaCount.value = total
+  imageZoom.value = 1
+  imageOffset.value = { x: 0, y: 0 }
   showImageViewer.value = true
   showViewerMenu.value = false
 }
@@ -758,6 +1111,76 @@ function openImageViewer(url, index, total) {
 function closeImageViewer() {
   showImageViewer.value = false
   showViewerMenu.value = false
+  imageZoom.value = 1
+  imageOffset.value = { x: 0, y: 0 }
+}
+
+function zoomImage(delta) {
+  imageZoom.value = Math.max(0.5, Math.min(4, imageZoom.value + delta))
+  if (imageZoom.value === 1) {
+    imageOffset.value = { x: 0, y: 0 }
+  }
+}
+
+function resetImageZoom() {
+  imageZoom.value = 1
+  imageOffset.value = { x: 0, y: 0 }
+}
+
+function handleImageWheel(e) {
+  e.preventDefault()
+  const delta = e.deltaY > 0 ? -0.1 : 0.1
+  zoomImage(delta)
+}
+
+function startImageDrag(e) {
+  if (imageZoom.value <= 1) return
+  e.stopPropagation()
+  isDraggingImage = true
+  dragStart = { x: e.clientX - imageOffset.value.x, y: e.clientY - imageOffset.value.y }
+  
+  const onMove = (moveE) => {
+    if (!isDraggingImage) return
+    imageOffset.value = {
+      x: moveE.clientX - dragStart.x,
+      y: moveE.clientY - dragStart.y
+    }
+  }
+  
+  const onUp = () => {
+    isDraggingImage = false
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+  }
+  
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+}
+
+function startImageTouchDrag(e) {
+  if (imageZoom.value <= 1) return
+  e.stopPropagation()
+  const touch = e.touches[0]
+  isDraggingImage = true
+  dragStart = { x: touch.clientX - imageOffset.value.x, y: touch.clientY - imageOffset.value.y }
+  
+  const onMove = (moveE) => {
+    if (!isDraggingImage) return
+    const touch = moveE.touches[0]
+    imageOffset.value = {
+      x: touch.clientX - dragStart.x,
+      y: touch.clientY - dragStart.y
+    }
+  }
+  
+  const onUp = () => {
+    isDraggingImage = false
+    document.removeEventListener('touchmove', onMove)
+    document.removeEventListener('touchend', onUp)
+  }
+  
+  document.addEventListener('touchmove', onMove)
+  document.addEventListener('touchend', onUp)
 }
 
 function openGifViewerFunc(url, size) {
@@ -772,12 +1195,22 @@ function closeGifViewer() {
   showGifMenu.value = false
 }
 
-function openVideoPlayerFunc(url) {
+function openVideoPlayer(url) {
   videoPlayerSrc.value = url
   showVideoPlayer.value = true
   fullVideoPlaying.value = false
+  fullVideoCurrentTime.value = 0
+  fullVideoProgress.value = 0
   controlsHidden.value = false
   playbackSpeed.value = 1
+  nextTick(() => {
+    if (fullscreenVideoRef.value) {
+      fullscreenVideoRef.value.playbackRate = 1
+      fullscreenVideoRef.value.play()
+      fullVideoPlaying.value = true
+      resetControlsTimeout()
+    }
+  })
 }
 
 function closeVideoPlayer() {
@@ -806,7 +1239,7 @@ function onFullVideoMeta() {
 }
 
 function onFullVideoTime() {
-  if (!fullscreenVideoRef.value) return
+  if (!fullscreenVideoRef.value || isSeeking.value) return
   fullVideoCurrentTime.value = fullscreenVideoRef.value.currentTime
   fullVideoProgress.value = (fullVideoCurrentTime.value / fullVideoDuration.value) * 100
   
@@ -824,8 +1257,49 @@ function onFullVideoEnded() {
 function seekFullVideo(e) {
   if (!fullscreenVideoRef.value) return
   const rect = e.currentTarget.getBoundingClientRect()
-  const percent = (e.clientX - rect.left) / rect.width
+  const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   fullscreenVideoRef.value.currentTime = percent * fullVideoDuration.value
+  fullVideoProgress.value = percent * 100
+  resetControlsTimeout()
+}
+
+function startSeek(e) {
+  e.preventDefault()
+  e.stopPropagation()
+  isSeeking.value = true
+  seekingProgressBar = e.currentTarget
+  
+  const updateSeek = (clientX) => {
+    if (!fullscreenVideoRef.value || !seekingProgressBar) return
+    const rect = seekingProgressBar.getBoundingClientRect()
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    fullVideoProgress.value = percent * 100
+    fullscreenVideoRef.value.currentTime = percent * fullVideoDuration.value
+  }
+  
+  const onMove = (moveEvent) => {
+    const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
+    updateSeek(clientX)
+    resetControlsTimeout()
+  }
+  
+  const onEnd = () => {
+    isSeeking.value = false
+    seekingProgressBar = null
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onEnd)
+    document.removeEventListener('touchmove', onMove)
+    document.removeEventListener('touchend', onEnd)
+  }
+  
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onEnd)
+  document.addEventListener('touchmove', onMove, { passive: false })
+  document.addEventListener('touchend', onEnd)
+  
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  updateSeek(clientX)
+  resetControlsTimeout()
 }
 
 function skipVideo(seconds) {
@@ -864,13 +1338,6 @@ function resetControlsTimeout() {
       controlsHidden.value = true
     }, 3000)
   }
-}
-
-function formatVideoTime(seconds) {
-  if (!seconds || isNaN(seconds)) return '0:00'
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
 function formatViewerDate(date) {
@@ -933,8 +1400,28 @@ function closeMenu() {
 
 function formatContent(content) {
   if (!content) return ''
-  const escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  return escaped.replace(/@([a-zA-Z0-9_]{3,20})/g, '<a href="/profile/username/$1" class="mention-link" onclick="event.stopPropagation()">@$1</a>')
+  let text = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  
+  const urlRegex = /(https?:\/\/[^\s<]+)/g
+  text = text.replace(urlRegex, '<a href="$1" class="content-link external-link" target="_blank" rel="noopener noreferrer">$1</a>')
+  text = text.replace(/(?<!href=")\/post\/([a-zA-Z0-9-]+)/g, '<a href="/post/$1" class="content-link internal-link" data-route="/post/$1">/post/$1</a>')
+  text = text.replace(/@([a-zA-Z0-9_]{3,20})/g, '<a href="/profile/username/$1" class="mention-link internal-link" data-route="/profile/username/$1">@$1</a>')
+  
+  return text
+}
+
+function handleContentClick(e) {
+  const link = e.target.closest('a')
+  if (link) {
+    e.stopPropagation()
+    if (link.classList.contains('internal-link')) {
+      e.preventDefault()
+      const route = link.dataset.route
+      if (route) {
+        router.push(route)
+      }
+    }
+  }
 }
 
 function formatTime(date) {
@@ -1012,6 +1499,169 @@ function handleComment() {
 function handleShare() {
   sharePressed.value = true
   setTimeout(() => sharePressed.value = false, 150)
+  showShareModal.value = true
+}
+
+function closeShareModal() {
+  showShareModal.value = false
+}
+
+function openRepostModal() {
+  showShareModal.value = false
+  repostComment.value = ''
+  showRepostModal.value = true
+}
+
+function closeRepostModal() {
+  showRepostModal.value = false
+  repostComment.value = ''
+}
+
+function backToShareModal() {
+  showRepostModal.value = false
+  showShareModal.value = true
+}
+
+async function submitRepost() {
+  repostLoading.value = true
+  try {
+    const res = await api.post(`/posts/${props.post.id}/repost`, {
+      comment: repostComment.value.trim() || null
+    })
+    closeRepostModal()
+    emit('update', { ...props.post, repostsCount: (props.post.repostsCount || 0) + 1 })
+  } catch (err) {
+    console.error('Repost failed:', err)
+  }
+  repostLoading.value = false
+}
+
+async function openSendToMessageModal() {
+  showShareModal.value = false
+  showSendToMessageModal.value = true
+  sendSearchQuery.value = ''
+  selectedFriends.value = []
+  loadingFriends.value = true
+  try {
+    const res = await api.get('/friends')
+    friendsList.value = res.data || []
+  } catch (err) {
+    console.error('Failed to load friends:', err)
+    friendsList.value = []
+  }
+  loadingFriends.value = false
+}
+
+function closeSendToMessageModal() {
+  showSendToMessageModal.value = false
+  selectedFriends.value = []
+  sendMessageText.value = ''
+  sendMessageMedia.value = []
+  sendSelectedMusic.value = null
+}
+
+function backToShareModalFromSend() {
+  showSendToMessageModal.value = false
+  showShareModal.value = true
+}
+
+const filteredFriends = computed(() => {
+  if (!sendSearchQuery.value.trim()) return friendsList.value
+  const query = sendSearchQuery.value.toLowerCase()
+  return friendsList.value.filter(f => f.name.toLowerCase().includes(query))
+})
+
+function toggleFriendSelection(friendId) {
+  const idx = selectedFriends.value.indexOf(friendId)
+  if (idx === -1) {
+    selectedFriends.value.push(friendId)
+  } else {
+    selectedFriends.value.splice(idx, 1)
+  }
+}
+
+function insertSendEmoji(emoji) {
+  sendMessageText.value += emoji
+}
+
+function triggerSendMediaInput(type) {
+  const input = sendMediaInput.value
+  if (!input) return
+  
+  if (type === 'image') {
+    input.accept = 'image/*'
+  } else if (type === 'video') {
+    input.accept = 'video/*'
+  } else {
+    input.accept = '*/*'
+  }
+  input.click()
+}
+
+function handleSendMediaSelect(e) {
+  const files = Array.from(e.target.files || [])
+  files.forEach(file => {
+    const preview = URL.createObjectURL(file)
+    sendMessageMedia.value.push({
+      file,
+      type: file.type,
+      name: file.name,
+      preview
+    })
+  })
+  e.target.value = ''
+}
+
+function removeSendMedia(idx) {
+  const media = sendMessageMedia.value[idx]
+  if (media?.preview) URL.revokeObjectURL(media.preview)
+  sendMessageMedia.value.splice(idx, 1)
+}
+
+function selectSendMusic(track) {
+  sendSelectedMusic.value = track
+  showSendMusicPicker.value = false
+}
+
+async function submitSendToFriends() {
+  if (selectedFriends.value.length === 0) return
+  sendLoading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('userIds', JSON.stringify(selectedFriends.value))
+    if (sendMessageText.value.trim()) {
+      formData.append('message', sendMessageText.value.trim())
+    }
+    if (sendSelectedMusic.value) {
+      formData.append('musicTrackId', sendSelectedMusic.value.id)
+      formData.append('musicTitle', sendSelectedMusic.value.title)
+      formData.append('musicArtist', sendSelectedMusic.value.artist)
+      formData.append('musicArtwork', sendSelectedMusic.value.artwork || '')
+    }
+    sendMessageMedia.value.forEach(m => {
+      formData.append('media', m.file)
+    })
+    
+    await api.post(`/posts/${props.post.id}/share`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    closeSendToMessageModal()
+  } catch (err) {
+    console.error('Share failed:', err)
+  }
+  sendLoading.value = false
+}
+
+function copyPostLink() {
+  const url = `${window.location.origin}/post/${props.post.id}`
+  navigator.clipboard.writeText(url)
+  closeShareModal()
+}
+
+function goToOriginalPost() {
+  if (props.post.originalPost?.id) {
+    router.push(`/post/${props.post.originalPost.id}`)
+  }
 }
 
 async function loadComments() {
@@ -1197,10 +1847,15 @@ const vClickOutside = {
   padding: 20px;
   position: relative;
   overflow: visible !important;
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
 }
 
 .post.pinned {
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .pinned-badge {
@@ -1363,6 +2018,121 @@ const vClickOutside = {
 
 .post-content :deep(.mention-link:hover) {
   text-decoration: underline;
+}
+
+.post-content :deep(.content-link) {
+  color: #5b9aff;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.post-content :deep(.content-link:hover) {
+  text-decoration: underline;
+}
+
+.repost-embedded {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.repost-embedded:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.repost-embedded:active {
+  transform: scale(0.99);
+}
+
+.repost-embedded-header {
+  margin-bottom: 8px;
+}
+
+.repost-embedded-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.repost-embedded-author:hover .repost-embedded-name {
+  text-decoration: underline;
+}
+
+.repost-embedded-author .avatar-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.repost-embedded-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.repost-embedded-content {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.repost-embedded-content :deep(.post-link),
+.repost-embedded-content :deep(.mention-link) {
+  color: #5b9aff;
+  text-decoration: none;
+}
+
+.repost-embedded-content :deep(.post-link:hover),
+.repost-embedded-content :deep(.mention-link:hover) {
+  text-decoration: underline;
+}
+
+.repost-embedded-media {
+  margin-top: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  max-height: 200px;
+}
+
+.repost-embedded-media img,
+.repost-embedded-media video {
+  width: 100%;
+  height: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.repost-media-count {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+}
+
+[data-theme="light"] .repost-embedded {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .repost-embedded:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .post-image-wrap {
@@ -2004,6 +2774,58 @@ const vClickOutside = {
 .media-gallery-item.is-video {
   cursor: pointer;
 }
+
+.video-inline-controls {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+}
+
+.video-time-badge,
+.video-mute-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.video-mute-badge {
+  padding: 4px 6px;
+}
+
+.video-mute-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.video-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 5;
+}
+
+.media-gallery-item .video-progress-fill {
+  position: relative;
+  height: 100%;
+  background: #3390ec;
+  transition: none !important;
+}
+
 .video-play-overlay {
   position: absolute;
   inset: 0;
@@ -2123,10 +2945,43 @@ const vClickOutside = {
 
 [data-theme="light"] .post-dropdown {
   background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .dropdown-item {
+  color: var(--text-primary);
 }
 
 [data-theme="light"] .dropdown-item:hover {
   background: rgba(0, 0, 0, 0.04);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .dropdown-item svg {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .dropdown-item:hover svg {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .dropdown-item.danger {
+  color: #ff3b30;
+}
+
+[data-theme="light"] .dropdown-item.danger svg {
+  color: #ff3b30;
+}
+
+[data-theme="light"] .post-menu-btn {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .post-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.7);
 }
 
 [data-theme="light"] .post-audio-wrap {
@@ -2164,6 +3019,7 @@ const vClickOutside = {
   align-items: center;
   justify-content: center;
   z-index: 100000;
+  cursor: pointer;
 }
 
 .viewer-floating-top {
@@ -2188,7 +3044,7 @@ const vClickOutside = {
   width: 44px;
   height: 44px;
   border-radius: 22px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2197,11 +3053,12 @@ const vClickOutside = {
   justify-content: center;
   color: white;
   transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+  cursor: pointer;
 }
 
 .viewer-glass-btn:active {
   transform: scale(0.85);
-  background: rgba(50, 50, 50, 0.85);
+  background: rgba(60, 60, 60, 0.7);
 }
 
 .viewer-glass-btn svg {
@@ -2241,7 +3098,7 @@ const vClickOutside = {
 .viewer-glass-pill {
   padding: 10px 18px;
   border-radius: 22px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2280,7 +3137,7 @@ const vClickOutside = {
   min-width: 180px;
   padding: 8px;
   border-radius: 16px;
-  background: rgba(30, 30, 30, 0.85);
+  background: rgba(30, 30, 30, 0.9);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2335,7 +3192,7 @@ const vClickOutside = {
   gap: 2px;
   padding: 10px 20px;
   border-radius: 18px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2360,6 +3217,7 @@ const vClickOutside = {
   overflow: hidden;
   padding: 80px 16px;
   width: 100%;
+  cursor: default;
 }
 
 .media-viewer-content img {
@@ -2369,12 +3227,14 @@ const vClickOutside = {
   user-select: none;
   -webkit-user-drag: none;
   border-radius: 12px;
+  cursor: default;
 }
 
 .video-player-video {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  cursor: default;
 }
 
 .video-floating-bottom {
@@ -2399,47 +3259,58 @@ const vClickOutside = {
 
 .video-progress-glass {
   position: relative;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.2);
+  width: 100%;
+  height: 24px;
+  padding: 10px 0;
   cursor: pointer;
-  overflow: hidden;
 }
 
 .video-progress-bg {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 6px;
+  transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
 
 .video-progress-buffered {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 0;
-  height: 100%;
+  height: 6px;
+  transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.25);
   border-radius: 3px;
 }
 
 .video-progress-fill {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 0;
-  height: 100%;
+  height: 6px;
+  transform: translateY(-50%);
   background: white;
   border-radius: 3px;
+  transition: none !important;
 }
 
 .video-progress-handle {
   position: absolute;
   top: 50%;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   background: white;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  transition: none !important;
+}
+
+.video-progress-glass:hover .video-progress-handle {
+  transform: translate(-50%, -50%) scale(1.2);
 }
 
 .video-controls-row {
@@ -2449,7 +3320,7 @@ const vClickOutside = {
   gap: 12px;
   padding: 8px 16px;
   border-radius: 28px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2536,5 +3407,564 @@ const vClickOutside = {
   .media-viewer-content {
     padding: 70px 12px;
   }
+}
+
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  padding: 20px;
+}
+
+.share-modal {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.share-modal.send-modal {
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.share-modal-header h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.share-modal-close,
+.share-modal-back {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.share-modal-close:active,
+.share-modal-back:active {
+  transform: scale(0.85);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.share-modal-close svg,
+.share-modal-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.share-options {
+  padding: 8px;
+}
+
+.share-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+  text-align: left;
+}
+
+.share-option:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.share-option-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.share-option-icon svg {
+  width: 22px;
+  height: 22px;
+  color: var(--text-primary);
+}
+
+.share-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.share-option-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.share-option-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.repost-preview {
+  padding: 16px 20px;
+}
+
+.repost-original {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.repost-original-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.repost-original-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.repost-original-content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.repost-original-media {
+  margin-top: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 120px;
+}
+
+.repost-original-media img,
+.repost-original-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-height: 120px;
+}
+
+.repost-comment {
+  padding: 0 20px 16px;
+}
+
+.repost-comment textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 15px;
+  resize: none;
+  transition: border-color 0.1s ease;
+}
+
+.repost-comment textarea:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.repost-comment textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.repost-submit-btn,
+.send-submit-btn {
+  margin: 0 20px 20px;
+  padding: 14px;
+  border-radius: 12px;
+  background: white;
+  color: #1a1a1a;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.repost-submit-btn:active:not(:disabled),
+.send-submit-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.repost-submit-btn:disabled,
+.send-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.send-search {
+  padding: 12px 20px;
+}
+
+.send-search input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.send-search input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.send-search input::placeholder {
+  color: var(--text-muted);
+}
+
+.send-friends-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px;
+  max-height: 300px;
+}
+
+.send-loading,
+.send-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.send-friend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.send-friend-item:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.send-friend-item.selected {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.send-friend-item .avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.send-friend-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.send-friend-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+}
+
+.send-friend-check.checked {
+  background: white;
+  border-color: white;
+}
+
+.send-friend-check svg {
+  width: 14px;
+  height: 14px;
+  color: #1a1a1a;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.send-friend-check.checked svg {
+  opacity: 1;
+}
+
+.spinner.small {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+.send-message-section {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.send-media-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.send-media-item {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.send-media-item img,
+.send-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.send-file-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 4px;
+}
+
+.send-file-preview svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+}
+
+.send-file-preview span {
+  font-size: 8px;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.send-media-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.send-media-remove svg {
+  width: 12px;
+  height: 12px;
+  color: white;
+}
+
+.send-music-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  position: relative;
+  flex: 1;
+  min-width: 150px;
+}
+
+.send-music-preview .music-art,
+.send-music-preview .music-art-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.send-music-preview .music-art-placeholder {
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-music-preview .music-art-placeholder svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+}
+
+.send-music-preview .music-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.send-music-preview .music-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.send-music-preview .music-artist {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.send-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.send-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 4px 8px 4px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.send-input-wrap input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 15px;
+  padding: 10px 0;
+}
+
+.send-input-wrap input:focus {
+  outline: none;
+}
+
+.send-input-wrap input::placeholder {
+  color: var(--text-muted);
+}
+
+.send-emoji-picker {
+  flex-shrink: 0;
+}
+
+.send-media-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.send-media-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.send-media-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.send-media-btn svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .share-modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .share-option-icon {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .repost-original {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .repost-comment textarea,
+[data-theme="light"] .send-search input {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .repost-submit-btn,
+[data-theme="light"] .send-submit-btn {
+  background: #1a1a1a;
+  color: white;
+}
+
+[data-theme="light"] .send-friend-check {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .send-friend-check.checked {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+}
+
+[data-theme="light"] .send-friend-check.checked svg {
+  color: white;
 }
 </style>

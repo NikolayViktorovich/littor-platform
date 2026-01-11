@@ -74,6 +74,8 @@ export async function initDb() {
     if (!colNames.includes('isArchived')) db.run(`ALTER TABLE posts ADD COLUMN isArchived INTEGER DEFAULT 0`)
     if (!colNames.includes('commentsDisabled')) db.run(`ALTER TABLE posts ADD COLUMN commentsDisabled INTEGER DEFAULT 0`)
     if (!colNames.includes('media')) db.run(`ALTER TABLE posts ADD COLUMN media TEXT`)
+    if (!colNames.includes('originalPostId')) db.run(`ALTER TABLE posts ADD COLUMN originalPostId TEXT`)
+    if (!colNames.includes('repostsCount')) db.run(`ALTER TABLE posts ADD COLUMN repostsCount INTEGER DEFAULT 0`)
   } catch (e) {}
 
   db.run(`
@@ -185,6 +187,9 @@ export async function initDb() {
     }
     if (!colNames.includes('musicArtwork')) {
       db.run(`ALTER TABLE messages ADD COLUMN musicArtwork TEXT`)
+    }
+    if (!colNames.includes('sharedPostId')) {
+      db.run(`ALTER TABLE messages ADD COLUMN sharedPostId TEXT`)
     }
   } catch (e) {
   }

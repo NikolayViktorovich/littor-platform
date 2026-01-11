@@ -262,6 +262,7 @@ onMounted(() => {
   padding: 24px;
   max-width: 800px;
   margin: 0 auto;
+  padding-left: calc(var(--sidebar-width) + 24px);
 }
 
 .music-header {
@@ -285,14 +286,18 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
   min-width: 200px;
   transition: all 0.2s;
 }
 
 .search-box:focus-within {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-light);
 }
 
 .search-box svg {
@@ -399,15 +404,25 @@ onMounted(() => {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 12px;
-  transition: background 0.1s;
+  transition: all 0.1s ease;
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  margin-bottom: 8px;
 }
 
 .track-item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--glass-bg-hover);
+}
+
+.track-item:active {
+  transform: scale(0.98);
 }
 
 .track-item.playing {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--glass-bg-active);
+  border-color: var(--glass-border-light);
 }
 
 .track-artwork {
@@ -524,7 +539,7 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .music-page {
-    padding: 16px;
+    padding: 12px 16px;
     padding-bottom: 80px;
   }
   
@@ -535,7 +550,7 @@ onMounted(() => {
   }
   
   .page-title {
-    font-size: 24px;
+    font-size: 28px;
   }
   
   .search-box {
@@ -560,12 +575,22 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.06);
 }
 
+[data-theme="light"] .search-box input {
+  background: transparent !important;
+  border: none !important;
+}
+
 [data-theme="light"] .search-box:focus-within {
   background: rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="light"] .search-wrap {
   background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .search-wrap input {
+  background: transparent !important;
+  border: none !important;
 }
 
 [data-theme="light"] .tab.active {

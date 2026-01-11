@@ -194,22 +194,28 @@ router.get('/:id/posts', authMiddleware, (req, res) => {
     SELECT p.*, u.name as authorName, u.avatar as authorAvatar,
       (SELECT COUNT(*) FROM likes WHERE postId = p.id) as likesCount,
       (SELECT COUNT(*) FROM comments WHERE postId = p.id) as commentsCount,
-      EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked
+      EXISTS(SELECT 1 FROM likes WHERE postId = p.id AND userId = ?) as isLiked,
+      op.id as originalPostId, op.content as originalContent, op.image as originalImage, op.media as originalMedia,
+      ou.id as originalAuthorId, ou.name as originalAuthorName, ou.avatar as originalAuthorAvatar
     FROM posts p
     JOIN users u ON p.authorId = u.id
+    LEFT JOIN posts op ON p.originalPostId = op.id
+    LEFT JOIN users ou ON op.authorId = ou.id
     WHERE p.authorId = ? AND (p.isArchived = 0 OR p.isArchived IS NULL)
     ORDER BY p.isPinned DESC, p.createdAt DESC
   `).all(req.userId, req.params.id)
 
+  function parseMedia(mediaJson) {
+    if (!mediaJson) return []
+    try {
+      const items = JSON.parse(mediaJson)
+      return items.map(item => ({ url: item.url, mediaType: item.type, fileName: item.name, fileSize: item.size }))
+    } catch { return [] }
+  }
+
   const result = posts.map(p => {
-    let media = []
-    if (p.media) {
-      try {
-        const items = JSON.parse(p.media)
-        media = items.map(item => ({ url: item.url, mediaType: item.type, fileName: item.name, fileSize: item.size }))
-      } catch {}
-    }
-    return {
+    const media = parseMedia(p.media)
+    const post = {
       id: p.id,
       content: p.content,
       image: p.image,
@@ -222,12 +228,29 @@ router.get('/:id/posts', authMiddleware, (req, res) => {
       createdAt: p.createdAt,
       likesCount: p.likesCount,
       commentsCount: p.commentsCount,
+      repostsCount: p.repostsCount || 0,
       isLiked: !!p.isLiked,
       isPinned: !!p.isPinned,
       isArchived: !!p.isArchived,
       commentsDisabled: !!p.commentsDisabled,
       author: { id: p.authorId, name: p.authorName, avatar: p.authorAvatar }
     }
+    
+    if (p.originalPostId) {
+      post.originalPost = {
+        id: p.originalPostId,
+        content: p.originalContent,
+        image: p.originalImage,
+        media: parseMedia(p.originalMedia),
+        author: {
+          id: p.originalAuthorId,
+          name: p.originalAuthorName,
+          avatar: p.originalAuthorAvatar
+        }
+      }
+    }
+    
+    return post
   })
 
   res.json(result)

@@ -300,24 +300,25 @@ onUnmounted(() => {
 }
 
 .friends-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
 .friends-header {
-  padding: 12px 24px;
+  padding: 12px 0;
   margin-bottom: 12px;
   overflow: visible;
   background: transparent;
   border: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  text-align: center;
+  text-align: left;
 }
 
 .friends-header h1 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .header-top {
@@ -333,16 +334,22 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
   border-radius: 50%;
   color: var(--text-secondary);
   transition: all var(--transition);
 }
 
 .add-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg-hover);
   color: var(--text-primary);
+}
+
+.add-btn:active {
+  transform: scale(0.88);
 }
 
 .add-btn svg {
@@ -475,13 +482,14 @@ onUnmounted(() => {
 .liquid-tabs {
   display: flex;
   position: relative;
-  background: var(--glass-bg);
-  border-radius: var(--radius-full);
-  padding: 4px;
-  gap: 4px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  border: none;
 }
 
 .liquid-tabs::-webkit-scrollbar {
@@ -489,28 +497,32 @@ onUnmounted(() => {
 }
 
 .liquid-tab {
-  padding: 10px 16px;
-  color: var(--text-muted);
+  padding: 10px 20px;
+  color: var(--text-secondary);
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   border-radius: var(--radius-full);
-  transition: color 0.1s cubic-bezier(0.2, 0, 0, 1);
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  transition: all 0.15s cubic-bezier(0.2, 0, 0, 1);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
   white-space: nowrap;
   min-width: fit-content;
 }
 
-.liquid-tab:hover {
-  color: var(--text-secondary);
+.liquid-tab:active {
+  transform: scale(0.95);
 }
 
 .liquid-tab.active {
   color: var(--text-primary);
-  background: var(--glass-bg-active);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .tab-badge {
@@ -579,10 +591,20 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 16px 20px;
   border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  margin-bottom: 8px;
+  transition: all 0.1s ease;
 }
 
 .friend-card:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--glass-bg-hover);
+}
+
+.friend-card:active {
+  transform: scale(0.98);
 }
 
 .friend-info {
@@ -626,45 +648,56 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .friends-page {
-    padding-left: 20px;
+    padding: 0 16px;
+    padding-bottom: 100px;
+  }
+  
+  .friends-header {
+    text-align: left;
+    padding: 20px 0 16px;
+    margin-bottom: 0;
+  }
+  
+  .friends-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
   }
   
   .liquid-tabs {
     flex-wrap: nowrap;
     background: transparent;
+    border: none;
     border-radius: 0;
     padding: 0;
-    gap: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin: 0 -24px;
-    padding: 0 24px;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 0 16px;
+    justify-content: flex-start;
   }
   
   .liquid-tab {
-    padding: 14px 8px;
+    padding: 10px 16px;
     font-size: 14px;
     font-weight: 500;
-    border-radius: 0;
-    background: transparent;
-    color: var(--text-muted);
+    border-radius: var(--radius-full);
+    background: var(--glass-bg);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
     position: relative;
+    flex: none;
   }
   
   .liquid-tab.active {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
     color: var(--text-primary);
   }
   
   .liquid-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 50%;
-    height: 3px;
-    background: var(--accent);
-    border-radius: 3px 3px 0 0;
+    display: none;
   }
   
   .tab-badge {
@@ -749,12 +782,19 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .liquid-tabs {
-  background: var(--glass-bg);
+  background: transparent;
+}
+
+[data-theme="light"] .liquid-tab {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: var(--text-secondary);
 }
 
 [data-theme="light"] .liquid-tab.active {
   color: var(--text-primary);
-  background: var(--glass-bg-active);
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 [data-theme="light"] .tab-badge {

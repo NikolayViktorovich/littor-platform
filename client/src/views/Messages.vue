@@ -34,7 +34,7 @@
                   </div>
                 </div>
                 <div class="dialog-bottom">
-                  <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">{{ t('you') }}: </span>{{ dialog.lastMessage.content || t('media') }}</p>
+                  <p class="dialog-preview"><span v-if="dialog.lastMessage.senderId === authStore.user?.id" class="you">{{ t('you') }}: </span>{{ getDialogPreview(dialog.lastMessage) }}</p>
                   <span v-if="dialog.unreadCount" class="unread-badge">{{ dialog.unreadCount }}</span>
                   <svg v-else-if="dialog.lastMessage.senderId === authStore.user?.id" class="read-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6l-11 11-5-5"/></svg>
                 </div>
@@ -175,7 +175,7 @@
                     </div>
                     <audio :src="msg.media" :id="'voice-' + msg.id" @ended="onVoiceEnded(msg.id)" @loadedmetadata="onVoiceLoaded($event, msg.id)" @timeupdate="onVoiceTimeUpdate($event, msg.id)" hidden></audio>
                   </div>
-                  <div v-else class="message-bubble" :class="{ 'files-only': getFileMedia(msg).length > 0 && !msg.content && getVisualMedia(msg).length === 0, 'media-only': getVisualMedia(msg).length > 0 && !msg.content && getFileMedia(msg).length === 0 }">
+                  <div v-else class="message-bubble" :class="{ 'files-only': getFileMedia(msg).length > 0 && !msg.content && getVisualMedia(msg).length === 0, 'media-only': getVisualMedia(msg).length > 0 && !msg.content && getFileMedia(msg).length === 0 }" @click="handleMsgContentClick">
                     <div v-if="msg.replyTo" class="reply-in-message" @click.stop="scrollToMessage(msg.replyTo.id)">
                       <span class="reply-sender">{{ msg.replyTo.senderName }}</span>
                       <span class="reply-text">{{ msg.replyTo.content || t('media') }}</span>
@@ -262,7 +262,39 @@
                         <span class="msg-music-track-artist">{{ msg.musicArtist }}</span>
                       </div>
                     </div>
-                    <span class="message-text-wrap"><p v-if="msg.content" v-html="formatMsgContent(msg.content)"></p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span></span>
+                    <!-- Shared Post Embed -->
+                    <div v-if="msg.sharedPost" class="shared-post-embed" @click.stop="goToPost(msg.sharedPost.id)">
+                      <p v-if="msg.content" class="shared-post-user-comment" v-html="formatMsgContent(msg.content)" @click.stop="handleSharedPostContentClick($event, msg.sharedPost.id)"></p>
+                      <div class="shared-post-card">
+                        <div class="shared-post-header">
+                          <router-link :to="`/profile/${msg.sharedPost.author.id}`" class="shared-post-author" @click.stop>
+                            <img :src="getAvatarUrl(msg.sharedPost.author.avatar)" class="avatar avatar-sm" alt="">
+                            <span class="shared-post-author-name">{{ msg.sharedPost.author.name }}</span>
+                          </router-link>
+                        </div>
+                        <p v-if="msg.sharedPost.content" class="shared-post-content" v-html="formatMsgContent(msg.sharedPost.content.slice(0, 200) + (msg.sharedPost.content.length > 200 ? '...' : ''))" @click.stop="handleSharedPostContentClick($event, msg.sharedPost.id)"></p>
+                        <div v-if="getSharedPostMedia(msg.sharedPost).length > 0" class="shared-post-media">
+                          <img v-if="getSharedPostMedia(msg.sharedPost)[0].mediaType === 'image' || getSharedPostMedia(msg.sharedPost)[0].mediaType === 'gif'" :src="getSharedPostMedia(msg.sharedPost)[0].url" alt="">
+                          <video v-else-if="getSharedPostMedia(msg.sharedPost)[0].mediaType === 'video'" :src="getSharedPostMedia(msg.sharedPost)[0].url"></video>
+                          <div v-if="getSharedPostMedia(msg.sharedPost).length > 1" class="shared-post-media-count">+{{ getSharedPostMedia(msg.sharedPost).length - 1 }}</div>
+                        </div>
+                        <div class="shared-post-stats">
+                          <span class="shared-post-stat">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            {{ msg.sharedPost.likesCount || 0 }}
+                          </span>
+                          <span class="shared-post-stat">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                            {{ msg.sharedPost.commentsCount || 0 }}
+                          </span>
+                          <span class="shared-post-stat">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                            {{ msg.sharedPost.repostsCount || 0 }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <span class="message-text-wrap"><p v-if="msg.content && !msg.sharedPost" v-html="formatMsgContent(msg.content)"></p><span class="message-time">{{ formatMsgTime(msg.createdAt) }}<svg v-if="msg.senderId === authStore.user?.id" class="read-status" viewBox="0 0 17 12" fill="none" stroke="currentColor" stroke-width="1.5"><path :d="msg.isRead ? 'M1 6l4 5 7-9' : 'M5 6l4 5 7-9'"/><path v-if="msg.isRead" d="M16 2l-7 9"/></svg></span></span>
                   </div>
                 </div>
               </div>
@@ -542,7 +574,7 @@
         </Transition>
 
         <Transition name="modal">
-          <div v-if="showVideoPlayer" class="video-player-overlay" @click.self="closeVideoPlayer">
+          <div v-if="showVideoPlayer" class="video-player-overlay" @click.self="closeVideoPlayer" @mousemove="resetControlsTimeout" @touchstart="resetControlsTimeout">
             <div class="viewer-floating-top">
               <button class="viewer-glass-btn" @click="closeVideoPlayer">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -598,7 +630,7 @@
         </Transition>
 
         <Transition name="modal">
-          <div v-if="showImageViewer" class="media-viewer-overlay" @click.self="closeImageViewer">
+          <div v-if="showImageViewer" class="media-viewer-overlay" @click="handleImageViewerClick">
             <div class="viewer-floating-top">
               <button class="viewer-glass-btn" @click="closeImageViewer">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -644,7 +676,7 @@
               >
             </div>
             
-            <div class="viewer-floating-bottom">
+            <div class="viewer-floating-bottom image-viewer-bottom">
               <button class="viewer-glass-btn" @click="shareMedia">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
               </button>
@@ -652,18 +684,20 @@
                 <span class="viewer-info-name">{{ currentMediaSender }}</span>
                 <span class="viewer-info-date">{{ currentMediaDate }}</span>
               </div>
-              <button class="viewer-glass-btn" @click="downloadMedia(currentImageUrl, 'image')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              </button>
-              <button class="viewer-glass-btn danger" @click="deleteMediaMessageForAll">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-              </button>
+              <div class="viewer-right-btns">
+                <button class="viewer-glass-btn" @click="downloadMedia(currentImageUrl, 'image')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                </button>
+                <button class="viewer-glass-btn danger" @click="deleteMediaMessageForAll">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                </button>
+              </div>
             </div>
           </div>
         </Transition>
 
         <Transition name="modal">
-          <div v-if="showGifViewer" class="media-viewer-overlay" @click.self="closeGifViewer">
+          <div v-if="showGifViewer" class="media-viewer-overlay" @click="handleGifViewerClick">
             <div class="viewer-floating-top">
               <button class="viewer-glass-btn" @click="closeGifViewer">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -703,7 +737,7 @@
               <img :src="currentGifUrl" alt="GIF">
             </div>
             
-            <div class="viewer-floating-bottom">
+            <div class="viewer-floating-bottom image-viewer-bottom">
               <button class="viewer-glass-btn" @click="shareMedia">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
               </button>
@@ -711,12 +745,14 @@
                 <span class="viewer-info-name">{{ currentMediaSender }}</span>
                 <span class="viewer-info-date">{{ currentMediaDate }}</span>
               </div>
-              <button class="viewer-glass-btn" @click="downloadMedia(currentGifUrl, 'gif')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              </button>
-              <button class="viewer-glass-btn danger" @click="deleteMediaMessageForAll">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-              </button>
+              <div class="viewer-right-btns">
+                <button class="viewer-glass-btn" @click="downloadMedia(currentGifUrl, 'gif')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                </button>
+                <button class="viewer-glass-btn danger" @click="deleteMediaMessageForAll">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                </button>
+              </div>
             </div>
           </div>
         </Transition>
@@ -731,7 +767,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import { useAudioPlayerStore } from '../stores/audioPlayer'
@@ -746,6 +782,7 @@ import api from '../api'
 const { t } = useI18n()
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const notifications = useNotificationsStore()
 const audioPlayerStore = useAudioPlayerStore()
@@ -836,7 +873,9 @@ const videoDurations = ref({})
 const playbackSpeed = ref(1)
 const isFullscreen = ref(false)
 const controlsHidden = ref(false)
+const isSeeking = ref(false)
 let controlsTimeout = null
+let seekingProgressBar = null
 
 const showImageViewer = ref(false)
 const currentImageUrl = ref('')
@@ -987,10 +1026,66 @@ function formatTime(d) {
 }
 function formatMsgTime(d) { return new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
 
+function getDialogPreview(msg) {
+  if (!msg) return ''
+  if (msg.sharedPostId) {
+    if (msg.content && !msg.content.includes('📝 Пост от')) {
+      return msg.content
+    }
+    return '📎 ' + t('sharedPost')
+  }
+  if (msg.content) return msg.content
+  if (msg.media || msg.mediaType) return t('media')
+  if (msg.musicTrackId) return '🎵 ' + (msg.musicTitle || t('music'))
+  return t('media')
+}
+
 function formatMsgContent(content) {
   if (!content) return ''
-  const escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  return escaped.replace(/@([a-zA-Z0-9_]{3,20})/g, '<a href="/profile/username/$1" class="mention-link">@$1</a>')
+  let text = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  
+  const urlRegex = /(https?:\/\/[^\s<]+)/g
+  text = text.replace(urlRegex, '<a href="$1" class="msg-link external-link" target="_blank" rel="noopener noreferrer">$1</a>')
+  text = text.replace(/(?<!href=")\/post\/([a-zA-Z0-9-]+)/g, '<a href="/post/$1" class="msg-link internal-link" data-route="/post/$1">/post/$1</a>')
+  text = text.replace(/@([a-zA-Z0-9_]{3,20})/g, '<a href="/profile/username/$1" class="mention-link internal-link" data-route="/profile/username/$1">@$1</a>')
+  
+  return text
+}
+
+function handleMsgContentClick(e) {
+  const link = e.target.closest('a.internal-link')
+  if (link) {
+    e.preventDefault()
+    e.stopPropagation()
+    const route = link.dataset.route
+    if (route) {
+      router.push(route)
+    }
+  }
+  const externalLink = e.target.closest('a.external-link')
+  if (externalLink) {
+    e.stopPropagation()
+  }
+}
+
+function handleSharedPostContentClick(e, postId) {
+  const link = e.target.closest('a.internal-link')
+  if (link) {
+    e.preventDefault()
+    e.stopPropagation()
+    const route = link.dataset.route
+    if (route) {
+      router.push(route)
+    }
+    return
+  }
+  const externalLink = e.target.closest('a.external-link')
+  if (externalLink) {
+    e.stopPropagation()
+    return
+  }
+  e.stopPropagation()
+  goToPost(postId)
 }
 
 function formatDateSeparator(d) {
@@ -1464,6 +1559,27 @@ function getFileMedia(msg) {
   }
   
   return []
+}
+
+function getSharedPostMedia(post) {
+  if (!post) return []
+  if (post.media && post.media.length > 0) {
+    return post.media.filter(m => ['image', 'video', 'gif'].includes(m.mediaType))
+  }
+  
+  if (post.image) {
+    const ext = post.image.split('.').pop().toLowerCase()
+    let mediaType = 'image'
+    if (['mp4', 'webm', 'mov'].includes(ext)) mediaType = 'video'
+    else if (ext === 'gif') mediaType = 'gif'
+    return [{ url: post.image, mediaType }]
+  }
+  
+  return []
+}
+
+function goToPost(postId) {
+  router.push(`/post/${postId}`)
 }
 
 function handleMediaSelect(e) { 
@@ -2098,7 +2214,7 @@ function onFullVideoMeta() {
 }
 
 function onFullVideoTime() {
-  if (fullscreenVideoRef.value) {
+  if (fullscreenVideoRef.value && !isSeeking.value) {
     fullVideoCurrentTime.value = fullscreenVideoRef.value.currentTime
     fullVideoProgress.value = (fullscreenVideoRef.value.currentTime / fullscreenVideoRef.value.duration) * 100
     if (fullscreenVideoRef.value.buffered.length > 0) {
@@ -2115,13 +2231,48 @@ function onFullVideoEnded() {
 function seekFullVideo(e) {
   if (!fullscreenVideoRef.value) return
   const rect = e.currentTarget.getBoundingClientRect()
-  const percent = (e.clientX - rect.left) / rect.width
+  const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   fullscreenVideoRef.value.currentTime = percent * fullscreenVideoRef.value.duration
+  fullVideoProgress.value = percent * 100
   resetControlsTimeout()
 }
 
 function startSeek(e) {
   e.preventDefault()
+  e.stopPropagation()
+  isSeeking.value = true
+  seekingProgressBar = e.currentTarget
+  
+  const updateSeek = (clientX) => {
+    if (!fullscreenVideoRef.value || !seekingProgressBar) return
+    const rect = seekingProgressBar.getBoundingClientRect()
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    fullVideoProgress.value = percent * 100
+    fullscreenVideoRef.value.currentTime = percent * fullscreenVideoRef.value.duration
+  }
+  
+  const onMove = (moveEvent) => {
+    const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
+    updateSeek(clientX)
+    resetControlsTimeout()
+  }
+  
+  const onEnd = () => {
+    isSeeking.value = false
+    seekingProgressBar = null
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onEnd)
+    document.removeEventListener('touchmove', onMove)
+    document.removeEventListener('touchend', onEnd)
+  }
+  
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onEnd)
+  document.addEventListener('touchmove', onMove, { passive: false })
+  document.addEventListener('touchend', onEnd)
+  
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  updateSeek(clientX)
   resetControlsTimeout()
 }
 
@@ -2179,8 +2330,8 @@ function openImageViewer(item, msg) {
   
   if (msg) {
     currentMediaMsgId.value = msg.id
-    const sender = msg.senderId === authStore.user?.id ? authStore.user : selectedDialog.value?.user
-    currentMediaSender.value = sender?.name || 'Пользователь'
+    const isOwnMessage = msg.senderId === authStore.user?.id
+    currentMediaSender.value = isOwnMessage ? authStore.user?.name : chatUser.value?.name
     currentMediaDate.value = formatMediaDate(msg.createdAt)
   }
   
@@ -2190,6 +2341,12 @@ function openImageViewer(item, msg) {
 function closeImageViewer() {
   showImageViewer.value = false
   showViewerMenu.value = false
+}
+
+function handleImageViewerClick(e) {
+  if (e.target.classList.contains('media-viewer-overlay') || e.target.classList.contains('media-viewer-content')) {
+    closeImageViewer()
+  }
 }
 
 function formatMediaDate(date) {
@@ -2271,8 +2428,8 @@ function openGifViewer(item, msg) {
   
   if (msg) {
     currentMediaMsgId.value = msg.id
-    const sender = msg.senderId === authStore.user?.id ? authStore.user : selectedDialog.value?.user
-    currentMediaSender.value = sender?.name || 'Пользователь'
+    const isOwnMessage = msg.senderId === authStore.user?.id
+    currentMediaSender.value = isOwnMessage ? authStore.user?.name : chatUser.value?.name
     currentMediaDate.value = formatMediaDate(msg.createdAt)
   }
   
@@ -2282,6 +2439,12 @@ function openGifViewer(item, msg) {
 function closeGifViewer() {
   showGifViewer.value = false
   showGifMenu.value = false
+}
+
+function handleGifViewerClick(e) {
+  if (e.target.classList.contains('media-viewer-overlay') || e.target.classList.contains('media-viewer-content')) {
+    closeGifViewer()
+  }
 }
 
 function scrollToMediaInChat() {
@@ -2517,9 +2680,18 @@ function handleClickOutside(e) {
   if (showAttachMenu.value && !e.target.closest('.attach-wrap')) showAttachMenu.value = false
 }
 
-function onNewMessage(msg) {
+async function onNewMessage(msg) {
   if (selectedUserId.value === msg.senderId) {
-    messages.value.push(parseMessageMedia(msg))
+    const parsedMsg = parseMessageMedia(msg)
+    
+    if (msg.sharedPostId && !msg.sharedPost) {
+      try {
+        const res = await api.get(`/posts/${msg.sharedPostId}`)
+        parsedMsg.sharedPost = res.data
+      } catch {}
+    }
+    
+    messages.value.push(parsedMsg)
     scrollToBottom()
     api.post(`/messages/${msg.senderId}/read`)
   }
@@ -2579,25 +2751,34 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 <style scoped>
 .messages-page { min-height: 100vh; padding: 20px; padding-left: calc(var(--sidebar-width) + 20px); display: flex; justify-content: center; }
 .messages-container { display: grid; grid-template-columns: 380px 1fr; gap: 20px; max-width: 1100px; width: 100%; height: calc(100vh - 40px); }
-.dialogs-panel, .chat-panel, .chat-empty { display: flex; flex-direction: column; overflow: hidden; }
-.dialogs-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; }
+.dialogs-panel, .chat-panel, .chat-empty { 
+  display: flex; 
+  flex-direction: column; 
+  overflow: hidden;
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+}
+.dialogs-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; background: transparent; }
 .dialogs-header h1 { font-size: 20px; font-weight: 600; }
 .dialogs-search-wrap { flex: 1; }
-.dialogs-search-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: none; border-radius: var(--radius-full); font-size: 15px; color: var(--text-primary); transition: all 0.1s ease; }
-.dialogs-search-input:focus { background: rgba(255,255,255,0.05); outline: none; }
+.dialogs-search-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); font-size: 15px; color: var(--text-primary); transition: all 0.1s ease; }
+.dialogs-search-input:focus { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); outline: none; }
 .dialogs-search-input::placeholder { color: var(--text-muted); }
 .dialogs-search-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); border-radius: 50%; transition: all 0.1s ease; flex-shrink: 0; }
-.dialogs-search-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
-.dialogs-search-btn:active { transform: scale(0.9); }
+.dialogs-search-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.dialogs-search-btn:active { transform: scale(0.88); }
 .dialogs-search-btn svg { width: 20px; height: 20px; transition: transform 0.1s ease; }
 .dialogs-list { flex: 1; overflow-y: auto; padding: 8px; }
 .loading-state, .empty-state { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text-secondary); }
 .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.5); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .dialog-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-lg); transition: all 0.1s cubic-bezier(0.2, 0, 0, 1); cursor: pointer; }
-.dialog-item:hover, .dialog-item.active { background: rgba(255,255,255,0.04); }
+.dialog-item:hover, .dialog-item.active { background: rgba(255,255,255,0.06); }
 .dialog-item:active { transform: scale(0.98); }
-.dialog-item.unread { background: rgba(255,255,255,0.03); }
+.dialog-item.unread { background: rgba(255,255,255,0.04); }
 .dialog-avatar-wrap, .chat-avatar-wrap { position: relative; flex-shrink: 0; }
 .online-indicator { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; background: #3b82f6; border: 3px solid var(--bg-primary); border-radius: 50%; }
 .dialog-content { flex: 1; min-width: 0; }
@@ -2608,7 +2789,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .dialog-icons { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .dialog-icons .pinned-icon { width: 14px; height: 14px; color: var(--text-muted); }
 .dialog-time { font-size: 12px; color: var(--text-muted); }
-.dialog-item.pinned { background: rgba(255,255,255,0.02); }
+.dialog-item.pinned { background: rgba(255,255,255,0.03); }
 .dialog-bottom { display: flex; align-items: center; gap: 8px; }
 .dialog-preview { flex: 1; font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dialog-preview .you { color: var(--text-muted); }
@@ -2620,10 +2801,10 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .chat-empty h3 { font-size: 20px; font-weight: 600; }
 .chat-empty p { color: var(--text-secondary); }
 .chat-panel { display: flex; flex-direction: column; }
-.chat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 64px; }
+.chat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 64px; background: transparent; }
 .back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: var(--radius-lg); flex-shrink: 0; transition: all 0.1s ease; }
-.back-btn:hover { background: rgba(255,255,255,0.04); }
-.back-btn:active { transform: scale(0.9); }
+.back-btn:hover { background: rgba(255,255,255,0.06); }
+.back-btn:active { transform: scale(0.88); }
 .back-btn svg { width: 20px; height: 20px; }
 .chat-user { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; flex: 1; min-width: 0; }
 .chat-user .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
@@ -2730,6 +2911,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .message-bubble p :deep(.mention-link) { color: #5b9aff; text-decoration: none; font-weight: 500; }
 .message-bubble p :deep(.mention-link:hover) { text-decoration: underline; }
 .message.own .message-bubble p :deep(.mention-link) { color: #ffffff; }
+.message-bubble p :deep(.msg-link) { color: #5b9aff; text-decoration: none; word-break: break-all; }
+.message-bubble p :deep(.msg-link:hover) { text-decoration: underline; }
+.message.own .message-bubble p :deep(.msg-link) { color: #ffffff; }
 .message-time { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: rgba(255,255,255,0.5); white-space: nowrap; margin-left: auto; }
 .message.own .message-time { color: rgba(255,255,255,0.7); }
 .read-status { width: 14px; height: 8px; color: rgba(255,255,255,0.5); }
@@ -2946,14 +3130,14 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   padding: 10px 12px;
   margin: 8px 12px;
   margin-bottom: calc(8px + env(safe-area-inset-bottom));
-  background: rgba(20, 20, 20, 0.85);
+  background: rgba(40, 40, 40, 0.5);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 26px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
 }
-.voice-recording-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 8px 12px; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); border-radius: 26px; }
+.voice-recording-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 8px 12px; background: rgba(40, 40, 40, 0.5); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 26px; }
 .input-actions-left, .input-actions-right { display: flex; }
 .action-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); border-radius: 50%; transition: all 0.2s; cursor: pointer; background: transparent; border: none; }
 .action-btn:hover { color: white; }
@@ -3664,12 +3848,14 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   align-items: center;
   justify-content: center;
   z-index: 100000;
+  cursor: pointer;
 }
 
 .video-player-video {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  cursor: default;
 }
 
 .viewer-floating-top {
@@ -3694,7 +3880,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   width: 44px;
   height: 44px;
   border-radius: 22px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3703,6 +3889,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   justify-content: center;
   color: white;
   transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+  cursor: pointer;
 }
 
 .viewer-glass-btn:active {
@@ -3751,7 +3938,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .viewer-glass-pill {
   padding: 10px 18px;
   border-radius: 22px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3790,7 +3977,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   min-width: 160px;
   padding: 8px;
   border-radius: 16px;
-  background: rgba(30, 30, 30, 0.85);
+  background: rgba(30, 30, 30, 0.9);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3817,7 +4004,9 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 .viewer-dropdown-item svg {
   width: 20px;
   height: 20px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #9a9a9a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .viewer-dropdown-item.danger {
@@ -3846,6 +4035,27 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   pointer-events: auto;
 }
 
+.viewer-floating-bottom.image-viewer-bottom {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+}
+
+.viewer-floating-bottom.image-viewer-bottom > *:first-child {
+  justify-self: start;
+}
+
+.viewer-floating-bottom.image-viewer-bottom > *:last-child {
+  justify-self: end;
+}
+
+.viewer-right-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .viewer-glass-info {
   display: flex;
   flex-direction: column;
@@ -3853,7 +4063,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   gap: 2px;
   padding: 10px 20px;
   border-radius: 18px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3892,47 +4102,58 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 
 .video-progress-glass {
   position: relative;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.2);
+  width: 100%;
+  height: 24px;
+  padding: 10px 0;
   cursor: pointer;
-  overflow: hidden;
 }
 
 .video-progress-bg {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 6px;
+  transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
 
 .video-progress-buffered {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 0;
-  height: 100%;
+  height: 6px;
+  transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.25);
   border-radius: 3px;
 }
 
 .video-progress-fill {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 0;
-  height: 100%;
+  height: 6px;
+  transform: translateY(-50%);
   background: white;
   border-radius: 3px;
+  transition: none !important;
 }
 
 .video-progress-handle {
   position: absolute;
   top: 50%;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   background: white;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  transition: none !important;
+}
+
+.video-progress-glass:hover .video-progress-handle {
+  transform: translate(-50%, -50%) scale(1.2);
 }
 
 .video-controls-row {
@@ -3942,7 +4163,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   gap: 12px;
   padding: 8px 16px;
   border-radius: 28px;
-  background: rgba(30, 30, 30, 0.75);
+  background: rgba(40, 40, 40, 0.6);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -3974,6 +4195,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   align-items: center;
   justify-content: center;
   z-index: 100000;
+  cursor: pointer;
 }
 
 .media-viewer-content {
@@ -3984,6 +4206,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   overflow: hidden;
   padding: 80px 16px;
   width: 100%;
+  cursor: default;
 }
 
 .media-viewer-content img {
@@ -3993,6 +4216,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   user-select: none;
   -webkit-user-drag: none;
   border-radius: 12px;
+  cursor: default;
 }
 
 @media (max-width: 768px) {
@@ -4267,6 +4491,150 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
   color: var(--text-muted);
 }
 
+.shared-post-embed {
+  margin: 4px 0;
+  cursor: pointer;
+}
+
+.shared-post-user-comment {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+  line-height: 1.4;
+  word-break: break-word;
+  text-align: center;
+}
+
+.shared-post-card {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.shared-post-embed:active .shared-post-card {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.shared-post-header {
+  margin-bottom: 8px;
+}
+
+.shared-post-author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.shared-post-author .avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.shared-post-author-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shared-post-content {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin: 0 0 8px;
+  word-break: break-word;
+}
+
+.shared-post-content :deep(.msg-link),
+.shared-post-content :deep(.mention-link),
+.shared-post-user-comment :deep(.msg-link),
+.shared-post-user-comment :deep(.mention-link) {
+  color: #5b9aff;
+  text-decoration: none;
+}
+
+.shared-post-content :deep(.msg-link:hover),
+.shared-post-content :deep(.mention-link:hover),
+.shared-post-user-comment :deep(.msg-link:hover),
+.shared-post-user-comment :deep(.mention-link:hover) {
+  text-decoration: underline;
+}
+
+.shared-post-media {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  max-height: 200px;
+}
+
+.shared-post-media img,
+.shared-post-media video {
+  width: 100%;
+  height: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.shared-post-media-count {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shared-post-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.shared-post-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.shared-post-stat svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+.message.own .shared-post-stat {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.message.own .shared-post-stat svg {
+  opacity: 0.85;
+}
+
+.message.own .shared-post-author-name {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.message.own .shared-post-text {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.message.own .shared-post-content {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.message.own .shared-post-user-comment {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
 .attach-icon.music {
   background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
 }
@@ -4380,8 +4748,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .chat-header {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.06);
+  background: transparent;
 }
 
 [data-theme="light"] .chat-input {
@@ -4409,6 +4776,30 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 [data-theme="light"] .emoji-btn:hover {
   color: var(--text-primary);
   background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .action-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .action-btn:hover {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .send-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .send-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .voice-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .voice-btn:hover {
+  color: var(--text-primary);
 }
 
 [data-theme="light"] .message:not(.own) .message-bubble {
@@ -4518,6 +4909,60 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 
 [data-theme="light"] .file-name {
   color: var(--text-primary);
+}
+
+[data-theme="light"] .message:not(.own) .shared-post-embed {
+  background: transparent !important;
+}
+
+[data-theme="light"] .message:not(.own) .shared-post-card {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .message:not(.own) .shared-post-author-name {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .message:not(.own) .shared-post-text {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .message:not(.own) .shared-post-stat {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="light"] .message:not(.own) .shared-post-stat svg {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="light"] .message.own .shared-post-card {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="light"] .message.own .shared-post-author-name {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .message.own .shared-post-text {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .message.own .shared-post-content {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .message.own .shared-post-user-comment {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .message.own .shared-post-stat {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="light"] .message.own .shared-post-stat svg {
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 @media (max-width: 480px) {
@@ -4701,7 +5146,7 @@ watch(() => route.params.id, id => { if (id) selectDialog(id) })
 }
 
 [data-theme="light"] .dialogs-header {
-  border-color: rgba(0, 0, 0, 0.06);
+  background: transparent;
 }
 
 [data-theme="light"] .dialogs-header h1 {

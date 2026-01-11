@@ -319,7 +319,22 @@ const translations = {
     libraryEmpty: 'Библиотека пуста',
     historyEmpty: 'История пуста',
     addToLibrary: 'Добавить в библиотеку',
-    removeFromLibrary: 'Удалить из библиотеки'
+    removeFromLibrary: 'Удалить из библиотеки',
+    repostToProfile: 'Репост на страницу',
+    repostToProfileDesc: 'Опубликовать на своей странице',
+    sendToMessage: 'Отправить в сообщения',
+    sendToMessageDesc: 'Поделиться с друзьями',
+    copyLinkDesc: 'Скопировать ссылку на пост',
+    addComment: 'Добавить комментарий...',
+    repost: 'Репостнуть',
+    searchFriends: 'Поиск друзей...',
+    noFriendsFound: 'Друзья не найдены',
+    post: 'Пост',
+    postNotFound: 'Пост не найден',
+    retry: 'Повторить',
+    addMessage: 'Добавить сообщение...',
+    viewPost: 'Открыть пост',
+    sharedPost: 'Пост'
   },
   en: {
     settings: 'Settings',
@@ -639,7 +654,22 @@ const translations = {
     libraryEmpty: 'Library is empty',
     historyEmpty: 'History is empty',
     addToLibrary: 'Add to library',
-    removeFromLibrary: 'Remove from library'
+    removeFromLibrary: 'Remove from library',
+    repostToProfile: 'Repost to profile',
+    repostToProfileDesc: 'Share on your page',
+    sendToMessage: 'Send to messages',
+    sendToMessageDesc: 'Share with friends',
+    copyLinkDesc: 'Copy link to post',
+    addComment: 'Add a comment...',
+    repost: 'Repost',
+    searchFriends: 'Search friends...',
+    noFriendsFound: 'No friends found',
+    post: 'Post',
+    postNotFound: 'Post not found',
+    retry: 'Retry',
+    addMessage: 'Add message...',
+    viewPost: 'View post',
+    sharedPost: 'Post'
   }
 }
 

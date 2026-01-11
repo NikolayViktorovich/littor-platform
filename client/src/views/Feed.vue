@@ -368,7 +368,7 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--bg-primary);
+  background: transparent;
 }
 
 .user-info {
@@ -376,6 +376,17 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  padding: 8px 16px 8px 8px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  transition: all 0.1s ease;
+}
+
+.user-info:active {
+  transform: scale(0.95);
 }
 
 .user-avatar {
@@ -405,6 +416,9 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
   color: var(--text-primary);
   transition: all 0.1s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -568,7 +582,7 @@ onUnmounted(() => {
 }
 
 .stories-card {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto 16px;
   background: var(--bg-secondary);
   border: 1px solid var(--glass-border);
@@ -707,7 +721,7 @@ onUnmounted(() => {
 }
 
 .feed-content {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -951,7 +965,7 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .feed-header {
-  background: var(--bg-primary);
+  background: transparent;
 }
 
 [data-theme="light"] .story-avatar img {

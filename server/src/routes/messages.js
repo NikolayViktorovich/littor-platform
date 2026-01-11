@@ -28,7 +28,7 @@ router.get('/dialogs', authMiddleware, (req, res) => {
   const dialogs = db.prepare(`
     SELECT 
       u.id, u.name, u.avatar, u.lastSeen,
-      m.id as messageId, m.content, m.senderId, m.createdAt, m.mediaType, m.musicTitle,
+      m.id as messageId, m.content, m.senderId, m.createdAt, m.mediaType, m.musicTitle, m.sharedPostId,
       (SELECT COUNT(*) FROM messages 
        WHERE senderId = u.id AND receiverId = ? AND isRead = 0 
        AND (deletedByReceiver IS NULL OR deletedByReceiver = 0)) as unreadCount,
@@ -66,7 +66,8 @@ router.get('/dialogs', authMiddleware, (req, res) => {
         id: d.messageId, 
         content, 
         senderId: d.senderId, 
-        createdAt: d.createdAt 
+        createdAt: d.createdAt,
+        sharedPostId: d.sharedPostId || null
       },
       unreadCount: d.unreadCount,
       isPinned: d.isPinned || 0,
@@ -268,27 +269,73 @@ router.get('/:id', authMiddleware, (req, res) => {
     ORDER BY m.createdAt ASC
   `).all(req.userId, req.params.id, req.params.id, req.userId)
 
-  const result = messages.map(msg => ({
-    ...msg,
-    forwardedFrom: msg.forwardedFromUserId ? {
-      id: msg.forwardedFromUserId,
-      name: msg.forwardedFromName,
-      avatar: msg.forwardedFromAvatar
-    } : null,
-    replyTo: msg.replyToMsgId ? {
-      id: msg.replyToMsgId,
-      content: msg.replyToContent,
-      senderId: msg.replyToSenderId,
-      senderName: msg.replyToSenderName
-    } : null,
-    forwardedFromUserId: undefined,
-    forwardedFromName: undefined,
-    forwardedFromAvatar: undefined,
-    replyToMsgId: undefined,
-    replyToContent: undefined,
-    replyToSenderId: undefined,
-    replyToSenderName: undefined
-  }))
+  const result = messages.map(msg => {
+    const mapped = {
+      ...msg,
+      forwardedFrom: msg.forwardedFromUserId ? {
+        id: msg.forwardedFromUserId,
+        name: msg.forwardedFromName,
+        avatar: msg.forwardedFromAvatar
+      } : null,
+      replyTo: msg.replyToMsgId ? {
+        id: msg.replyToMsgId,
+        content: msg.replyToContent,
+        senderId: msg.replyToSenderId,
+        senderName: msg.replyToSenderName
+      } : null,
+      forwardedFromUserId: undefined,
+      forwardedFromName: undefined,
+      forwardedFromAvatar: undefined,
+      replyToMsgId: undefined,
+      replyToContent: undefined,
+      replyToSenderId: undefined,
+      replyToSenderName: undefined
+    }
+    
+    if (msg.sharedPostId) {
+      const post = db.prepare(`
+        SELECT p.*, u.id as authorId, u.name as authorName, u.avatar as authorAvatar,
+          (SELECT COUNT(*) FROM likes WHERE postId = p.id) as likesCount,
+          (SELECT COUNT(*) FROM comments WHERE postId = p.id) as commentsCount
+        FROM posts p
+        JOIN users u ON p.authorId = u.id
+        WHERE p.id = ?
+      `).get(msg.sharedPostId)
+      
+      if (post) {
+        let media = []
+        if (post.media) {
+          try {
+            const items = JSON.parse(post.media)
+            media = items.map(item => ({
+              url: item.url,
+              mediaType: item.type,
+              fileName: item.name,
+              fileSize: item.size
+            }))
+          } catch {}
+        }
+        
+        mapped.sharedPost = {
+          id: post.id,
+          content: post.content,
+          image: post.image,
+          media,
+          likesCount: post.likesCount,
+          commentsCount: post.commentsCount,
+          repostsCount: post.repostsCount || 0,
+          createdAt: post.createdAt,
+          author: {
+            id: post.authorId,
+            name: post.authorName,
+            avatar: post.authorAvatar
+          }
+        }
+      }
+    }
+    
+    return mapped
+  })
 
   res.json(result)
 })
